@@ -1,0 +1,10 @@
+.service-name {
+  color: var(--brand-accent);
+}
+
+.theme-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ant-margin-sm);
+}
