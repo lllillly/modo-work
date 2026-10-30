@@ -1,0 +1,84 @@
+@theme inline {
+  /* 로고, 좌측 메뉴 맨 위 서비스명 */
+  --color-brand-accent: #FF6000;
+
+  /* 간격: 4 / 8 / 12 / 16 / 24 / 32px */
+  --spacing-xxs: var(--ant-padding-xxs);
+  --spacing-xs: var(--ant-padding-xs);
+  --spacing-sm: var(--ant-padding-sm);
+  --spacing-md: var(--ant-padding);
+  --spacing-lg: var(--ant-padding-lg);
+  --spacing-xl: var(--ant-padding-xl);
+
+  /* 4, 작은 요소 / 6, 버튼, 입력창 (기본) / 8, 카드, 패널 */
+  --radius-sm: var(--ant-border-radius-sm);
+  --radius-md: var(--ant-border-radius);
+  --radius-lg: var(--ant-border-radius-lg);
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: var(--ant-font-weight-strong);
+
+  /* 30 / 38 - Bold, 페이지 제목 */
+  --text-page-title: var(--ant-font-size-heading-2);
+  --text-page-title--line-height: var(--ant-line-height-heading-2);
+  --text-page-title--font-weight: var(--ant-font-weight-strong);
+
+  /* 24 / 32 - Bold, 큰 섹션 제목 */
+  --text-section-title-lg: var(--ant-font-size-heading-3);
+  --text-section-title-lg--line-height: var(--ant-line-height-heading-3);
+  --text-section-title-lg--font-weight: var(--ant-font-weight-strong);
+
+  /* 20 / 28 - Bold, 섹션 제목 */
+  --text-section-title: var(--ant-font-size-heading-4);
+  --text-section-title--line-height: var(--ant-line-height-heading-4);
+  --text-section-title--font-weight: var(--ant-font-weight-strong);
+
+  /* 16 / 24 - Medium, 카드 제목, 강조 라벨 */
+  --text-card-title: var(--ant-font-size-lg);
+  --text-card-title--line-height: var(--ant-line-height-lg);
+  --text-card-title--font-weight: 500;
+
+  /* 14 / 22 - Regular, 본문, 표내용 (기본) */
+  --text-body: var(--ant-font-size);
+  --text-body--line-height: var(--ant-line-height);
+  --text-body--font-weight: 400;
+
+  /* 12 / 20 - Regular, 보조 설명, 마감 당김 표시 */
+  --text-caption: var(--ant-font-size-sm);
+  --text-caption--line-height: var(--ant-line-height-sm);
+  --text-caption--font-weight: 400;
+
+  /* 기한 지남 */
+  --color-status-overdue-base: var(--ant-color-error);
+  --color-status-overdue-text: var(--ant-color-error-text);
+  --color-status-overdue-bg: var(--ant-color-error-bg);
+
+  /* 임박 */
+  --color-status-due-soon-base: var(--ant-color-warning);
+  --color-status-due-soon-bg: var(--ant-color-warning-bg);
+
+  /* 7일 내 마감 (배경만) / 예: D-6 */
+  --color-status-upcoming-bg: var(--ant-color-warning-bg);
+
+  /* 미완료 */
+  --color-status-incomplete-text: var(--ant-color-text-tertiary);
+
+  /* 완료, 확인 대기 */
+  --color-status-pending-review-base: var(--ant-color-info);
+  --color-status-pending-review-bg: var(--ant-color-info-bg);
+
+  /* 확인됨, 완료 */
+  --color-status-completed-base: var(--ant-color-success);
+
+  /* 승인 대기 (사용자) */
+  --color-status-pending-approval-text: var(--ant-color-text-tertiary);
+
+  /* 마감 당김 표시 / 예시: 12/6(일) -> 12/4(금) 당김, 일요일 */
+  --color-deadline-adjusted-text: var(--ant-color-text-secondary);
+
+  /* 열람 전용 */
+  --color-status-read-only-text: var(--ant-color-info-text);
+  --color-status-read-only-bg: var(--ant-color-info-bg);
+  --color-status-read-only-border: var(--ant-color-info-border);
+}

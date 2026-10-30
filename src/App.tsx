@@ -2,7 +2,6 @@ import { useId, useState } from 'react'
 import { Switch } from 'antd'
 import AppProvider from './providers/AppProvider'
 import { darkTheme, lightTheme } from './styles/theme'
-import './App.css'
 
 function App() {
   const [isDark, setIsDark] = useState(false)
@@ -12,10 +11,8 @@ function App() {
   return (
     <AppProvider themeConfig={currentTheme}>
       <main>
-        <h1 className="service-name">
-          MODO WORK<span style={{ fontFamily: currentTheme.token?.fontFamily }}>AX</span>
-        </h1>
-        <div className="theme-toggle">
+        <h1 className="text-page-title font-bold text-brand-accent">MODO WORKAX</h1>
+        <div className="flex flex-wrap items-center gap-sm">
           <label htmlFor={switchId}>다크 모드</label>
           <Switch
             id={switchId}

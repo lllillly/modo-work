@@ -1,13 +1,9 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@layer theme, base, antd, components, utilities;
 
-body {
-  margin: 0;
-}
-
-#root {
-  min-height: 100svh;
-}
+/* tailwind 기본 reset이랑 Ant Design reset이 충돌 가능성이 있어 */
+/* 초기화는 Ant Design reset만 사용하게 작성했습니다. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'antd/dist/reset.css' layer(base);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import './fonts.css';
+@import './tokens.css';

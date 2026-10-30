@@ -1,9 +1,8 @@
 import type { PropsWithChildren } from 'react'
+import { StyleProvider } from '@ant-design/cssinjs'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import type { ThemeConfig } from 'antd'
 import koKR from 'antd/locale/ko_KR'
-import { brandCssVariables } from '../styles/theme'
-import './AppProvider.css'
 
 type AppProviderProps = PropsWithChildren<{
   themeConfig: ThemeConfig
@@ -11,10 +10,12 @@ type AppProviderProps = PropsWithChildren<{
 
 export default function AppProvider({ themeConfig, children }: AppProviderProps) {
   return (
-    <ConfigProvider locale={koKR} theme={themeConfig}>
-      <AntdApp className="app-shell" style={brandCssVariables}>
-        {children}
-      </AntdApp>
-    </ConfigProvider>
+    <StyleProvider layer>
+      <ConfigProvider locale={koKR} theme={themeConfig}>
+        <AntdApp className="min-h-svh bg-(--ant-color-bg-layout) p-lg text-body font-regular text-(--ant-color-text)">
+          {children}
+        </AntdApp>
+      </ConfigProvider>
+    </StyleProvider>
   )
 }
