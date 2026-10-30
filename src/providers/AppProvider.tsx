@@ -12,7 +12,7 @@ export default function AppProvider({ themeConfig, children }: AppProviderProps)
   return (
     <StyleProvider layer>
       <ConfigProvider locale={koKR} theme={themeConfig}>
-        <AntdApp className="min-h-svh bg-(--ant-color-bg-layout) p-lg text-body font-regular text-(--ant-color-text)">
+        <AntdApp className="min-h-svh bg-(--ant-color-bg-layout) text-body font-regular text-(--ant-color-text)">
           {children}
         </AntdApp>
       </ConfigProvider>

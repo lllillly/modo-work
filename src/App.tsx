@@ -1,6 +1,6 @@
-import { useId, useState } from 'react'
-import { Switch } from 'antd'
+import { useState } from 'react'
 import AppProvider from './providers/AppProvider'
+import AppRouter from './router'
 import { darkTheme, lightTheme } from './styles/theme'
 
 function App() {
@@ -11,7 +11,6 @@ function App() {
       return false
     }
   })
-  const switchId = useId()
   const currentTheme = isDark ? darkTheme : lightTheme
 
   function changeTheme(isDark: boolean) {
@@ -25,18 +24,7 @@ function App() {
 
   return (
     <AppProvider themeConfig={currentTheme}>
-      <main>
-        <h1 className="text-page-title font-bold text-brand-accent">MODO WORKAX</h1>
-        <div className="flex flex-wrap items-center gap-sm">
-          <label htmlFor={switchId}>다크 모드</label>
-          <Switch
-            id={switchId}
-            aria-label="다크 모드"
-            checked={isDark}
-            onChange={changeTheme}
-          />
-        </div>
-      </main>
+      <AppRouter isDark={isDark} onThemeChange={changeTheme} />
     </AppProvider>
   )
 }
