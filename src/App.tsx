@@ -4,9 +4,24 @@ import AppProvider from './providers/AppProvider'
 import { darkTheme, lightTheme } from './styles/theme'
 
 function App() {
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(() => {
+    try {
+      return localStorage.getItem('portal-theme') === 'dark'
+    } catch {
+      return false
+    }
+  })
   const switchId = useId()
   const currentTheme = isDark ? darkTheme : lightTheme
+
+  function changeTheme(isDark: boolean) {
+    setIsDark(isDark)
+    try {
+      localStorage.setItem('portal-theme', isDark ? 'dark' : 'light')
+    } catch {
+      return
+    }
+  }
 
   return (
     <AppProvider themeConfig={currentTheme}>
@@ -18,7 +33,7 @@ function App() {
             id={switchId}
             aria-label="다크 모드"
             checked={isDark}
-            onChange={setIsDark}
+            onChange={changeTheme}
           />
         </div>
       </main>
