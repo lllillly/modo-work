@@ -3,7 +3,7 @@ import { theme } from 'antd'
 import type { ThemeConfig } from 'antd'
 
 export const brandColors = {
-  accent: '#FF6600',
+  accent: '#FF6000',
 } as const
 
 export const brandCssVariables: CSSProperties & Record<`--${string}`, string> = {
