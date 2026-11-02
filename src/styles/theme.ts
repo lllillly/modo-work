@@ -17,4 +17,10 @@ export const lightTheme: ThemeConfig = {
 export const darkTheme: ThemeConfig = {
   ...commonTheme,
   algorithm: theme.darkAlgorithm,
+  token: {
+    ...commonTheme.token,
+    colorBgLayout: '#141414',
+    colorBgContainer: '#1F1F1F',
+    colorBgElevated: '#262626',
+  },
 }

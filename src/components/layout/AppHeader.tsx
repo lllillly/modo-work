@@ -1,7 +1,8 @@
 import { DownOutlined } from '@ant-design/icons'
-import { Badge, Button, Dropdown, Empty, Layout, Popover, Switch } from 'antd'
+import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation } from 'react-router'
+import ThemeToggle from '../common/ThemeToggle'
 
 type AppHeaderProps = {
   isDark: boolean
@@ -47,7 +48,7 @@ export default function AppHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-sm">
-        <Switch aria-label="다크 모드" checked={isDark} onChange={onThemeChange} />
+        <ThemeToggle isDark={isDark} onThemeChange={onThemeChange} />
         <Popover
           title="알림"
           trigger="click"
