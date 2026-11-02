@@ -1,9 +1,13 @@
+import { CloseOutlined } from '@ant-design/icons'
 import { useState } from 'react'
-import { ConfigProvider, Layout, Menu, Select } from 'antd'
+import { Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
 import type { MenuProps, ThemeConfig } from 'antd'
 import { Link, useLocation } from 'react-router'
 
 type AppSidebarProps = {
+  isMobile: boolean
+  isOpen: boolean
+  onClose: () => void
   role?: 'ADMIN' | 'LEADER' | 'ASSIGNEE' | 'VIEWER'
 }
 
@@ -42,6 +46,9 @@ const sidebarTheme: ThemeConfig = {
 }
 
 export default function AppSidebar({
+  isMobile,
+  isOpen,
+  onClose,
   role,
 }: AppSidebarProps) {
   const { pathname } = useLocation()
@@ -59,12 +66,21 @@ export default function AppSidebar({
         <div className="relative flex items-start">
           <Link
             to="/"
+            onClick={onClose}
             className="flex min-w-0 flex-1 items-center justify-center gap-[10px] pt-xxs pb-sm text-(--ant-color-text)"
           >
             <span aria-hidden="true" className="size-6 shrink-0 rounded-md bg-brand-accent" />
             <span className="text-[18px] leading-[27px] font-bold">MODO WORK AX</span>
           </Link>
-
+          {isMobile && (
+            <Button
+              type="text"
+              aria-label="메뉴 닫기"
+              className="absolute top-0 right-0"
+              icon={<CloseOutlined />}
+              onClick={onClose}
+            />
+          )}
         </div>
         <label
           htmlFor="sidebar-business"
@@ -93,6 +109,7 @@ export default function AppSidebar({
             inlineIndent={12}
             selectedKeys={[pathname]}
             items={menuItems}
+            onClick={onClose}
             className="border-e-0"
           />
           {visibleAdminItems.length > 0 && (
@@ -105,7 +122,8 @@ export default function AppSidebar({
                 inlineIndent={12}
                 selectedKeys={[pathname]}
                 items={visibleAdminItems}
-                    className="border-e-0"
+                onClick={onClose}
+                className="border-e-0"
               />
             </>
           )}
@@ -115,12 +133,34 @@ export default function AppSidebar({
   )
 
   return (
-    <Layout.Sider
-      width={256}
-      theme="light"
-      className="max-h-svh overflow-y-auto border-0 border-e border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container)"
-    >
-      {sidebarContent}
-    </Layout.Sider>
+    <>
+      {!isMobile && (
+        <Layout.Sider
+          width={256}
+          theme="light"
+          className="max-h-svh overflow-y-auto border-0 border-e border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container)"
+        >
+          {sidebarContent}
+        </Layout.Sider>
+      )}
+      <Drawer
+        title="메뉴"
+        placement="left"
+        size={296}
+        open={isMobile && isOpen}
+        onClose={onClose}
+        closeIcon={false}
+        afterOpenChange={(open) => {
+          if (!open) onClose()
+        }}
+        classNames={{
+          header: 'sr-only',
+          body: 'bg-(--ant-color-bg-container) p-0',
+          wrapper: 'max-w-full',
+        }}
+      >
+        {isMobile && sidebarContent}
+      </Drawer>
+    </>
   )
 }

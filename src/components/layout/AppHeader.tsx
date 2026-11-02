@@ -1,4 +1,4 @@
-import { DownOutlined } from '@ant-design/icons'
+import { DownOutlined, MenuOutlined } from '@ant-design/icons'
 import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation } from 'react-router'
@@ -7,6 +7,9 @@ import ThemeToggle from '../common/ThemeToggle'
 type AppHeaderProps = {
   isDark: boolean
   onThemeChange: (isDark: boolean) => void
+  isMobile: boolean
+  onMenuOpen: () => void
+  isMenuOpen: boolean
 }
 
 // 사용자 정보와 알림은 API 연동 전까지 예시로
@@ -28,6 +31,9 @@ const pageTitles: Record<string, string> = {
 export default function AppHeader({
   isDark,
   onThemeChange,
+  isMobile,
+  onMenuOpen,
+  isMenuOpen,
 }: AppHeaderProps) {
   const { pathname } = useLocation()
   const pageTitle = pageTitles[pathname] ?? '페이지를 찾을 수 없습니다'
@@ -35,12 +41,21 @@ export default function AppHeader({
 
   return (
     <Layout.Header
-      className="flex h-16 shrink-0 items-center justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container) px-lg leading-normal"
+      className={`flex shrink-0 items-center justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container) leading-normal ${isMobile ? 'h-14 px-md' : 'h-16 px-lg'}`}
     >
       <div className="flex min-w-0 items-center gap-sm">
-
+        {isMobile && (
+          <Button
+            type="text"
+            aria-label="메뉴 열기"
+            aria-expanded={isMenuOpen}
+            icon={<MenuOutlined />}
+            onClick={onMenuOpen}
+            className="shrink-0"
+          />
+        )}
         <h1
-          className="m-0 truncate text-section-title font-bold"
+          className={`m-0 truncate font-bold ${isMobile ? 'text-[18px] leading-[27px]' : 'text-section-title'}`}
           title={pageTitle}
         >
           {pageTitle}
@@ -77,10 +92,14 @@ export default function AppHeader({
           autoFocus
         >
           <Button
-            type="default"
+            type={isMobile ? 'text' : 'default'}
             aria-label={`사용자 메뉴: ${userName}, ${userRole}`}
             aria-haspopup="menu"
-            className="h-[38px] gap-xs border-(--ant-color-border-secondary) bg-transparent py-[6px] pr-sm pl-xs font-regular shadow-none"
+            className={
+              isMobile
+                ? 'h-auto border-0 bg-transparent p-0 shadow-none'
+                : 'h-[38px] gap-xs border-(--ant-color-border-secondary) bg-transparent py-[6px] pr-sm pl-xs font-regular shadow-none'
+            }
           >
             <span className="flex items-center gap-xs">
               <img
@@ -90,8 +109,12 @@ export default function AppHeader({
                 height={24}
                 className={`shrink-0 ${isDark ? 'invert' : ''}`}
               />
-              <span>{userName} - {userRole}</span>
-              <DownOutlined className="text-[10px] text-(--ant-color-text-tertiary)" />
+              {!isMobile && (
+                <>
+                  <span>{userName} - {userRole}</span>
+                  <DownOutlined className="text-[10px] text-(--ant-color-text-tertiary)" />
+                </>
+              )}
             </span>
           </Button>
         </Dropdown>
