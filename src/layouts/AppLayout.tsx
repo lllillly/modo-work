@@ -11,7 +11,8 @@ type AppLayoutProps = {
 export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   return (
     <Layout hasSider className="min-h-svh">
-      <AppSidebar />
+      {/* 인증 연동 전에는 관리자 메뉴 표시 */}
+      <AppSidebar role="ADMIN" />
       <Layout className="min-w-0">
         <AppHeader isDark={isDark} onThemeChange={onThemeChange} />
         <Layout.Content className="flex min-w-0 flex-col p-lg">
