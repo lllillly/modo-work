@@ -70,11 +70,11 @@ export default function AppSidebar({
             className="flex min-w-0 flex-1 items-center justify-center pt-xxs pb-sm"
           >
             <img
-              src={`${import.meta.env.BASE_URL}images/logo.png`}
+              src={`${import.meta.env.BASE_URL}images/logo.svg`}
               alt="MODO WORK 홈"
-              width={180}
-              height={60}
-              className="h-auto w-[180px] max-w-full"
+              width={144}
+              height={36}
+              className="h-auto w-[144px] max-w-full"
             />
           </Link>
           {isMobile && (
