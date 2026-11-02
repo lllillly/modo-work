@@ -1,4 +1,4 @@
-# MODO WORKAX 웹 프론트엔드
+# MODO WORK 웹 프론트엔드
 
 React + TypeScript + Vite + Ant Design + Tailwind CSS
 

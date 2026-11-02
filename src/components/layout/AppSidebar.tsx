@@ -67,10 +67,15 @@ export default function AppSidebar({
           <Link
             to="/"
             onClick={onClose}
-            className="flex min-w-0 flex-1 items-center justify-center gap-[10px] pt-xxs pb-sm text-(--ant-color-text)"
+            className="flex min-w-0 flex-1 items-center justify-center pt-xxs pb-sm"
           >
-            <span aria-hidden="true" className="size-6 shrink-0 rounded-md bg-brand-accent" />
-            <span className="text-[18px] leading-[27px] font-bold">MODO WORK AX</span>
+            <img
+              src={`${import.meta.env.BASE_URL}images/logo.png`}
+              alt="MODO WORK 홈"
+              width={180}
+              height={60}
+              className="h-auto w-[180px] max-w-full"
+            />
           </Link>
           {isMobile && (
             <Button
