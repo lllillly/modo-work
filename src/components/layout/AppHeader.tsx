@@ -1,27 +1,15 @@
-import { useId } from 'react'
 import { Layout, Switch } from 'antd'
-import { Link } from 'react-router'
 
 type AppHeaderProps = {
   isDark: boolean
   onThemeChange: (isDark: boolean) => void
 }
 
-export default function AppHeader({
-  isDark,
-  onThemeChange,
-}: AppHeaderProps) {
-  const switchId = useId()
-
+export default function AppHeader({ isDark, onThemeChange }: AppHeaderProps) {
   return (
-    <Layout.Header className="flex items-center justify-between gap-md bg-(--ant-color-bg-container) px-lg leading-normal">
-      <Link to="/" className="text-section-title font-bold text-brand-accent">
-        MODO WORK AX
-      </Link>
-      <div className="flex items-center gap-xs">
-        <label htmlFor={switchId}>다크 모드</label>
-        <Switch id={switchId} checked={isDark} onChange={onThemeChange} />
-      </div>
+    <Layout.Header className="flex h-16 items-center justify-between border-0 border-b border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container) px-lg leading-normal">
+      <h1 className="m-0 text-section-title">홈</h1>
+      <Switch aria-label="다크 모드" checked={isDark} onChange={onThemeChange} />
     </Layout.Header>
   )
 }

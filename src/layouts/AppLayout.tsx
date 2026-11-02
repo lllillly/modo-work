@@ -10,10 +10,10 @@ type AppLayoutProps = {
 
 export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   return (
-    <Layout className="min-h-svh">
-      <AppHeader isDark={isDark} onThemeChange={onThemeChange} />
-      <Layout hasSider>
-        <AppSidebar />
+    <Layout hasSider className="min-h-svh">
+      <AppSidebar />
+      <Layout className="min-w-0">
+        <AppHeader isDark={isDark} onThemeChange={onThemeChange} />
         <Layout.Content className="flex min-w-0 flex-col p-lg">
           <main className="flex flex-1 flex-col">
             <Card className="flex-1">
