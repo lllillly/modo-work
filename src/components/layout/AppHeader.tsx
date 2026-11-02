@@ -1,7 +1,7 @@
 import { DownOutlined, MenuOutlined } from '@ant-design/icons'
 import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import ThemeToggle from '../common/ThemeToggle'
 
 type AppHeaderProps = {
@@ -21,11 +21,12 @@ const avatarSrc = `${import.meta.env.BASE_URL}images/avatar-placeholder.svg`
 const userMenuItems: MenuProps['items'] = [
   { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
   { type: 'divider' },
-  { key: 'logout', label: '로그아웃', disabled: true },
+  { key: 'logout', label: '로그아웃' },
 ]
 
 const pageTitles: Record<string, string> = {
   '/': '홈',
+  '/tasks': '과정별 할 일',
 }
 
 export default function AppHeader({
@@ -36,8 +37,14 @@ export default function AppHeader({
   isMenuOpen,
 }: AppHeaderProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const pageTitle = pageTitles[pathname] ?? '페이지를 찾을 수 없습니다'
 
+  function handleUserMenuClick({ key }: { key: string }) {
+    if (key === 'logout') {
+      navigate('/login', { replace: true })
+    }
+  }
 
   return (
     <Layout.Header
@@ -86,7 +93,7 @@ export default function AppHeader({
         </Popover>
 
         <Dropdown
-          menu={{ items: userMenuItems }}
+          menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
           trigger={['click']}
           placement="bottomRight"
           autoFocus

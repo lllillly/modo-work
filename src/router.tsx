@@ -3,6 +3,7 @@ import AppLayout from './layouts/AppLayout'
 import AuthLayout from './layouts/AuthLayout'
 import LoginPage from './pages/auth/LoginPage'
 import HomePage from './pages/home/HomePage'
+import TasksPage from './pages/tasks/TasksPage'
 
 type AppRouterProps = {
   isDark: boolean
@@ -17,6 +18,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
           element={<AppLayout isDark={isDark} onThemeChange={onThemeChange} />}
         >
           <Route index element={<HomePage />} />
+          <Route path="/tasks" element={<TasksPage />} />
           <Route
             path="*"
             element={

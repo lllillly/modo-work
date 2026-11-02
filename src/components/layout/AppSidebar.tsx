@@ -13,7 +13,7 @@ type AppSidebarProps = {
 
 const menuItems = [
   { key: '/', label: <Link to="/">홈</Link> },
-  { key: '/tasks', label: '과정별 할 일', disabled: true },
+  { key: '/tasks', label: <Link to="/tasks">과정별 할 일</Link> },
   { key: '/ask', label: '물어보기', disabled: true },
   { key: '/documents', label: '문서', disabled: true },
   { key: '/notices', label: '공지', disabled: true },
