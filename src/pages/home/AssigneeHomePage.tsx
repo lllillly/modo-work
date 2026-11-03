@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Card, Segmented, Tag } from 'antd'
-import { useOutletContext } from 'react-router'
+import { useOutletContext, useSearchParams } from 'react-router'
 
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import type { ViewScope } from '../../types/home'
@@ -8,6 +8,8 @@ import { formatSelectedDate, getToday } from './dateUtils'
 import { courses, tasks as mockTasks } from './assigneeHomeMockData'
 import { getAssigneeHomeData } from './assigneeHomeData'
 
+import AssigneeHomeSkeleton from './components/AssigneeHomeSkeleton'
+import AssigneeHomeError from './components/AssigneeHomeError'
 import CourseList from './components/CourseList'
 import HomeCalendar from './components/HomeCalendar'
 import TaskList from './components/TaskList'
@@ -16,6 +18,7 @@ const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
 
 export default function AssigneeHomePage() {
   const { isMobile, selectedBusiness, userName } = useOutletContext<AppLayoutContext>()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const today = getToday()
 
@@ -24,6 +27,7 @@ export default function AssigneeHomePage() {
   const [viewScope, setViewScope] = useState<ViewScope>('mine')
   const [showAllAlerts, setShowAllAlerts] = useState(false)
 
+  const preview = searchParams.get('preview')
   const homeData = getAssigneeHomeData({
     businessName: selectedBusiness,
     courses,
@@ -33,8 +37,11 @@ export default function AssigneeHomePage() {
     today,
   })
 
-  const isEmpty = homeData.courses.length === 0
-  const alerts = homeData.alerts
+  const isEmpty = preview === 'empty' || homeData.courses.length === 0
+  const isLoading = preview === 'loading'
+  const isError = preview === 'error'
+  const hideAlerts = preview === 'no-alerts'
+  const alerts = hideAlerts ? [] : homeData.alerts
   const visibleAlerts = isMobile && !showAllAlerts ? alerts.slice(0, 3) : alerts
 
   function completeTask(taskId: string) {
@@ -46,16 +53,23 @@ export default function AssigneeHomePage() {
     )))
   }
 
-  const overdueSummary = homeData.overdueCount === 0 ? '없음' : `${homeData.overdueCount}건`
+  function retry() {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('preview')
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const overdueSummary = hideAlerts || homeData.overdueCount === 0 ? '없음' : `${homeData.overdueCount}건`
   let summary = `오늘 마감 ${homeData.todayCount}건 - 기한 지남 ${overdueSummary}`
   if (isEmpty) summary = '아직 배정된 과정이 없어요'
+  if (isLoading) summary = '할 일을 불러오는 중이에요'
 
   return (
     <div className="flex flex-col gap-sm min-[992px]:gap-md">
       <div className="flex flex-col gap-sm min-[992px]:flex-row min-[992px]:items-center min-[992px]:justify-between">
         <div className="flex flex-col gap-xs min-[992px]:gap-xxs">
           <h2 className="m-0 text-section-title">{userName}님, 안녕하세요</h2>
-          <p className="m-0 text-caption text-(--ant-color-text-secondary)">{summary}</p>
+          {!isError && <p className="m-0 text-caption text-(--ant-color-text-secondary)">{summary}</p>}
         </div>
         <Segmented
           aria-label="영역 보기 범위"
@@ -70,7 +84,11 @@ export default function AssigneeHomePage() {
         />
       </div>
 
-      {isEmpty ? (
+      {isLoading ? (
+        <AssigneeHomeSkeleton />
+      ) : isError ? (
+        <AssigneeHomeError onRetry={retry} />
+      ) : isEmpty ? (
         <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
           <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
             <h3 className="m-0 text-card-title">배정된 과정이 없어요</h3>
