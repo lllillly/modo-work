@@ -2,7 +2,7 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router'
 import AppLayout from './layouts/AppLayout'
 import AuthLayout from './layouts/AuthLayout'
 import LoginPage from './pages/auth/LoginPage'
-import HomePage from './pages/home/HomePage'
+import AssigneeHomePage from './pages/home/AssigneeHomePage'
 import TasksPage from './pages/tasks/TasksPage'
 
 type AppRouterProps = {
@@ -17,8 +17,8 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
         <Route
           element={<AppLayout isDark={isDark} onThemeChange={onThemeChange} />}
         >
-          <Route index element={<HomePage />} />
-          <Route path="/tasks" element={<TasksPage />} />
+          <Route index element={<AssigneeHomePage />} /> {/* 담당자 홈 */}
+          <Route path="/tasks" element={<TasksPage />} /> {/* 과정별 할 일 */}
           <Route
             path="*"
             element={

@@ -58,6 +58,11 @@
   --color-status-due-soon-base: var(--ant-color-warning);
   --color-status-due-soon-bg: var(--ant-color-warning-bg);
 
+  /* D-day 배지 */
+  --color-status-due-today-border: var(--ant-color-warning);
+  --color-status-due-today-bg: var(--ant-color-warning-bg);
+  --color-status-due-today-text: var(--ant-color-warning-text);
+
   /* 7일 내 마감 (배경만) / 예: D-6 */
   --color-status-upcoming-bg: var(--ant-color-warning-bg);
 
