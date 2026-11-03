@@ -2,6 +2,7 @@ import { DownOutlined, MenuOutlined } from '@ant-design/icons'
 import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router'
+
 import ThemeToggle from '../common/ThemeToggle'
 
 type AppHeaderProps = {
@@ -10,19 +11,12 @@ type AppHeaderProps = {
   isMobile: boolean
   onMenuOpen: () => void
   isMenuOpen: boolean
+  userName: string
+  userRole: string
+  notificationCount: number
 }
 
-// 사용자 정보와 알림은 API 연동 전까지 예시로
-const userName = '담당자 A'
-const userRole = '관리자'
-const notificationCount = 0
 const avatarSrc = `${import.meta.env.BASE_URL}images/avatar-placeholder.svg`
-
-const userMenuItems: MenuProps['items'] = [
-  { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
-  { type: 'divider' },
-  { key: 'logout', label: '로그아웃' },
-]
 
 const pageTitles: Record<string, string> = {
   '/': '홈',
@@ -35,10 +29,18 @@ export default function AppHeader({
   isMobile,
   onMenuOpen,
   isMenuOpen,
+  userName,
+  userRole,
+  notificationCount,
 }: AppHeaderProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const pageTitle = pageTitles[pathname] ?? '페이지를 찾을 수 없습니다'
+  const userMenuItems: MenuProps['items'] = [
+    { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
+    { type: 'divider' },
+    { key: 'logout', label: '로그아웃' },
+  ]
 
   function handleUserMenuClick({ key }: { key: string }) {
     if (key === 'logout') {

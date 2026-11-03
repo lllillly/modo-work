@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Card, Grid, Layout } from 'antd'
+import { Grid, Layout } from 'antd'
 import { Outlet } from 'react-router'
+
+import { businessOptions, currentUser, notificationCount } from '../pages/home/assigneeHomeMockData'
+
 import AppHeader from '../components/layout/AppHeader'
 import AppSidebar from '../components/layout/AppSidebar'
 
@@ -9,35 +12,48 @@ type AppLayoutProps = {
   onThemeChange: (isDark: boolean) => void
 }
 
+export type AppLayoutContext = {
+  isMobile: boolean
+  selectedBusiness: string
+  userName: string
+}
+
 export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.lg
+
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [selectedBusiness, setSelectedBusiness] = useState(businessOptions[0]?.value ?? '')
 
   return (
-    <Layout hasSider={!isMobile} className="min-h-svh">
-      {/* 인증 연동 전에는 관리자 메뉴 표시 */}
+    <Layout hasSider={!isMobile} className="h-svh overflow-hidden">
       <AppSidebar
         isMobile={isMobile}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        role="ADMIN"
+        role={currentUser.role}
+        businessOptions={businessOptions}
+        selectedBusiness={selectedBusiness}
+        onBusinessChange={setSelectedBusiness}
       />
-      <Layout className="min-w-0">
+      <Layout className="min-h-0 min-w-0">
         <AppHeader
           isDark={isDark}
           onThemeChange={onThemeChange}
           isMobile={isMobile}
           isMenuOpen={isMenuOpen}
           onMenuOpen={() => setIsMenuOpen(true)}
+          userName={currentUser.name}
+          userRole={currentUser.roleLabel}
+          notificationCount={notificationCount}
         />
         <Layout.Content
-          className={`flex min-w-0 flex-col ${isMobile ? 'p-md' : 'p-lg'}`}
+          className={`flex min-h-0 min-w-0 flex-col overflow-y-auto ${isMobile ? 'p-md' : 'p-lg'}`}
         >
           <main className="flex flex-1 flex-col">
-            <Card className="flex-1">
-              <Outlet />
-            </Card>
+            <Outlet
+              context={{ isMobile, selectedBusiness, userName: currentUser.name } satisfies AppLayoutContext}
+            />
           </main>
         </Layout.Content>
       </Layout>

@@ -1,14 +1,18 @@
 import { CloseOutlined } from '@ant-design/icons'
-import { useState } from 'react'
 import { Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
 import type { MenuProps, ThemeConfig } from 'antd'
 import { Link, useLocation } from 'react-router'
+
+import type { UserRole } from '../../types/user'
 
 type AppSidebarProps = {
   isMobile: boolean
   isOpen: boolean
   onClose: () => void
-  role?: 'ADMIN' | 'LEADER' | 'ASSIGNEE' | 'VIEWER'
+  role?: UserRole
+  selectedBusiness: string
+  onBusinessChange: (business: string) => void
+  businessOptions: { value: string; label: string }[]
 }
 
 const menuItems = [
@@ -50,9 +54,11 @@ export default function AppSidebar({
   isOpen,
   onClose,
   role,
+  selectedBusiness,
+  onBusinessChange,
+  businessOptions,
 }: AppSidebarProps) {
   const { pathname } = useLocation()
-  const [selectedBusiness, setSelectedBusiness] = useState('business-1')
 
   const visibleAdminItems = adminMenuItems.filter((item) => {
     if (role === 'ADMIN') return true
@@ -93,17 +99,13 @@ export default function AppSidebar({
         >
           사업
         </label>
-        {/* 사업 목록은 API 연동 전까지 예시로 표시 */}
         <Select
           id="sidebar-business"
           aria-label="사업 선택"
           className="w-full"
           value={selectedBusiness}
-          onChange={setSelectedBusiness}
-          options={[
-            { value: 'business-1', label: '사업 1' },
-            { value: 'business-2', label: '사업 2' },
-          ]}
+          onChange={onBusinessChange}
+          options={businessOptions}
         />
         <nav aria-label="페이지 이동">
           <div className="pt-xs pl-xs text-caption font-medium text-(--ant-color-text-tertiary)">

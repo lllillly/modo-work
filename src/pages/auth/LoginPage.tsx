@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Alert, Button, Card } from 'antd'
 import { useNavigate } from 'react-router'
 
+import { currentUser, invalidEmail } from '../home/assigneeHomeMockData'
+
 type LoginStatus = 'login' | 'pending' | 'invalid' | 'inactive'
 
 const statusMessages = {
@@ -13,7 +15,7 @@ const statusMessages = {
   invalid: {
     type: 'warning',
     title: '회사 계정으로 로그인해 주세요',
-    description: 'user@gmail.com 계정은 사용할 수 없어요. 회사 Google 계정으로 다시 로그인해 주세요.',
+    description: `${invalidEmail} 계정은 사용할 수 없어요. 회사 Google 계정으로 다시 로그인해 주세요.`,
   },
   inactive: {
     type: 'error',
@@ -85,7 +87,7 @@ export default function LoginPage() {
                       로그인한 계정
                     </p>
                     <p className="m-0 break-all text-body leading-[21px]">
-                      user1@example.com
+                      {currentUser.email}
                     </p>
                   </div>
                 </div>
