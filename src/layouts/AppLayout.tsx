@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Grid, Layout } from 'antd'
+import { Suspense, useState } from 'react'
+import { Grid, Layout, Spin } from 'antd'
 import { Outlet } from 'react-router'
 
 import { businessOptions, currentUser, notificationCount } from '../pages/home/assigneeHomeMockData'
@@ -51,9 +51,11 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
           className={`flex min-h-0 min-w-0 flex-col overflow-y-auto ${isMobile ? 'p-md' : 'p-lg'}`}
         >
           <main className="flex flex-1 flex-col">
-            <Outlet
-              context={{ isMobile, selectedBusiness, userName: currentUser.name } satisfies AppLayoutContext}
-            />
+            <Suspense fallback={<Spin className="m-auto" aria-label="화면 불러오는 중" />}>
+              <Outlet
+                context={{ isMobile, selectedBusiness, userName: currentUser.name } satisfies AppLayoutContext}
+              />
+            </Suspense>
           </main>
         </Layout.Content>
       </Layout>
