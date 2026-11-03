@@ -9,6 +9,7 @@ import { courses, tasks as mockTasks } from './assigneeHomeMockData'
 import { getAssigneeHomeData } from './assigneeHomeData'
 
 import CourseList from './components/CourseList'
+import HomeCalendar from './components/HomeCalendar'
 import TaskList from './components/TaskList'
 
 const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
@@ -19,7 +20,7 @@ export default function AssigneeHomePage() {
   const today = getToday()
 
   const [tasks, setTasks] = useState(mockTasks)
-  const selectedDate = today
+  const [selectedDate, setSelectedDate] = useState(today)
   const [viewScope, setViewScope] = useState<ViewScope>('mine')
   const [showAllAlerts, setShowAllAlerts] = useState(false)
 
@@ -92,22 +93,46 @@ export default function AssigneeHomePage() {
             </Card>
           )}
 
-          <Card variant="borderless" className="min-w-0 shadow-none" classNames={cardClassNames}>
-            <h2 className="m-0 mb-xs flex flex-wrap items-center gap-xs text-card-title min-[992px]:mb-sm">
-              {formatSelectedDate(selectedDate)} 할 일
-              <span className="text-caption font-regular text-(--ant-color-text-secondary)">{homeData.dayTasks.length}건</span>
-            </h2>
-            <TaskList tasks={homeData.dayTasks} showCheckbox onComplete={completeTask} />
-            {homeData.otherTasks.length > 0 && (
-              <div className="mt-md">
-                <div className="mb-xs flex items-center gap-xs">
-                  <h3 className="m-0 text-body font-medium">다른 영역</h3>
-                  <Tag color="processing" className="m-0">보기만 가능</Tag>
-                </div>
-                <TaskList tasks={homeData.otherTasks} />
-              </div>
+          <div className="grid grid-cols-1 gap-md min-[992px]:grid-cols-[280px_minmax(0,1fr)] min-[1200px]:grid-cols-[320px_minmax(0,1fr)]">
+            {!isMobile && (
+              <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-5' }}>
+                <HomeCalendar
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  tasks={homeData.calendarTasks}
+                  today={today}
+                  isMobile={false}
+                />
+              </Card>
             )}
-          </Card>
+            <Card variant="borderless" className="min-w-0 shadow-none" classNames={cardClassNames}>
+              <h2 className="m-0 mb-xs flex flex-wrap items-center gap-xs text-card-title min-[992px]:mb-sm">
+                {formatSelectedDate(selectedDate)} 할 일
+                <span className="text-caption font-regular text-(--ant-color-text-secondary)">{homeData.dayTasks.length}건</span>
+              </h2>
+              {isMobile && (
+                <div className="mb-xs">
+                  <HomeCalendar
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                    tasks={homeData.calendarTasks}
+                    today={today}
+                    isMobile
+                  />
+                </div>
+              )}
+              <TaskList tasks={homeData.dayTasks} showCheckbox onComplete={completeTask} />
+              {homeData.otherTasks.length > 0 && (
+                <div className="mt-md">
+                  <div className="mb-xs flex items-center gap-xs">
+                    <h3 className="m-0 text-body font-medium">다른 영역</h3>
+                    <Tag color="processing" className="m-0">보기만 가능</Tag>
+                  </div>
+                  <TaskList tasks={homeData.otherTasks} />
+                </div>
+              )}
+            </Card>
+          </div>
 
           <CourseList
             key={selectedBusiness}
