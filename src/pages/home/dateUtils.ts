@@ -1,3 +1,5 @@
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+
 export function getToday() {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Seoul',
@@ -10,6 +12,10 @@ export function getToday() {
 export function parseDate(value: string) {
   const [year, month, day] = value.split('-').map(Number)
   return new Date(year, month - 1, day)
+}
+
+export function getDaysUntil(dueDate: string, today: string) {
+  return (Date.parse(dueDate) - Date.parse(today)) / MILLISECONDS_PER_DAY
 }
 
 export function formatDate(date: Date) {

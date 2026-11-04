@@ -37,20 +37,18 @@ export default function TaskList({ tasks, showCheckbox = false, onComplete }: Ta
 
         return (
           <li key={task.id} className="flex items-center border-0 border-b border-solid border-(--ant-color-border-secondary)">
-            {showCheckbox && task.isMyArea ? (
-              <Checkbox
-                aria-label={`${task.title} 완료`}
-                checked={task.isCompleted}
-                disabled={task.isCompleted}
-                onChange={() => onComplete?.(task.id)}
-                className={`${rowClassName} ${task.isCompleted ? '' : 'cursor-pointer hover:bg-(--ant-color-fill-quaternary)'}`}
-                classNames={{ label: 'min-w-0 flex-1 p-0' }}
-              >
-                {content}
-              </Checkbox>
-            ) : (
-              <div className={rowClassName}>{content}</div>
-            )}
+            <div className={rowClassName}>
+              {showCheckbox && task.isMyArea && (
+                <Checkbox
+                  aria-label={`${task.title} 완료`}
+                  checked={task.isCompleted}
+                  disabled={task.isCompleted}
+                  onChange={() => onComplete?.(task.id)}
+                  className="shrink-0"
+                />
+              )}
+              {content}
+            </div>
           </li>
         )
       })}

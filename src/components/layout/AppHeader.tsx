@@ -90,7 +90,7 @@ export default function AppHeader({
             className="flex items-center gap-[6px] px-0 font-regular"
           >
             알림
-            <Badge count={notificationCount} showZero size="small" />
+            <Badge count={notificationCount} size="small" />
           </Button>
         </Popover>
 

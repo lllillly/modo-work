@@ -1,4 +1,5 @@
 import type { Course, HomeCourse, HomeTask, Task, ViewScope } from '../../types/home'
+import { getDaysUntil } from './dateUtils'
 
 type AssigneeHomeDataOpt = {
   businessName: string
@@ -7,6 +8,20 @@ type AssigneeHomeDataOpt = {
   viewScope: ViewScope
   selectedDate: string
   today: string
+}
+
+function getDeadline(dueDate: string | null, today: string): Pick<HomeTask, 'deadlineLabel' | 'deadlineStatus'> {
+  if (!dueDate) return { deadlineLabel: '-', deadlineStatus: 'none' }
+
+  const daysUntil = getDaysUntil(dueDate, today)
+  const deadlineLabel = daysUntil === 0 ? 'D-day' : `D${daysUntil < 0 ? '+' : '-'}${Math.abs(daysUntil)}`
+  let deadlineStatus: HomeTask['deadlineStatus'] = 'scheduled'
+
+  if (daysUntil < 0) deadlineStatus = 'overdue'
+  else if (daysUntil <= 2) deadlineStatus = 'dueSoon'
+  else if (daysUntil <= 7) deadlineStatus = 'upcoming'
+
+  return { deadlineLabel, deadlineStatus }
 }
 
 export function getAssigneeHomeData({
@@ -25,7 +40,7 @@ export function getAssigneeHomeData({
   // 할 일에 과정명 연결
   for (const task of tasks) {
     const course = courseById.get(task.courseId)
-    if (course) homeTasks.push({ ...task, courseName: course.name })
+    if (course) homeTasks.push({ ...task, courseName: course.name, ...getDeadline(task.dueDate, today) })
   }
 
   // 내 영역 보기 / 전체 보기

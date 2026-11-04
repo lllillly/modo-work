@@ -15,8 +15,6 @@ export type Task = {
   areaName: string
   isMyArea: boolean
   dueDate: string | null
-  deadlineLabel: string
-  deadlineStatus: 'overdue' | 'dueSoon' | 'upcoming' | 'scheduled' | 'none'
   isCompleted: boolean
   completedBy?: string
   reviewStatus?: 'pending' | 'confirmed'
@@ -24,6 +22,8 @@ export type Task = {
 
 export type HomeTask = Task & {
   courseName: string
+  deadlineLabel: string
+  deadlineStatus: 'overdue' | 'dueSoon' | 'upcoming' | 'scheduled' | 'none'
 }
 
 export type HomeCourse = Course & {

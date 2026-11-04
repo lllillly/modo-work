@@ -5,14 +5,15 @@ import type { HomeTask } from '../../../types/home'
 
 type DeadlineTagProps = {
   task: HomeTask
+  showReviewStatus?: boolean
 }
 
-export default function DeadlineTag({ task }: DeadlineTagProps) {
+export default function DeadlineTag({ task, showReviewStatus = false }: DeadlineTagProps) {
   if (task.isCompleted) {
-    if (task.reviewStatus === 'pending') {
+    if (showReviewStatus && task.reviewStatus === 'pending') {
       return <Tag color="processing" variant="outlined" icon={<SyncOutlined />} className="m-0">확인 대기</Tag>
     }
-    return <Tag color="success" variant="outlined" icon={<CheckCircleOutlined />} className="m-0">{task.reviewStatus === 'confirmed' ? '확인됨' : '완료'}</Tag>
+    return <Tag color="success" variant="outlined" icon={<CheckCircleOutlined />} className="m-0">{showReviewStatus && task.reviewStatus === 'confirmed' ? '확인됨' : '완료'}</Tag>
   }
 
   if (task.deadlineLabel === 'D-day') {

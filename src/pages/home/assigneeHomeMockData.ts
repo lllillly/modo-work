@@ -27,56 +27,56 @@ export const courses: Course[] = [
 export const tasks: Task[] = [
   {
     id: 'task-a', courseId: 'course-1', title: '할 일 A', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-10-28', deadlineLabel: 'D+5', deadlineStatus: 'overdue', isCompleted: false,
+    dueDate: '2026-10-28', isCompleted: false,
   },
   {
     id: 'task-b', courseId: 'course-2', title: '할 일 B', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-01', deadlineLabel: 'D+1', deadlineStatus: 'overdue', isCompleted: false,
+    dueDate: '2026-11-01', isCompleted: false,
   },
   {
     id: 'task-c', courseId: 'course-1', title: '할 일 C', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-03', deadlineLabel: 'D-1', deadlineStatus: 'dueSoon', isCompleted: false,
+    dueDate: '2026-11-03', isCompleted: false,
   },
   {
     id: 'task-d', courseId: 'course-3', title: '할 일 D', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-04', deadlineLabel: 'D-2', deadlineStatus: 'dueSoon', isCompleted: false,
+    dueDate: '2026-11-04', isCompleted: false,
   },
   {
     id: 'task-e', courseId: 'course-2', title: '할 일 E', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-05', deadlineLabel: 'D-3', deadlineStatus: 'upcoming', isCompleted: false,
+    dueDate: '2026-11-05', isCompleted: false,
   },
   {
     id: 'task-f', courseId: 'course-4', title: '할 일 F', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-08', deadlineLabel: 'D-6', deadlineStatus: 'upcoming', isCompleted: false,
+    dueDate: '2026-11-08', isCompleted: false,
   },
   {
     id: 'task-g', courseId: 'course-3', title: '할 일 G', areaName: '영역 1', isMyArea: true,
-    dueDate: '2026-11-16', deadlineLabel: 'D-14', deadlineStatus: 'scheduled', isCompleted: false,
+    dueDate: '2026-11-16', isCompleted: false,
   },
   {
     id: 'task-h', courseId: 'course-1', title: '할 일 H', areaName: '영역 1', isMyArea: true,
-    dueDate: today, deadlineLabel: 'D-day', deadlineStatus: 'dueSoon', isCompleted: false,
+    dueDate: today, isCompleted: false,
   },
   {
     id: 'task-i', courseId: 'course-1', title: '할 일 I', areaName: '영역 1', isMyArea: true,
-    dueDate: today, deadlineLabel: 'D-day', deadlineStatus: 'dueSoon', isCompleted: true,
+    dueDate: today, isCompleted: true,
     completedBy: '담당자 B', reviewStatus: 'pending',
   },
   {
     id: 'task-j', courseId: 'course-1', title: '할 일 J', areaName: '영역 2', isMyArea: false,
-    dueDate: today, deadlineLabel: 'D-day', deadlineStatus: 'dueSoon', isCompleted: false,
+    dueDate: today, isCompleted: false,
   },
   {
     id: 'task-k', courseId: 'course-3', title: '할 일 K', areaName: '영역 3', isMyArea: false,
-    dueDate: today, deadlineLabel: 'D-day', deadlineStatus: 'dueSoon', isCompleted: true,
+    dueDate: today, isCompleted: true,
     completedBy: '담당자 C', reviewStatus: 'confirmed',
   },
   {
     id: 'task-l', courseId: 'course-4', title: '할 일 L', areaName: '영역 1', isMyArea: true,
-    dueDate: today, deadlineLabel: 'D-day', deadlineStatus: 'dueSoon', isCompleted: false,
+    dueDate: today, isCompleted: false,
   },
   {
     id: 'task-m', courseId: 'course-2', title: '할 일 M', areaName: '영역 2', isMyArea: false,
-    dueDate: '2026-11-06', deadlineLabel: 'D-4', deadlineStatus: 'upcoming', isCompleted: false,
+    dueDate: '2026-11-06', isCompleted: false,
   },
 ]
