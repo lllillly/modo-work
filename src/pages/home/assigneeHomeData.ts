@@ -17,6 +17,7 @@ function getDeadline(dueDate: string | null, today: string): Pick<HomeTask, 'dea
   const deadlineLabel = daysUntil === 0 ? 'D-day' : `D${daysUntil < 0 ? '+' : '-'}${Math.abs(daysUntil)}`
   let deadlineStatus: HomeTask['deadlineStatus'] = 'scheduled'
 
+  // TODO: API 연동 시 임박 분류를 서버의 dueSoonBusinessDays(영업일) 기준으로 변경예정
   if (daysUntil < 0) deadlineStatus = 'overdue'
   else if (daysUntil <= 2) deadlineStatus = 'dueSoon'
   else if (daysUntil <= 7) deadlineStatus = 'upcoming'
