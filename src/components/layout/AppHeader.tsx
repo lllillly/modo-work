@@ -1,7 +1,7 @@
 import { DownOutlined, MenuOutlined } from '@ant-design/icons'
 import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
-import { useLocation, useNavigate } from 'react-router'
+import { useLocation } from 'react-router'
 
 import ThemeToggle from '../common/ThemeToggle'
 
@@ -14,6 +14,8 @@ type AppHeaderProps = {
   userName: string
   userRole: string
   notificationCount: number
+  onLogout: () => Promise<void>
+  isLoggingOut: boolean
 }
 
 const avatarSrc = `${import.meta.env.BASE_URL}images/avatar-placeholder.svg`
@@ -32,19 +34,20 @@ export default function AppHeader({
   userName,
   userRole,
   notificationCount,
+  onLogout,
+  isLoggingOut,
 }: AppHeaderProps) {
   const { pathname } = useLocation()
-  const navigate = useNavigate()
   const pageTitle = pageTitles[pathname] ?? '페이지를 찾을 수 없습니다'
   const userMenuItems: MenuProps['items'] = [
     { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
     { type: 'divider' },
-    { key: 'logout', label: '로그아웃' },
+    { key: 'logout', label: '로그아웃', disabled: isLoggingOut },
   ]
 
   function handleUserMenuClick({ key }: { key: string }) {
     if (key === 'logout') {
-      navigate('/login', { replace: true })
+      void onLogout()
     }
   }
 
@@ -104,6 +107,7 @@ export default function AppHeader({
             type={isMobile ? 'text' : 'default'}
             aria-label={`사용자 메뉴: ${userName}, ${userRole}`}
             aria-haspopup="menu"
+            loading={isLoggingOut}
             className={
               isMobile
                 ? 'h-auto border-0 bg-transparent p-0 shadow-none'

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AppProvider from './providers/AppProvider'
+import AuthProvider from './providers/AuthProvider'
 import AppRouter from './router'
 import { darkTheme, lightTheme } from './styles/theme'
 
@@ -24,7 +25,9 @@ function App() {
 
   return (
     <AppProvider themeConfig={currentTheme}>
-      <AppRouter isDark={isDark} onThemeChange={changeTheme} />
+      <AuthProvider>
+        <AppRouter isDark={isDark} onThemeChange={changeTheme} />
+      </AuthProvider>
     </AppProvider>
   )
 }
