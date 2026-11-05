@@ -1,21 +1,17 @@
 import { Button, Form, Input } from 'antd'
 
-import { demoAccounts } from '../loginMockData'
+import { demoAccounts } from '../demoAccounts'
 
 import type { AuthErrorResponse, TestLoginRequest } from '../../../types/auth'
 
 type TestLoginFormProps = {
-  email: string
-  requireName: boolean
   showDemoAccounts: boolean
   isSubmitting: boolean
   onSubmit: (values: TestLoginRequest) => Promise<AuthErrorResponse['fieldErrors'] | undefined>
 }
 
-export default function TestLoginForm({ email, requireName, showDemoAccounts, isSubmitting, onSubmit }: TestLoginFormProps) {
+export default function TestLoginForm({ showDemoAccounts, isSubmitting, onSubmit }: TestLoginFormProps) {
   const [form] = Form.useForm<TestLoginRequest>()
-  const name = Form.useWatch('name', form)
-  const showNameError = requireName && !name?.trim()
 
   async function handleSubmit(values: TestLoginRequest) {
     if (isSubmitting) return
@@ -40,7 +36,6 @@ export default function TestLoginForm({ email, requireName, showDemoAccounts, is
       layout="vertical"
       requiredMark={false}
       disabled={isSubmitting}
-      initialValues={{ email }}
       onFinish={handleSubmit}
       scrollToFirstError={{ focus: true }}
       noValidate
@@ -86,18 +81,12 @@ export default function TestLoginForm({ email, requireName, showDemoAccounts, is
       <Form.Item
         label="이름"
         name="name"
-        rules={[{
-          required: requireName,
-          whitespace: requireName,
-          message: '최초 로그인 시 이름을 입력해 주세요.',
-        }]}
-        validateStatus={showNameError ? 'error' : undefined}
-        help={showNameError ? '최초 로그인 시 이름을 입력해 주세요.' : undefined}
-        extra={!requireName && (
+        rules={[{ type: 'string', max: 100, message: '이름은 100자 이하로 입력해 주세요.' }]}
+        extra={
           <span className="text-caption text-(--ant-color-text-tertiary)">
             처음 로그인할 때만 입력해요. 이미 가입한 계정이면 비워도 돼요.
           </span>
-        )}
+        }
         className="mb-0"
       >
         <Input autoComplete="name" placeholder="예: 담당자 A" maxLength={100} size="large" />
