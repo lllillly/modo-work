@@ -10,7 +10,7 @@ type AssigneeHomeDataOpt = {
   today: string
 }
 
-function getDeadline(dueDate: string | null, today: string): Pick<HomeTask, 'deadlineLabel' | 'deadlineStatus'> {
+export function getDeadline(dueDate: string | null, today: string): Pick<HomeTask, 'deadlineLabel' | 'deadlineStatus'> {
   if (!dueDate) return { deadlineLabel: '-', deadlineStatus: 'none' }
 
   const daysUntil = getDaysUntil(dueDate, today)

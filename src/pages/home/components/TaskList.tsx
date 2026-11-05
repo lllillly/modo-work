@@ -1,18 +1,20 @@
+import type { ReactNode } from 'react'
 import { Checkbox, Empty } from 'antd'
 
 import type { HomeTask } from '../../../types/home'
 
 import DeadlineTag from './DeadlineTag'
 
-type TaskListProps = {
-  tasks: HomeTask[]
+type TaskListProps<T extends HomeTask> = {
+  tasks: T[]
   showCheckbox?: boolean
   onComplete?: (taskId: string) => void
+  renderDescription?: (task: T) => ReactNode
 }
 
 const rowClassName = 'm-0 flex min-h-14 min-w-0 flex-1 items-center gap-sm px-xxs py-xs min-[992px]:px-md'
 
-export default function TaskList({ tasks, showCheckbox = false, onComplete }: TaskListProps) {
+export default function TaskList<T extends HomeTask>({ tasks, showCheckbox = false, onComplete, renderDescription }: TaskListProps<T>) {
   if (tasks.length === 0) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="이날의 할 일이 없어요" className="my-lg" />
   }
@@ -25,9 +27,13 @@ export default function TaskList({ tasks, showCheckbox = false, onComplete }: Ta
             <span className="min-w-0 flex-1">
               <span className="block truncate text-body leading-[21px] text-(--ant-color-text)">{task.title}</span>
               <span className="block text-caption leading-[18px] text-(--ant-color-text-tertiary)">
-                {task.courseName} - {task.areaName}
-                {task.isCompleted && task.completedBy && (
-                  <span className="inline-block max-w-full truncate align-bottom"> - {task.completedBy} 완료</span>
+                {renderDescription ? renderDescription(task) : (
+                  <>
+                    {task.courseName} - {task.areaName}
+                    {task.isCompleted && task.completedBy && (
+                      <span className="inline-block max-w-full truncate align-bottom"> - {task.completedBy} 완료</span>
+                    )}
+                  </>
                 )}
               </span>
             </span>
