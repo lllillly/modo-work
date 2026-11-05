@@ -34,7 +34,7 @@ const statusMessages = {
   expired: {
     type: 'info',
     title: '로그인 시간이 지났어요',
-    description: '30분 동안 사용하지 않으면 자동으로 로그아웃돼요. 다시 로그인해 주세요.',
+    description: '오랫동안 사용하지 않으면 자동으로 로그아웃돼요. 다시 로그인해 주세요.',
   },
 } as const
 
