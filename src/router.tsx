@@ -7,7 +7,7 @@ import RequireAuth from './layouts/RequireAuth'
 
 const AppLayout = lazy(() => import('./layouts/AppLayout'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
-const AssigneeHomePage = lazy(() => import('./pages/home/AssigneeHomePage'))
+const HomePage = lazy(() => import('./pages/home/HomePage'))
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 
 type AppRouterProps = {
@@ -24,7 +24,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
             <Route
               element={<AppLayout isDark={isDark} onThemeChange={onThemeChange} />}
             >
-              <Route index element={<AssigneeHomePage />} /> {/* 담당자 홈 */}
+              <Route index element={<HomePage />} /> {/* 홈(역할별로 화면 변경) */}
               <Route path="/tasks" element={<TasksPage />} /> {/* 과정별 할 일 */}
               <Route
                 path="*"
