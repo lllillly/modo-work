@@ -11,14 +11,18 @@ export function getLeaderReviewScope(user: AuthUser) {
   const hasAllAccess = user.roles.some((role) => role.role === 'ADMIN')
   const hasAreaRole = leaderRoles.some((role) => role.leaderType === 'AREA')
   const orgUnitsById = new Map<string, LeaderCourse['orgUnit']>()
+  const areasById = new Map<string, LeaderArea>()
   for (const role of leaderRoles) {
     if (role.leaderType === 'ORG_UNIT' && role.orgUnit) {
       orgUnitsById.set(role.orgUnit.id, role.orgUnit)
     }
+    if (role.leaderType === 'AREA' && role.area) {
+      areasById.set(role.area.id, role.area)
+    }
   }
 
   const orgUnits = [...orgUnitsById.values()]
-  const areas = hasAreaRole ? user.areas : []
+  const areas = [...areasById.values()]
   const orgUnitIds = new Set(orgUnits.map((orgUnit) => orgUnit.id))
   const areaIds = new Set(areas.map((area) => area.id))
 

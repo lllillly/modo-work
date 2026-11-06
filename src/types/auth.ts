@@ -19,6 +19,7 @@ export type AuthUser = {
     leaderType: 'ORG_UNIT' | 'AREA' | null
     viewerTargetRole: Exclude<UserRole, 'VIEWER'> | null
     orgUnit: { id: string; name: string } | null
+    area: { id: string; name: string } | null
   }[]
 }
 

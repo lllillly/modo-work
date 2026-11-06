@@ -7,8 +7,10 @@ export function createLeaderHomeMockData(user: AuthUser, today: string) {
     ?? user.orgUnit
     ?? { id: 'mock-org-1', name: '조직 단위 1' }
   const otherOrgUnit = { id: 'mock-org-2', name: '조직 단위 2' }
+  const leaderAreas = user.roles.flatMap((role) => role.role === 'LEADER' && role.leaderType === 'AREA' && role.area ? [role.area] : [])
   const areas: LeaderArea[] = ['영역 1', '영역 2'].map((name, index) => (
-    user.areas.find((area) => area.name === name) ?? { id: `mock-area-${index + 1}`, name }
+    leaderAreas.find((area) => area.name === name)
+      ?? user.areas.find((area) => area.name === name) ?? { id: `mock-area-${index + 1}`, name }
   ))
 
   function dateOffset(days: number) {
