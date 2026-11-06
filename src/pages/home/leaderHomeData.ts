@@ -64,7 +64,7 @@ export function getLeaderHomeData({ user, businessName, areas, courses, tasks, t
 
     const homeTask: LeaderHomeTask = {
       ...task, courseName: course.name, orgUnit: course.orgUnit,
-      isReadOnly: course.endDate < today || !reviewScope.canReview(course.orgUnit, task.areaId),
+      isReadOnly: !reviewScope.canReview(course.orgUnit, task.areaId),
       ...getDeadline(task.dueDate, today),
     }
     visibleTasks.push(homeTask)
@@ -73,7 +73,7 @@ export function getLeaderHomeData({ user, businessName, areas, courses, tasks, t
     tasksByCourse.set(course.id, courseTasks)
   }
 
-  const alerts = visibleTasks.filter((task) => !task.isCompleted && (courseById.get(task.courseId)?.endDate ?? '') >= today
+  const alerts = visibleTasks.filter((task) => !task.isCompleted
     && (task.deadlineStatus === 'overdue' || task.deadlineStatus === 'dueSoon'))
     .sort(compareTaskDeadline)
   const records = visibleTasks.filter((task) => task.isCompleted)
