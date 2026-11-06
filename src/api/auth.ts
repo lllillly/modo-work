@@ -17,18 +17,12 @@ export class AuthApiError extends Error {
 }
 
 async function requestAuth(path: string, options?: RequestInit) {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
-
-  if (!baseUrl) {
-    throw new Error('백엔드 주소가 설정되지 않았어요. VITE_API_BASE_URL을 확인해 주세요.')
-  }
-
   const timeoutSignal = AbortSignal.timeout(AUTH_TIMEOUT_MS)
   const signal = options?.signal
     ? AbortSignal.any([options.signal, timeoutSignal])
     : timeoutSignal
 
-  const response = await fetch(`${baseUrl}/api/auth${path}`, {
+  const response = await fetch(`/api/auth${path}`, {
     ...options,
     credentials: 'include',
     cache: 'no-store',

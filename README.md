@@ -43,11 +43,8 @@ npm run dev
 
 `/login`은 시험 로그인 화면으로 시작합니다. 이메일, 시험 비밀번호, 이름을 입력하며 이름은 처음 로그인할 때만 필요합니다.
 백엔드 실행은 [백엔드 로컬 실행 안내](../../docs/development/backend-local.md)를 참고해 주세요.
-`apps/web/.env.local`에 아래 주소를 설정한 뒤 프론트 개발 서버를 실행합니다. 프론트와 백엔드의 호스트는 `localhost`로 통일합니다.
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:8080
-```
+인증 요청은 동일 출처 상대 경로 `/api/auth`를 사용합니다. 로컬에서는 Vite가 `/api` 요청을 `http://localhost:8080`으로 전달합니다. 백엔드를 실행한 뒤 `npm run dev`로 프론트를 실행해 주세요.
+Docker 환경에서는 Nginx의 `/api` 프록시를 사용합니다.
 
 - `로그인`: 시험 로그인 API를 호출하고 ACTIVE는 홈으로 이동하며 PENDING은 승인 대기 화면 표시
 - 새로고침: `/me`로 로그인 상태 확인. 로그인 전이나 승인 대기 상태에서는 업무 화면 접근 제한
