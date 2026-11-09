@@ -19,6 +19,7 @@ import CourseSchedule from './components/CourseSchedule'
 import CourseTasksEmpty from './components/CourseTasksEmpty'
 import CourseTasksSkeleton from './components/CourseTasksSkeleton'
 import MonthlyWork from './components/MonthlyWork'
+import TaskDetailDrawer from './components/TaskDetailDrawer'
 import TaskPhaseList from './components/TaskPhaseList'
 
 export default function TasksPage() {
@@ -60,6 +61,10 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
     setTagFilter('all')
   }
 
+  function closeTask() {
+    updateSearchParams({ taskId: null }, { replace: true })
+  }
+
   if (!selectedCourse) return <CourseTasksEmpty />
 
   const course = selectedCourse
@@ -72,6 +77,7 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
   const normalTasks = courseTasks.filter((task) => task.referenceType !== 'ALWAYS')
   const alwaysTasks = courseTasks.filter((task) => task.referenceType === 'ALWAYS')
   const visibleTasks = tagFilter === 'all' ? normalTasks : normalTasks.filter((task) => task.tag === tagFilter)
+  const selectedTask = courseTasks.find((task) => task.id === searchParams.get('taskId'))
   const tags = [...new Set(normalTasks.map((task) => task.tag).filter(Boolean))]
 
   const cycles = getMonthlyCycles(course.startDate, course.endDate, course.monthlyOffsetDays)
@@ -150,6 +156,8 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
       )}
 
       <Drawer open={showMonthlyWork && isMobile} title="월 주기와 상시 업무" placement="bottom" size="80%" closable={{ placement: 'end' }} onClose={() => setShowMonthlyWork(false)} classNames={{ header: 'px-md py-md', body: 'p-md' }}>{monthlyWork}</Drawer>
+      {selectedTask && !isLoading && !isError && !isEmpty && <TaskDetailDrawer key={selectedTask.id} task={selectedTask} course={course} user={user} isMobile={isMobile} onClose={closeTask} onAction={(type, memo) => processTask(selectedTask.id, type, memo)} />}
+      {searchParams.has('taskId') && !selectedTask && !isLoading && !isError && !isEmpty && <Alert type="info" title="이 할 일을 조회할 수 없어요." action={<Button size="small" onClick={closeTask}>닫기</Button>} />}
     </div>
   )
 }
