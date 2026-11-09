@@ -41,3 +41,17 @@
     cursor: text;
   }
 }
+
+@media (width < 992px) {
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ant-select-dropdown-list-scrollbar {
+    display: none;
+  }
+}

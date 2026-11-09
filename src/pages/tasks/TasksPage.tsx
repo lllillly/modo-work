@@ -11,7 +11,7 @@ import { getToday } from '../home/dateUtils'
 import HomeError from '../home/components/AssigneeHomeError'
 import {
   applyTaskAction, canViewCourse, formatTaskDate, getCourseDays,
-  getCourseTaskView, getMonthlyCycles, getTaskPermissions,
+  getCourseTaskView, getMonthlyCycles, getTaskPermissions, recalculateCourseTasks,
 } from './courseTasksData'
 import { createCourseTasksMockData } from './courseTasksMockData'
 
@@ -84,6 +84,13 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
   const currentCycle = cycles.find((cycle) => cycle.startDate <= today && cycle.endDate >= today)
 
   const isEnded = course.endDate < today
+  const isAdmin = user.roles.some((role) => role.role === 'ADMIN')
+  const isAssignedAssignee = user.roles.some((role) => role.role === 'ASSIGNEE')
+    && course.assignees.some((assignment) => assignment.users.some((assignee) => assignee.id === user.id))
+  const isOrgLeader = user.roles.some((role) =>
+    role.role === 'LEADER' && role.leaderType === 'ORG_UNIT' && role.orgUnit?.id === course.orgUnit.id,
+  )
+  const canEditSchedule = !isEnded && !course.archived && (isAdmin || isAssignedAssignee || isOrgLeader)
 
   const isLoading = preview === 'loading'
   const isError = preview === 'error'
@@ -104,6 +111,37 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
     message.success('처리 내용을 저장했어요.')
   }
 
+  function saveSchedule(startDate: string, endDate: string, reason: string) {
+    if (!canEditSchedule || startDate > endDate) return
+    if (startDate === course.startDate && endDate === course.endDate) return
+
+    const scheduleChanges = [
+      { before: course.startDate, after: startDate, label: '시작일 변경' },
+      { before: course.endDate, after: endDate, label: '종료일 변경' },
+    ]
+    const changes = scheduleChanges
+      .filter((change) => change.before !== change.after)
+      .map((change) => ({
+        ...change,
+        id: crypto.randomUUID(),
+        reason: reason.trim(),
+        description: '미완료 할 일 마감 다시 계산',
+        actor: user.name,
+        createdAt: new Date().toISOString(),
+      }))
+
+    const updatedCourse = {
+      ...course, startDate, endDate,
+      changeHistory: [...course.changeHistory, ...changes],
+    }
+
+    setData((current) => ({
+      courses: current.courses.map((item) => item.id === course.id ? updatedCourse : item),
+      tasks: recalculateCourseTasks(updatedCourse, current.tasks),
+    }))
+    message.success('일정을 변경했어요. 완료 기록은 유지돼요.')
+  }
+
   function retry() {
     updateSearchParams({ preview: null }, { replace: true })
   }
@@ -117,7 +155,7 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
     </div>
   )
 
-  const schedule = <CourseSchedule key={course.id} course={course} isMobile={isMobile} />
+  const schedule = <CourseSchedule key={course.id} course={course} isMobile={isMobile} canEdit={canEditSchedule} onSave={saveSchedule} />
 
   const monthlyWork = <MonthlyWork cycles={cycles} tasks={alwaysTasks} today={today} courseEndDate={course.endDate} offsetDays={course.monthlyOffsetDays} onOpenTask={(taskId) => { setShowMonthlyWork(false); openTask(taskId) }} />
 
