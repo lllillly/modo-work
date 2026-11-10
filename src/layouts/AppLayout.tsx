@@ -1,6 +1,6 @@
 import { Suspense, useState } from 'react'
 import { App, Grid, Layout, Spin } from 'antd'
-import { Outlet } from 'react-router'
+import { Outlet, useSearchParams } from 'react-router'
 
 import { businessOptions, notificationCount } from '../pages/home/assigneeHomeMockData'
 
@@ -26,10 +26,21 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const { message } = App.useApp()
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.lg
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selectedBusiness, setSelectedBusiness] = useState(businessOptions[0]?.value ?? '')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  function handleBusinessChange(business: string) {
+    const next = new URLSearchParams(searchParams)
+    next.delete('courseId')
+    next.delete('taskId')
+    next.delete('preview')
+
+    setSearchParams(next, { replace: true })
+    setSelectedBusiness(business)
+  }
 
   async function handleLogout() {
     if (isLoggingOut) return
@@ -59,7 +70,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
         role={primaryRole}
         businessOptions={businessOptions}
         selectedBusiness={selectedBusiness}
-        onBusinessChange={setSelectedBusiness}
+        onBusinessChange={handleBusinessChange}
       />
       <Layout className="min-h-0 min-w-0">
         <AppHeader
