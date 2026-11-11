@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { InboxOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons'
+import { InboxOutlined, PlusOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons'
 import { Button, Card, Checkbox, Input, Select, Skeleton, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import type { ManagedCourse } from '../../../../types/adminCourses'
 import { getAssignmentIssues, getCourseState } from '../courseManagementData'
@@ -15,6 +15,7 @@ type CourseListProps = {
 }
 
 export default function CourseList({ courses, isMobile }: CourseListProps) {
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [orgUnitId, setOrgUnitId] = useState('all')
@@ -62,8 +63,28 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
     { title: '정원', dataIndex: 'capacity', width: 52, render: (capacity: number | null) => capacity ?? '-' },
     { title: '담당 배정', key: 'assignees', width: 190, render: (_, course) => <AssignmentStatus course={course} /> },
     { title: '상태', key: 'state', width: 82, render: (_, course) => <CourseStateTag course={course} /> },
-
+    {
+      title: '',
+      key: 'actions',
+      width: 90,
+      render: (_, course) => (
+        <Link to={course.id}>{getCourseState(course) === '종료' ? '보기' : '수정'}</Link>
+      ),
+    },
   ] satisfies TableColumnsType<ManagedCourse>
+
+  const actions = (
+    <div className="flex gap-xs">
+      <Button
+        type="primary"
+        icon={<PlusOutlined aria-hidden />}
+        onClick={() => navigate('new')}
+        className={isMobile ? 'order-1 flex-1' : ''}
+      >
+        과정 추가
+      </Button>
+    </div>
+  )
 
   const empty = (
     <div className="flex min-h-[260px] flex-col items-center justify-center gap-sm py-xl text-center">
@@ -74,9 +95,17 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
       <p className="m-0 text-caption text-(--ant-color-text-secondary)">
         {activeCourses.length
           ? '검색어나 필터를 바꿔 다시 확인해 주세요.'
-          : '등록된 과정이 여기에 표시돼요.'}
+          : '과정을 하나씩 추가하거나, CSV 파일로 한 번에 가져올 수 있어요.'}
       </p>
-      {activeCourses.length > 0 && <Button onClick={resetFilters}>필터 초기화</Button>}
+      {activeCourses.length ? (
+        <Button onClick={resetFilters}>필터 초기화</Button>
+      ) : (
+        <div className="flex gap-xs">
+          <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
+            과정 추가
+          </Button>
+        </div>
+      )}
     </div>
   )
 
@@ -91,6 +120,7 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
             </p>
           )}
         </div>
+        {actions}
       </div>
       <div
         className={`flex flex-wrap items-center gap-xs ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container) px-lg py-md'}`}
@@ -201,8 +231,9 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
             {visibleCourses.map((course) => {
               return (
                 <div key={course.id} className="relative rounded-lg bg-(--ant-color-bg-container)">
-                  <div
-                    className="flex w-full flex-col items-start rounded-lg p-md text-left text-(--ant-color-text)"
+                  <Link
+                    to={course.id}
+                    className="flex w-full flex-col items-start rounded-lg p-md text-left text-(--ant-color-text) hover:bg-(--ant-color-fill-quaternary)"
                   >
                     <span className="flex w-full items-center justify-between gap-xs">
                       <span className="min-w-0 text-body font-medium">{course.name}</span>
@@ -217,7 +248,7 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
                       <CourseLengthTag {...course} />
                     </span>
                     <AssignmentStatus course={course} />
-                  </div>
+                  </Link>
                 </div>
               )
             })}
