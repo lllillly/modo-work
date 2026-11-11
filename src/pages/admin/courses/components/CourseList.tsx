@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { InboxOutlined, PlusOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Checkbox, Input, Select, Skeleton, Table } from 'antd'
+import { InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons'
+import { Button, Card, Checkbox, Dropdown, Input, Select, Skeleton, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -12,9 +12,10 @@ import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabel
 type CourseListProps = {
   courses: ManagedCourse[]
   isMobile: boolean
+  onArchive: (course: ManagedCourse) => void
 }
 
-export default function CourseList({ courses, isMobile }: CourseListProps) {
+export default function CourseList({ courses, isMobile, onArchive }: CourseListProps) {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -67,14 +68,34 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
       title: '',
       key: 'actions',
       width: 90,
-      render: (_, course) => (
-        <Link to={course.id}>{getCourseState(course) === '종료' ? '보기' : '수정'}</Link>
-      ),
+      render: (_, course) =>
+        getCourseState(course) === '종료' ? (
+          <Link to={course.id}>보기</Link>
+        ) : (
+          <span className="flex items-center gap-xs">
+            <Link to={course.id}>수정</Link>
+            <Button
+              type="text"
+              size="small"
+              className="h-auto p-0 text-caption text-(--ant-color-text-secondary)"
+              onClick={() => onArchive(course)}
+            >
+              보관
+            </Button>
+          </span>
+        ),
     },
   ] satisfies TableColumnsType<ManagedCourse>
 
   const actions = (
     <div className="flex gap-xs">
+      <Button
+        icon={<InboxOutlined aria-hidden />}
+        onClick={() => navigate('archived')}
+        className={isMobile ? 'order-3' : ''}
+      >
+        {isMobile ? '보관' : '보관 목록'}
+      </Button>
       <Button
         type="primary"
         icon={<PlusOutlined aria-hidden />}
@@ -229,13 +250,15 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
         visibleCourses.length ? (
           <div className="flex flex-col gap-sm">
             {visibleCourses.map((course) => {
+              const isEnded = getCourseState(course) === '종료'
+
               return (
                 <div key={course.id} className="relative rounded-lg bg-(--ant-color-bg-container)">
                   <Link
                     to={course.id}
                     className="flex w-full flex-col items-start rounded-lg p-md text-left text-(--ant-color-text) hover:bg-(--ant-color-fill-quaternary)"
                   >
-                    <span className="flex w-full items-center justify-between gap-xs">
+                    <span className={`flex w-full items-center justify-between gap-xs ${isEnded ? '' : 'pr-xl'}`}>
                       <span className="min-w-0 text-body font-medium">{course.name}</span>
                       <CourseStateTag course={course} />
                     </span>
@@ -249,6 +272,25 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
                     </span>
                     <AssignmentStatus course={course} />
                   </Link>
+                  {!isEnded && (
+                    <Dropdown
+                      trigger={['click']}
+                      placement="bottomRight"
+                      autoFocus
+                      menu={{
+                        items: [{ key: 'archive', label: '보관', icon: <InboxOutlined /> }],
+                        onClick: () => onArchive(course),
+                      }}
+                    >
+                      <Button
+                        type="text"
+                        icon={<MoreOutlined />}
+                        aria-label={`${course.name} 작업 메뉴`}
+                        aria-haspopup="menu"
+                        className="absolute top-xs right-xs h-10 w-10"
+                      />
+                    </Dropdown>
+                  )}
                 </div>
               )
             })}
