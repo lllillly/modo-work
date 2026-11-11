@@ -30,7 +30,7 @@ const adminMenuItems = [
   { key: '/admin/task-templates', label: '할 일 템플릿', disabled: true },
   { key: '/admin/documents', label: '문서 업로드', disabled: true },
   { key: '/admin/questions', label: '물어보기 관리', disabled: true },
-  { key: '/admin/import', label: '과정 가져오기', disabled: true },
+  { key: '/admin/import', label: <Link to="/admin/courses/import">과정 가져오기</Link> },
   { key: '/admin/service-tokens', label: '서비스 토큰 관리', disabled: true },
   { key: '/admin/config', label: '설정 내보내기 & 가져오기', disabled: true },
   { key: '/admin/settings', label: '설정', disabled: true },
@@ -59,7 +59,8 @@ export default function AppSidebar({
   businessOptions,
 }: AppSidebarProps) {
   const { pathname } = useLocation()
-  const selectedAdminKey = pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
+  const selectedAdminKey = pathname === '/admin/courses/import' ? '/admin/import'
+    : pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
 
   const visibleAdminItems = adminMenuItems.filter((item) => {
     if (role === 'ADMIN') return true

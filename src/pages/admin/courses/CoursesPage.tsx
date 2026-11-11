@@ -12,6 +12,7 @@ import {
 } from './courseManagementMockData'
 import ArchivedCourses from './components/ArchivedCourses'
 import CourseEditor from './components/CourseEditor'
+import CourseImport from './components/CourseImport'
 import CourseList from './components/CourseList'
 
 type CourseEditorRouteProps = {
@@ -171,6 +172,16 @@ export default function CoursesPage() {
       <Route
         path="archived"
         element={<ArchivedCourses courses={visibleCourses} isMobile={isMobile} onRestore={restoreCourse} />}
+      />
+      <Route
+        path="import"
+        element={
+          <CourseImport
+            key={selectedBusiness}
+            business={selectedBusiness}
+            isMobile={isMobile}
+          />
+        }
       />
       <Route
         path="*"

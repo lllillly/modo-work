@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Spin } from 'antd'
-import { BrowserRouter, Link, Route, Routes } from 'react-router'
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 
 import AuthLayout from './layouts/AuthLayout'
 import RequireAuth from './layouts/RequireAuth'
@@ -28,6 +28,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
               <Route index element={<HomePage />} /> {/* 홈(역할별로 화면 변경) */}
               <Route path="/tasks" element={<TasksPage />} /> {/* 과정별 할 일 */}
               <Route path="/admin/courses/*" element={<CoursesPage />} />
+              <Route path="/admin/import" element={<Navigate to="/admin/courses/import" replace />} />
               <Route
                 path="*"
                 element={

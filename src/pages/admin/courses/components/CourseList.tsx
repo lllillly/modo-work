@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons'
+import { InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
 import { Button, Card, Checkbox, Dropdown, Input, Select, Skeleton, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -97,6 +97,13 @@ export default function CourseList({ courses, isMobile, onArchive }: CourseListP
         {isMobile ? '보관' : '보관 목록'}
       </Button>
       <Button
+        icon={<UploadOutlined aria-hidden />}
+        onClick={() => navigate('import')}
+        className={isMobile ? 'order-2' : ''}
+      >
+        {isMobile ? 'CSV' : 'CSV로 가져오기'}
+      </Button>
+      <Button
         type="primary"
         icon={<PlusOutlined aria-hidden />}
         onClick={() => navigate('new')}
@@ -122,6 +129,9 @@ export default function CourseList({ courses, isMobile, onArchive }: CourseListP
         <Button onClick={resetFilters}>필터 초기화</Button>
       ) : (
         <div className="flex gap-xs">
+          <Button icon={<UploadOutlined aria-hidden />} onClick={() => navigate('import')}>
+            CSV로 가져오기
+          </Button>
           <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
             과정 추가
           </Button>
