@@ -23,6 +23,7 @@ const avatarSrc = `${import.meta.env.BASE_URL}images/avatar-placeholder.svg`
 const pageTitles: Record<string, string> = {
   '/': '홈',
   '/tasks': '과정별 할 일',
+  '/admin/courses': '과정·담당 배정',
 }
 
 export default function AppHeader({
@@ -38,7 +39,8 @@ export default function AppHeader({
   isLoggingOut,
 }: AppHeaderProps) {
   const { pathname } = useLocation()
-  const pageTitle = pageTitles[pathname] ?? '페이지를 찾을 수 없습니다'
+  const pageTitle = pageTitles[pathname]
+    ?? (pathname.startsWith('/admin/courses/') ? '과정·담당 배정' : '페이지를 찾을 수 없습니다')
   const userMenuItems: MenuProps['items'] = [
     { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
     { type: 'divider' },

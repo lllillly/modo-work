@@ -25,7 +25,7 @@ const menuItems = [
 ] satisfies MenuProps['items']
 
 const adminMenuItems = [
-  { key: '/admin/courses', label: '과정 & 담당 배정', disabled: true },
+  { key: '/admin/courses', label: <Link to="/admin/courses">과정·담당 배정</Link> },
   { key: '/admin/users', label: '사용자와 승인', disabled: true },
   { key: '/admin/task-templates', label: '할 일 템플릿', disabled: true },
   { key: '/admin/documents', label: '문서 업로드', disabled: true },
@@ -59,6 +59,7 @@ export default function AppSidebar({
   businessOptions,
 }: AppSidebarProps) {
   const { pathname } = useLocation()
+  const selectedAdminKey = pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
 
   const visibleAdminItems = adminMenuItems.filter((item) => {
     if (role === 'ADMIN') return true
@@ -127,7 +128,7 @@ export default function AppSidebar({
               <Menu
                 mode="inline"
                 inlineIndent={12}
-                selectedKeys={[pathname]}
+                selectedKeys={[selectedAdminKey]}
                 items={visibleAdminItems}
                 onClick={onClose}
                 className="border-e-0"
