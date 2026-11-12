@@ -1,8 +1,6 @@
 # MODO WORK 웹 프론트엔드
 
-React + TypeScript + Vite + Ant Design + Tailwind CSS
-
-패키지 매니저는 npm을 사용합니다.
+React + TypeScript + Vite + Ant Design + Tailwind CSS를 사용합니다. 패키지 매니저는 npm입니다.
 
 ## 실행
 
@@ -12,205 +10,118 @@ npm ci
 npm run dev
 ```
 
-빌드: `npm run build` / 린트: `npm run lint`
+- 빌드: `npm run build` (TypeScript 검사 포함)
+- 린트: `npm run lint`
+- 백엔드 실행: [로컬 실행 안내](../../docs/development/backend-local.md)
 
-## 공통 설정
+API 요청은 세션 쿠키와 동일 출처 상대 경로 `/api`를 사용합니다. 로컬에서는 Vite가 `http://localhost:8080`으로 전달하고 Docker에서는 Nginx 프록시를 사용합니다.
 
-- `src/providers/AppProvider.tsx`: Ant Design 테마 설정
-- `src/styles/theme.ts`: 폰트, 라이트-다크 테마
-- `src/styles/tokens.css`: 색상, 간격, 모서리, 글자 토큰
-- `src/styles/index.css`: Tailwind와 reset 연결
-- `src/styles/fonts.css`: 로컬 폰트 선언
-- `public/fonts/`: Pretendard 폰트와 라이선스
-- `public/images/logo.svg`: 임시 로고
-- `public/favicon.png`: 임시 파비콘
+## 화면과 연동 상태
 
-초기화 스타일은 Ant Design reset을 사용하며 충돌 가능성이 있어서 Tailwind Preflight는 제외했습니다.
+| 화면 | 주소 | 현재 상태 |
+| --- | --- | --- |
+| 로그인 | `/login` | 시험 로그인, 내 정보 조회, 로그아웃 API 연결 |
+| 담당자 홈 (S03) | `/` | 목업 |
+| 리더 홈 (S04) | `/` | 리더와 관리자에게 표시, 목업 |
+| 과정별 할 일과 상세 (S05, S06) | `/tasks` | 기본 경로는 목업 |
+| S10에서 연결한 할 일과 상세 | `/tasks?courseId=실제ID&source=api` | 관리자용 실제 API 연결 |
+| 과정 & 담당 배정 (S10) | `/admin/courses` | 실제 API 연결 |
+| CSV 가져오기 | `/admin/courses/import` | 미리보기, 적용, 취소 API 연결 |
 
-## 구조
+홈과 기존 할 일 화면의 목업은 새로고침하면 초기화됩니다. 실제 API 화면과 목업 상태는 공유하지 않습니다. `source=api`는 프론트 화면 구분용이며 서버에는 보내지 않습니다.
 
-- `src/router.tsx`: 화면 라우터(링크) 연결
-- `src/layouts/AppLayout.tsx`: 헤더, 사이드바, 콘텐츠 영역
-- `src/layouts/AuthLayout.tsx`: 로그인 화면 레이아웃
-- `src/components/layout/`: 헤더, 사이드바
-- `src/components/common/ThemeToggle.tsx`: 헤더 다크 모드 전환 버튼
-- `src/pages/`: 홈, 로그인, 과정별 할 일 화면
-- `src/pages/home/AssigneeHomePage.tsx`: S03 담당자 홈
+## 공통 구조
 
-홈은 `/`, 로그인은 `/login`, 과정별 할 일은 `/tasks`에서 확인 부탁드립니다.
-
-## 로그인 연동
-
-`/login`은 시험 로그인 화면으로 시작합니다. 이메일, 시험 비밀번호, 이름을 입력하며 이름은 처음 로그인할 때만 필요합니다.
-백엔드 실행은 [백엔드 로컬 실행 안내](../../docs/development/backend-local.md)를 참고해 주세요.
-인증 요청은 동일 출처 상대 경로 `/api/auth`를 사용합니다. 로컬에서는 Vite가 `/api` 요청을 `http://localhost:8080`으로 전달합니다. 백엔드를 실행한 뒤 `npm run dev`로 프론트를 실행해 주세요.
-Docker 환경에서는 Nginx의 `/api` 프록시를 사용합니다.
-
-- `로그인`: 시험 로그인 API를 호출하고 ACTIVE는 홈으로 이동하며 PENDING은 승인 대기 화면 표시
-- 새로고침: `/me`로 로그인 상태 확인. 로그인 전이나 승인 대기 상태에서는 업무 화면 접근 제한
-- `승인 상태 확인`: `/me`를 다시 호출하며 승인 후 홈으로 이동. 자동 새로고침은 사용하지 않음
-- `로그아웃`: 승인 대기 화면과 헤더 모두 서버에 로그아웃 요청 후 로그인 화면으로 이동
-- `담당자`, `리더`, `관리자`: 백엔드 시드 문서 기준의 시연 계정 이메일만 채우며 비밀번호는 직접 입력
-- 입력 오류는 해당 입력란 아래 표시하며 비밀번호 오류와 사용 중지, 일시 오류는 각각 안내
-- 헤더의 이름과 역할, 홈 인사말은 로그인한 사용자 정보 사용
-
-세션 만료는 서버의 UNAUTHENTICATED 응답으로 판단하도록 하였습니다.
-업무 화면 이동과 창으로 돌아왔을 때도 로그인 상태를 확인합니다. 네트워크 오류나 서버 오류는 세션 만료로 처리하지 않습니다.
-API 요청은 응답 대기 시간이 30초를 넘으면 중단하며 다시 시도할 수 있습니다.
-
-로그인과 로그아웃은 `async/await`로 서버 응답을 기다린 뒤 상태를 변경합니다. 로그인은 `Promise<AuthUser>`로 사용자 정보를 받고 로그아웃은 `Promise<void>`로 요청 완료를 기다립니다. 처리 중에는 버튼을 잠가 중복 요청을 막고 실패하면 오류를 안내합니다.
-
-로그인 상태를 바꾸는 확인용 버튼은 제거했습니다. 이름 누락, 승인 대기, 사용 중지, 일시 오류와 세션 만료 안내는 실제 API 응답에 따라 표시합니다.
-Google 로그인 화면과 시험 로그인 화면 사이의 전환 버튼은 유지했습니다. 현재는 시험 로그인만 API에 연결되어 있으며 Google 계정으로 로그인 버튼은 눌러도 이동하거나 API를 호출하지 않습니다.
-
-로그인 관련 파일은 `src/pages/auth/`에 두었습니다.
-
-- `src/api/auth.ts`: 시험 로그인, 현재 사용자 조회, 로그아웃 요청과 오류 처리
-- `src/types/auth.ts`: 인증 요청, 사용자와 오류 응답 타입
-- `src/providers/AuthProvider.tsx`, `AuthContext.ts`: 공통 로그인 상태
-- `src/layouts/RequireAuth.tsx`: 업무 화면 접근 검사
-- `LoginPage.tsx`: 로그인 상태별 화면과 API 연결
-- `components/TestLoginForm.tsx`: 시험 로그인 입력과 검증
-- `demoAccounts.ts`: 시연 계정 이메일
-
-## 담당자 홈
-
-선택한 사업의 과정과 할 일을 보여주는 화면입니다. 사업 1은 샘플 데이터가 있고, 사업 2는 배정된 과정이 없는 화면 버전으로 작성하였습니다.
-
-- 내 알림은 기한 지남, D-day, 임박 순으로 표시하며 알림이 없으면 카드를 숨깁니다.
-- 달력에서 날짜를 선택하면 해당 날짜의 할 일이 표시됩니다.
-- 내 영역의 미완료 할 일은 체크박스를 눌러 완료할 수 있습니다. 제목이나 설명을 눌러도 완료되지 않습니다. 완료하면 처리자와 초록색 완료 배지가 표시되고 진행률에도 반영됩니다. 담당자 화면에서 완료 취소는 불가능하게 하였습니다.
-- 마감 배지와 알림 분류는 마감일과 한국 오늘 날짜로 계산합니다. 현재 목업에서는 달력일 기준 D-day부터 D-2까지는 임박, D-3부터 D-7까지는 배경색으로 표시합니다. API 연동 시 임박 분류는 서버의 `dueSoonBusinessDays`와 영업일 기준에 맞춰 변경할 예정입니다. D-day, D-3 등 배지 문구는 달력일 기준으로 유지합니다.
-- 전체 보기에서는 다른 영역의 할 일도 보여주며 체크박스 없이 보기만 가능합니다. 과정 진행률과 달력의 점도 보기 범위에 맞춰 표시합니다.
-- 내 과정은 과정 필터, 마감순과 과정명순 정렬을 지원합니다. 모바일은 과정 필터를 숨기고 처음 3개 과정과 더 보기 버튼을 표시합니다.
-
-화면 상태는 아래 주소에서도 확인할 수 있습니다.
-
-| 주소 | 확인할 화면 |
+| 경로 | 역할 |
 | --- | --- |
-| `/` | 기본 화면 |
-| `/?preview=empty` | 배정된 과정 없음 |
-| `/?preview=no-alerts` | 알림 0건 |
-| `/?preview=loading` | 불러오는 중 |
-| `/?preview=error` | 불러오기 실패 |
+| `src/router.tsx`, `src/layouts/` | 화면 연결, 접근 검사, 공통 레이아웃 |
+| `src/components/layout/` | 헤더와 사이드바 |
+| `src/providers/AppProvider.tsx`, `src/styles/` | Ant Design 테마, 디자인 토큰, 폰트와 공통 스타일 |
+| `src/providers/AuthProvider.tsx`, `AuthContext.ts` | 로그인 상태 관리 |
+| `src/api/`, `src/types/` | API 요청과 데이터 타입 |
+| `src/hooks/useApiQuery.ts` | 조회 상태, 요청 취소, 재조회 |
+| `src/pages/auth/` | 로그인과 인증 상태별 화면 |
+| `src/pages/home/` | 담당자와 리더 홈 |
+| `src/pages/tasks/` | 과정별 할 일, 상세, 일정과 월 주기 |
+| `src/pages/admin/courses/` | 과정 관리와 CSV 가져오기 |
 
-확인용 화면들이라 추후 삭제 예정입니다.
+Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치지 않도록 Tailwind Preflight는 제외했습니다.
+992px 이상은 데스크탑, 그 미만은 모바일입니다. 본문과 사이드바는 각각 스크롤하며 모바일에서는 메뉴 버튼으로 사이드바를 엽니다. 모바일 스크롤바는 숨기되 스크롤은 유지합니다.
 
-홈 관련 파일은 `src/pages/home/`에 두었습니다.
+## 로그인
 
-- `AssigneeHomePage.tsx`: 화면 구성, 보기 범위와 완료 상태
-- `assigneeHomeData.ts`: 사업과 보기 범위(내 영역 or 전체)에 따른 목록, 진행률과 홈 알림 건수 계산
-- `assigneeHomeMockData.ts`: 임시 사용자, 사업, 과정과 할 일 데이터
-- `dateUtils.ts`: 달력과 날짜 표시 형식 변환
-- `components/`: 달력, 할 일과 과정 목록, 상태 배지, 로딩과 오류 화면
+`AuthProvider`에서 사용자와 로그인 상태를 관리하고 `RequireAuth`에서 업무 화면 접근을 확인합니다. 로그인 화면은 인증 상태에 따라 입력 폼과 안내 화면을 표시합니다.
 
-## 리더 홈
+`src/api/auth.ts`는 시험 로그인, 내 정보 조회와 로그아웃 요청을 담당합니다. `async/await`로 응답을 기다린 뒤 상태를 변경하며 로그인은 `Promise<AuthUser>`, 로그아웃은 `Promise<void>`를 반환합니다. 세션 상태는 `/me`와 서버의 인증 오류 응답으로 확인합니다.
 
-리더와 관리자 계정은 `/`에서 S04 홈이 표시됩니다. 관리자는 선택한 사업의 전체 범위, 담당자는 기존 담당자 홈을 표시합니다.
-`lead01`은 조직 리더라 자기 조직의 과정만 보이며 영역 리더 역할도 있으면 해당 영역의 다른 조직 과정을 함께 표시합니다.
+## 담당자 홈과 리더 홈
 
-- 영역 리더는 자기 조직의 다른 영역을 보기만 가능. 조회 가능한 진행률은 표시하며 확인 버튼과 일괄 확인 대상에서는 제외
-- 영역 리더의 확인 범위는 `roles[].area` 기준. `user.areas`는 담당과 열람 영역이며 리더 권한 계산에 사용하지 않음
-- 폐쇄 조직은 모든 리더와 관리자가 조회 및 확인 가능
-- 리더 알림은 기한 지남 -> D-day -> 임박 순으로 표시
-- 처리 기록은 최근 완료순. 확인해도 순서는 유지하며 확인 대기가 0건이면 일괄 확인 버튼 숨김
-- 종료된 과정도 권한 범위 안에서는 단건과 일괄 확인 가능. 미완료 할 일은 종료일과 관계없이 마감 기준으로 알림에 표시
-- 과정별 진행률과 다음 마감 표시. 범위 밖 영역은 진행률 대신 범위 밖으로 표시
-- 모바일에서는 알림, 기록과 과정 목록을 더 보기로 펼침
+`HomePage.tsx`에서 사용자 역할에 따라 담당자 홈과 리더 홈을 표시합니다.
 
-리더 홈 데이터와 확인 처리는 목업이며 새로고침하면 초기화됩니다. 과정 선택은 `/tasks?courseId=...`로 이동합니다.
-`/?preview=empty`, `/?preview=loading`, `/?preview=error`, `/?preview=no-reviews`에서 상태별 화면을 확인할 수 있습니다.
-`/?preview=closed-org`에서는 조직 단위 2를 폐쇄 상태로 표시해 리더의 조회와 확인을 확인할 수 있습니다.
+- `AssigneeHomePage.tsx`: 알림, 달력, 날짜별 할 일과 과정 진행률
+- `LeaderHomePage.tsx`: 요약, 확인 범위, 알림, 처리 기록과 과정별 진행률
+- `assigneeHomeData.ts`, `leaderHomeData.ts`: 보기 범위와 권한, 알림과 진행률 계산
+- `assigneeHomeMockData.ts`, `leaderHomeMockData.ts`: 화면 확인용 데이터
 
-- `HomePage.tsx`: 계정 역할에 따라 담당자 홈과 리더 홈 분기
-- `LeaderHomePage.tsx`: 리더 홈 화면과 확인 처리
-- `leaderHomeMockData.ts`: 과정, 영역별 진행률과 할 일 샘플
-- `leaderHomeData.ts`: 확인 범위, 알림과 요약 계산
-- `components/LeaderReviewList.tsx`, `LeaderCourseList.tsx`: 처리 기록과 과정별 진행
+두 홈은 `TaskList`를 재사용합니다. `T extends HomeTask`로 화면별 추가 필드의 타입을 유지하고 설명은 `renderDescription`으로 전달합니다. 리더 홈의 다음 마감과 기한 지난 건수는 목록을 한 번 순회해 계산합니다.
 
-할 일 목록은 담당자 홈과 리더 홈 모두 `TaskList`를 사용합니다. `T extends HomeTask`로 공통 필드를 유지하면서 전달받은 할 일 타입을 그대로 사용합니다. 리더 홈에서 추가로 필요한 조직, 담당자 목록과 조회 권한도 별도의 타입 변환 없이 설명에 표시할 수 있습니다. 설명 부분은 `renderDescription`으로 전달하며 담당자 홈은 기존 설명을 그대로 사용합니다.
+리더 범위는 `roles[].orgUnit`과 `roles[].area`를 사용합니다. 마감 배지는 한국 날짜로 계산합니다. 홈 목업의 임박 범위는 D-day~D-2이며 API 연결 후 서버의 `dueSoonBusinessDays` 기준으로 변경할 예정입니다.
 
-`leaderHomeData.ts`는 조회 가능한 할 일을 과정별로 모아 계산합니다. 다음 마감은 목록 전체를 정렬하지 않고 한 번 순회하며 찾고 같은 순회에서 기한이 지난 할 일 수도 계산합니다.
+## 과정별 할 일과 상세
 
-## 과정별 할 일과 상세 패널
+`TasksPage.tsx`에서 과정 선택과 태그 필터를 관리합니다. `source=api` 경로는 `ApiCourseTasks.tsx`에서 서버 데이터를 조회하고 `courseTasksApiData.ts`에서 기존 컴포넌트에 맞게 변환합니다.
 
-`/tasks`에서 과정 선택과 태그 필터, 단계별 할 일, 월 주기와 상시 업무를 확인할 수 있습니다. 제목을 누르면 상세 패널이 열립니다. 체크박스는 담당자의 담당 할 일과 리더, 관리자가 대신 완료할 수 있는 범위에 표시합니다. 보기만 가능한 다른 영역에는 표시하지 않습니다.
+| 컴포넌트 | 역할 |
+| --- | --- |
+| `TaskPhaseList.tsx` | 단계별 목록, 진행률과 완료 목록 접기 |
+| `TaskDetailDrawer.tsx` | 상세 정보, 처리 버튼과 기록, 메모 입력 |
+| `MonthlyWork.tsx` | 월 주기와 상시 업무 |
+| `CourseSchedule.tsx` | 일정 표시와 수정, 변경 이력 연결 |
 
-- 담당자는 완료와 본인이 작성한 완료 메모 수정 가능. 완료 취소는 불가
-- 리더는 확인 범위 안에서 확인, 담당자 대신 완료와 담당자 완료 취소 가능. 리더가 처리한 기록의 취소는 관리자만 가능
-- 관리자는 확인 취소와 완료 취소 가능. 완료를 취소하면 연결된 확인도 해제되며 원래 기록과 취소 기록은 모두 유지
-- 종료된 과정은 기간과 담당 배정 수정만 제한. 할 일 완료, 확인과 취소는 역할 권한에 따라 계속 가능
-- 종료된 과정은 일정 수정 버튼을 표시하지 않음. 담당자 교체는 변경 이력에만 표시하고 실제 배정 화면은 추후 연결
-- 보관된 과정은 관리자만 조회 가능하며 변경 불가
-- 변경 이력은 변경 전후 값, 사유, 처리자와 시각을 최신순으로 표시
-- 완료한 할 일은 단계별로 접어 표시. 모두 완료한 단계도 기본으로 접고 리더의 확인 대기 업무는 펼쳐 표시
-- 일정 수정은 해당 과정에 배정된 담당자, 그 과정 조직의 조직 단위 리더와 관리자만 가능. 영역 리더 역할만 가진 사용자와 열람 전용에게는 버튼을 표시하지 않음
-- 일정을 수정하면 미완료 마감을 다시 계산하며 완료 기록은 유지하고 기준이 달라진 항목에 안내 표시
-- 일정 수정 창에서 변경 전후 기간과 월 주기 수, 장기/단기 구분을 미리 표시. 모바일에서는 하단 시트로 표시
-- 상시 업무는 완료나 진행률 없이 메모만 누적
+`courseTasksData.ts`에서 역할별 처리 권한과 목업 계산을 관리합니다. 실제 처리 요청에는 서버의 `version`과 요청별 `requestId`를 사용합니다. 실제 마감과 월 주기는 서버에 저장된 값을 표시합니다.
 
-992px 미만은 모바일 레이아웃을 사용합니다. 모바일에서는 스크롤바만 숨기고 스크롤은 유지합니다.
+## 과정 & 담당 배정
 
-`/tasks?preview=ended`, `/tasks?preview=empty`, `/tasks?preview=loading`, `/tasks?preview=error`로 종료된 과정과 빈 목록, 로딩, 오류 화면을 확인할 수 있습니다. `courseId`와 `taskId`를 주소에 지정하면 해당 과정과 상세 패널을 열 수 있습니다.
+`CoursesPage.tsx`에서 관리자 접근과 하위 화면을 연결합니다. 목록은 서버 페이지 단위로 조회하고 입력 폼의 배정 데이터는 `courseManagementData.ts`에서 화면용 구조로 변환합니다.
 
-과정을 선택하면 주소에 `?courseId=...`가 붙습니다. 이때는 물음표를 추가하지 않고 `&preview=loading` 또는 `&preview=error`를 붙입니다. 예를 들어 `/tasks?courseId=course-3&preview=loading`은 선택한 과정의 로딩 화면입니다.
+| 파일 | 역할 |
+| --- | --- |
+| `CourseList.tsx`, `CourseLabels.tsx` | 과정 목록과 상태 표시 |
+| `CourseEditor.tsx` | 과정 등록과 수정 |
+| `AssigneeFields.tsx`, `AssigneeSearch.tsx` | 공동 담당 배정과 이름, 이메일 검색 |
+| `CourseCorrectionModal.tsx` | 종료일 정정과 담당 배정 변경 |
+| `CourseHistoryModal.tsx` | 일정 변경 이력 조회 |
+| `CourseImport.tsx` | CSV 파일 선택과 업로드 |
+| `CourseImportPreview.tsx` | 미리보기, 경고 확인, 적용과 취소 |
 
-현재 데이터와 처리는 목업이며 새로고침하면 초기화됩니다. 월 주기는 백엔드 계산 방식에 맞췄고 마감 보정은 주말만 적용했습니다. API 연동 후 공휴일 보정과 일정 변경에 따른 할 일 재생성은 서버 결과를 사용합니다. 홈과 과정별 할 일의 목업 상태는 별개입니다.
-상세 패널은 현재 과정별 할 일에서 연결합니다. 연결 문서 버튼은 S08 문서 뷰어 연결 전까지 비활성 상태로 둘 예정입니다.
+`courseManagementApi.ts`는 변경된 정보, 담당 배정, 일정 순서로 저장합니다. 직전 응답의 `version`을 다음 요청에 전달하고 일부 요청만 성공하면 완료된 항목을 함께 안내합니다.
 
-- `src/pages/tasks/TasksPage.tsx`: 과정 선택, 필터와 화면 상태
-- `components/TaskPhaseList.tsx`: 단계별 목록과 완료 처리
-- `components/MonthlyWork.tsx`: 데스크탑과 모바일에서 사용하는 월 주기와 상시 업무
-- `components/CourseSchedule.tsx`: 일정 수정과 변경 이력
-- `components/CourseTasksSkeleton.tsx`: 할 일 목록과 월 주기의 로딩 화면
-- `components/CourseTasksEmpty.tsx`: 시안의 빈 목록 안내
-- `components/TaskDetailDrawer.tsx`: 역할별 처리와 기록을 보여주는 상세 패널
-- `courseTasksMockData.ts`: 과정, 할 일과 처리 기록 샘플
-- `courseTasksData.ts`: 권한 검사, 월 주기와 마감 계산, 목업 처리
-- `src/types/courseTasks.ts`: 과정별 할 일과 처리 기록 타입
+CSV 파일은 `FormData`로 전송합니다. 서버에서 검사한 행별 변경 내용과 오류, 경고를 표시하며 확인한 경고 키를 적용 요청에 전달합니다. 작업 조회에는 URL의 `jobId`를 사용합니다.
 
-## 과정·담당 배정
+### 미연동 항목 (추후 연동 예정)
 
-관리자 계정의 사이드바에서 `과정·담당 배정`과 `과정 가져오기`로 이동합니다. `/admin/courses`는 S10 목록이며 과정 추가와 수정, 보관 목록을 연결했습니다.
+구현과 연동이 끝난 항목은 표에서 삭제합니다.
 
-- 과정명·외부 키 검색, 조직과 상태 필터, 배정 확인이 필요한 과정만 보기
-- 시작일과 종료일을 포함한 180일 기준으로 장기·단기 자동 표시
-- 영역별 공동 담당 배정과 이름·이메일 검색. 기존 비활성 담당자는 표시하고 신규 후보에서는 제외
-- 종료 과정은 정보 입력을 잠금. 최신 시안에 따라 관리자에게만 사유가 필요한 종료일 정정과 비활성 담당자 교체 제공
-- 처리 기록이 있는 과정은 보관하고 기록이 없으면 삭제. 보관된 과정은 목록에서 복원 가능
-- CSV 버튼과 사이드바의 과정 가져오기는 같은 화면으로 연결. 파일 선택 후 샘플 미리보기를 표시하며 실제 파일 검사와 등록은 API 연동 후 적용
-- 수정 화면의 재배정은 해당 영역에 검색창을 열어 활성 담당자를 선택. 종료 과정의 담당자 교체는 사유를 받는 모달 사용
+| 항목 | 현재 상태 |
+| --- | --- |
+| 과정명과 외부 키 검색, 조직 필터 | 비활성, 백엔드 API 추가 후 연결 |
+| 진행 상태와 배정 상태 필터 | 비활성, 백엔드 후속 구현 예정 |
+| 삭제, 보관, 복원과 보관 목록 | 비활성, 백엔드 구현 후 연결 |
+| 정보 수정과 담당 배정 변경 이력, 마지막 수정자와 시각 | 통합 변경 이력 API 추가 후 연결 |
+| 조직명과 영역명, 현재 담당자 이메일 | 비활성 담당자를 포함한 과정 응답 보완 후 연결 |
+| CSV 양식 다운로드 | 백엔드에서 `courses_template.csv` 전달 후 프론트 정적 파일로 연결 |
 
-`/admin/courses?preview=empty`, `?preview=loading`, `?preview=error`에서 목록 상태를 확인할 수 있습니다. 수정 주소 뒤에 `?preview=save-error` 또는 `?preview=conflict`를 붙이면 저장 오류와 충돌 안내를 확인할 수 있습니다.
+일반 담당 배정 변경 이력은 사유 없이 변경 전후 값과 수정자, 시각을 표시할 예정입니다. 사유는 종료 과정의 관리자 예외 교체 이력에서 표시합니다.
 
-데이터와 저장·보관·복원은 목업이며 새로고침하면 초기화됩니다. 저장 후 재계산 건수는 목업 응답값을 표시하며 프론트에서 할 일이나 마감을 재계산하지 않습니다. S05의 데이터와는 별개이며 `과정별 할 일 보기`는 기존 S05 화면으로 이동합니다.
+## 상태별 화면 확인
 
-CSV 화면에서는 파일을 선택하거나 끌어 놓을 수 있습니다. 프론트는 파일 선택 시 확장자만 확인하며 내용은 읽거나 업로드하지 않습니다. 선택 후 표시하는 미리보기는 `courseManagementMockData.ts`의 샘플 응답으로 파일의 실제 검사 결과가 아닙니다. 다른 파일을 고르면 표시되는 파일명이 바뀝니다.
-`/admin/courses/import?preview=success`와 `?preview=error`에서도 목업 미리보기를 확인할 수 있습니다. 오류 응답에서는 등록 버튼을 비활성화하고 경고만 있으면 버튼을 활성화합니다. 양식 내려받기와 등록 버튼은 아직 사용 불가 안내만 표시하며 과정 목록을 변경하지 않습니다.
-CSV 양식 제공, 파일 파싱과 외부 키·담당자 검사, 장기·단기 판정, 실제 등록·갱신과 할 일 재계산은 서버 API로 연결할 예정입니다. 화면은 서버의 요약·행별 결과와 등록 가능 여부를 표시하도록 구성했으며 현재 미리보기의 열 이름이나 타입을 API 계약으로 확정한 것은 아닙니다.
+아래 `preview`는 목업과 목록 디자인 확인용입니다. 실제 저장 오류와 CSV 결과는 서버 응답을 사용합니다.
 
-종료 과정의 관리자 정정은 이번 S10 시안과 최신 API 문서의 구현 예정 정책을 따릅니다. 종료일 오입력 정정과 담당 배정 교체에 사유를 필수로 받으며, 실제 연동은 예외용 요청 경로와 사유 필드, 권한 응답이 확정되면 적용합니다. 일반 과정의 비활성 담당자 재배정은 마감 재계산이 아닌 배정 변경이며 실제 이력 저장과 업무 재배정도 서버가 처리합니다.
+| 화면 | 파라미터 |
+| --- | --- |
+| 담당자 홈 `/` | `?preview=empty`, `no-alerts`, `loading`, `error` |
+| 리더 홈 `/` | `?preview=empty`, `no-reviews`, `closed-org`, `loading`, `error` |
+| 목업 할 일 `/tasks` | `?preview=ended`, `empty`, `loading`, `error` |
+| 과정 관리 목록 `/admin/courses` | `?preview=empty`, `loading`, `error` |
 
-- `src/pages/admin/courses/CoursesPage.tsx`: 하위 화면 연결과 목업 저장
-- `courseManagementMockData.ts`: 과정, 조직과 영역, 담당자, 저장 결과와 CSV 미리보기 응답 샘플
-- `courseManagementData.ts`: 화면의 장단기·진행 상태 표시, 배정 안내와 이력 표시값
-- `components/CourseList.tsx`, `ArchivedCourses.tsx`: 과정 목록과 보관 목록
-- `components/CourseEditor.tsx`, `AssigneeFields.tsx`, `CourseCorrectionModal.tsx`: 과정 입력과 담당 배정, 종료 과정 정정
-- `components/CourseImport.tsx`: CSV 파일 선택과 미리보기
-- `components/CourseLabels.tsx`: 과정 상태와 배정 안내 표시
-- `src/types/adminCourses.ts`: 과정 관리와 CSV 미리보기 타입
-
-## 임시 데이터
-
-사업 목록, 알림 건수, 담당자 홈의 과정과 할 일은 `src/pages/home/assigneeHomeMockData.ts`에 모았습니다.
-진행률은 샘플 할 일 기준이며 선택한 사업과 완료 상태는 새로고침하면 초기화됩니다.
-
-`assigneeHomeData.ts`는 목업 파일을 직접 불러오지 않고 전달받은 데이터로 계산하는 로직입니다.API 연동 후 수정예정입니다.
-
-## 반응형 작업
-
-992px 이상은 데스크탑, 그 미만은 모바일로 구성했습니다. 전체 레이아웃은 화면 높이에 맞추고 본문과 사이드바를 각각 스크롤하도록 하였습니다.
-
-모바일에서는 사이드바 대신 메뉴 버튼으로 Drawer를 열도록 하였습니다. 홈 달력은 주간 날짜 띠로 표시하고 월 전체 보기 버튼으로 펼칠 수 있습니다.
-
-본문 여백은 데스크탑 24px, 모바일 16px입니다. 로그인 카드는 좌우 여백 16px을 두고 화면 너비에 맞게 늘어나며 최대 width는 400px로 고정했습니다.
+각 값은 `?preview=loading`처럼 사용합니다. 이미 `courseId`가 붙은 주소에는 `&preview=loading`처럼 이어 붙입니다. 할 일 상세는 `taskId`로 지정할 수 있습니다.
