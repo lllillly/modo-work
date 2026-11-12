@@ -1,45 +1,10 @@
-import type { AuthErrorResponse, AuthResponse, TestLoginRequest } from '../types/auth'
+import type { AuthResponse, TestLoginRequest } from '../types/auth'
+import { requestApi } from './client'
 
-const AUTH_TIMEOUT_MS = 30_000
+export { ApiError as AuthApiError } from './client'
 
-export class AuthApiError extends Error {
-  status: number
-  code: string
-  fieldErrors: AuthErrorResponse['fieldErrors']
-
-  constructor(status: number, error: AuthErrorResponse) {
-    super(error.message)
-    this.name = 'AuthApiError'
-    this.status = status
-    this.code = error.code
-    this.fieldErrors = error.fieldErrors
-  }
-}
-
-async function requestAuth(path: string, options?: RequestInit) {
-  const timeoutSignal = AbortSignal.timeout(AUTH_TIMEOUT_MS)
-  const signal = options?.signal
-    ? AbortSignal.any([options.signal, timeoutSignal])
-    : timeoutSignal
-
-  const response = await fetch(`/api/auth${path}`, {
-    ...options,
-    credentials: 'include',
-    cache: 'no-store',
-    signal,
-  })
-
-  if (!response.ok) {
-    const error: AuthErrorResponse | null = await response.json().catch(() => null)
-
-    throw new AuthApiError(response.status, {
-      code: error?.code ?? `HTTP_${response.status}`,
-      message: error?.message ?? '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
-      fieldErrors: Array.isArray(error?.fieldErrors) ? error.fieldErrors : [],
-    })
-  }
-
-  return response
+function requestAuth(path: string, options?: RequestInit) {
+  return requestApi(`/auth${path}`, options)
 }
 
 export async function testLogin(data: TestLoginRequest) {
