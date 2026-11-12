@@ -36,7 +36,7 @@ function CourseEditorRoute({ courses, business, onSave }: CourseEditorRouteProps
 }
 
 export default function CoursesPage() {
-  const { isMobile, selectedBusiness } = useOutletContext<AppLayoutContext>()
+  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user } = useAuth()
   const { modal, message } = App.useApp()
   const [courses, setCourses] = useState(createCourseManagementMockData)
@@ -55,6 +55,10 @@ export default function CoursesPage() {
         }
       />
     )
+  }
+
+  if (!selectedBusinessId) {
+    return <Result status="info" title="선택할 수 있는 사업이 없어요" />
   }
 
   const actorName = user.name
@@ -154,7 +158,7 @@ export default function CoursesPage() {
   }
 
   return (
-    <Routes>
+    <Routes key={selectedBusinessId}>
       <Route
         index
         element={
@@ -178,6 +182,7 @@ export default function CoursesPage() {
         element={
           <CourseImport
             key={selectedBusiness}
+            businessId={selectedBusinessId}
             business={selectedBusiness}
             isMobile={isMobile}
           />
