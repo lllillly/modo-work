@@ -1,8 +1,12 @@
-import { Suspense, useState } from 'react'
-import { App, Grid, Layout, Spin } from 'antd'
-import { Outlet, useSearchParams } from 'react-router'
+import { Suspense, useCallback, useState } from 'react'
+import { App, Button, Grid, Layout, Result, Spin } from 'antd'
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
-import { businessOptions, notificationCount } from '../pages/home/assigneeHomeMockData'
+import { businessOptions as mockBusinessOptions, notificationCount } from '../pages/home/assigneeHomeMockData'
+
+import { getBusinesses } from '../api/courses'
+import { getApiErrorMessage } from '../api/client'
+import useApiQuery from '../hooks/useApiQuery'
 
 import { useAuth } from '../providers/AuthContext'
 import { userRoleLabels } from '../types/user'
@@ -18,6 +22,7 @@ type AppLayoutProps = {
 export type AppLayoutContext = {
   isMobile: boolean
   selectedBusiness: string
+  selectedBusinessId?: string
   userName: string
 }
 
@@ -29,7 +34,19 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [selectedBusiness, setSelectedBusiness] = useState(businessOptions[0]?.value ?? '')
+  const [businessSelection, setBusinessSelection] = useState('')
+  const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
+  const loadBusinesses = useCallback((signal: AbortSignal) => getBusinesses(signal), [])
+  const businesses = useApiQuery(isAdmin ? `businesses:${user?.id}` : null, loadBusinesses)
+  const businessOptions = isAdmin
+    ? (businesses.data?.items ?? []).map((item) => ({ value: item.id, label: item.name }))
+    : mockBusinessOptions
+  const selectedOption =
+    businessOptions.find((item) => item.value === businessSelection) ?? businessOptions[0]
+  const selectedBusiness = selectedOption?.label ?? ''
+  const selectedBusinessId = isAdmin ? selectedOption?.value : undefined
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   function handleBusinessChange(business: string) {
@@ -37,9 +54,13 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
     next.delete('courseId')
     next.delete('taskId')
     next.delete('preview')
+    next.delete('jobId')
 
     setSearchParams(next, { replace: true })
-    setSelectedBusiness(business)
+    setBusinessSelection(business)
+    if (pathname.startsWith('/admin/courses/') && pathname !== '/admin/courses/import') {
+      navigate({ pathname: '/admin/courses', search: next.toString() }, { replace: true })
+    }
   }
 
   async function handleLogout() {
@@ -56,9 +77,22 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   }
 
   if (!user) return null
+  if (isAdmin && businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
+  if (isAdmin && businesses.error) {
+    return (
+      <Result
+        status="warning"
+        title="사업 목록을 불러오지 못했어요"
+        subTitle={getApiErrorMessage(businesses.error)}
+        extra={<Button onClick={businesses.reload}>다시 시도</Button>}
+      />
+    )
+  }
 
   const roles = user.roles.map((item) => item.role)
-  const primaryRole = (['ADMIN', 'LEADER', 'ASSIGNEE', 'VIEWER'] as const).find((role) => roles.includes(role))
+  const primaryRole = (['ADMIN', 'LEADER', 'ASSIGNEE', 'VIEWER'] as const).find((role) =>
+    roles.includes(role),
+  )
   const roleLabel = [...new Set(roles)].map((role) => userRoleLabels[role]).join(', ') || '역할 미지정'
 
   return (
@@ -69,7 +103,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
         onClose={() => setIsMenuOpen(false)}
         role={primaryRole}
         businessOptions={businessOptions}
-        selectedBusiness={selectedBusiness}
+        selectedBusiness={selectedOption?.value ?? ''}
         onBusinessChange={handleBusinessChange}
       />
       <Layout className="min-h-0 min-w-0">
@@ -91,7 +125,14 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
           <main className="flex flex-1 flex-col">
             <Suspense fallback={<Spin className="m-auto" aria-label="화면 불러오는 중" />}>
               <Outlet
-                context={{ isMobile, selectedBusiness, userName: user.name } satisfies AppLayoutContext}
+                context={
+                  {
+                    isMobile,
+                    selectedBusiness,
+                    selectedBusinessId,
+                    userName: user.name,
+                  } satisfies AppLayoutContext
+                }
               />
             </Suspense>
           </main>
