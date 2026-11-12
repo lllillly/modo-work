@@ -1,17 +1,20 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ArrowRightOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Checkbox, Pagination, Steps, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link } from 'react-router'
 
 import {
+  applyCourseImport,
+  cancelCourseImport,
   getImportJob,
   getImportRows,
   getMissingCourses,
 } from '../../../../api/courses'
-import { ApiError, getApiErrorMessage } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import type { ImportJob, ImportRow } from '../../../../types/courseApi'
+import { useAuth } from '../../../../providers/AuthContext'
+import type { ApplyImportRequest, ImportJob, ImportRow } from '../../../../types/courseApi'
 
 const rowLabels: Record<ImportRow['disposition'], string> = {
   ADDED: '신규',
@@ -51,8 +54,17 @@ type ImportPreviewProps = {
 }
 
 export default function CourseImportPreview({ jobId, businessId, isMobile, onReset }: ImportPreviewProps) {
+  const { refreshUser } = useAuth()
   const [page, setPage] = useState(0)
   const [missingPage, setMissingPage] = useState(0)
+  const [confirmed, setConfirmed] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [mustPreview, setMustPreview] = useState(false)
+  const [needsCheck, setNeedsCheck] = useState(false)
+  const [resolvedJob, setResolvedJob] = useState<ImportJob | null>(null)
+  const applyRequest = useRef<ApplyImportRequest | null>(null)
+
   const loadJob = useCallback(
     async (signal: AbortSignal) => {
       const detail = await getImportJob(jobId, signal)
@@ -73,7 +85,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
     [jobId, missingPage],
   )
   const jobQuery = useApiQuery(`${businessId}:${jobId}`, loadJob)
-  const job = jobQuery.data
+  const job = resolvedJob ?? jobQuery.data
   const rowsQuery = useApiQuery(job ? `${jobId}:${page}` : null, loadRows)
   const missingQuery = useApiQuery(
     job?.summary.missingCourseCount ? `${jobId}:${missingPage}` : null,
@@ -85,6 +97,70 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
     jobQuery.reload()
     rowsQuery.reload()
     missingQuery.reload()
+  }
+
+  const pending = job?.status === 'PREVIEW'
+  const allConfirmed =
+    !!job &&
+    job.requiredWarningKeys.length === confirmed.length &&
+    job.requiredWarningKeys.every((key) => confirmed.includes(key))
+
+  async function checkJob() {
+    setBusy(true)
+    try {
+      const response = await getImportJob(jobId)
+      setResolvedJob(response.job)
+      setNeedsCheck(false)
+      setError('')
+      reloadQueries()
+    } catch (error) {
+      handleError(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function handleError(error: unknown) {
+    setError(getApiErrorMessage(error))
+    if (isAuthStateError(error)) {
+      void refreshUser()
+    }
+  }
+
+  async function apply() {
+    if (!job || busy || mustPreview || !allConfirmed) return
+    setBusy(true)
+    setError('')
+    // 응답 유실 뒤 재전송에도 최초 version과 확인 키를 그대로 사용한다.
+    applyRequest.current ??= { version: job.version, confirmedWarningKeys: [...confirmed] }
+    try {
+      const response = await applyCourseImport(jobId, applyRequest.current)
+      setResolvedJob(response.job)
+      setNeedsCheck(false)
+    } catch (error) {
+      handleError(error)
+      if (error instanceof ApiError && error.status === 409) {
+        setMustPreview(true)
+      }
+      setNeedsCheck(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function cancel() {
+    if (!job || busy || needsCheck || applyRequest.current) return
+    setBusy(true)
+    setError('')
+    try {
+      const response = await cancelCourseImport(jobId, job.version)
+      setResolvedJob(response.job)
+    } catch (error) {
+      handleError(error)
+      setNeedsCheck(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const columns: TableColumnsType<ImportRow> = [
@@ -138,8 +214,17 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
           {row.warnings.map((warning) => (
             <Checkbox
               key={warning.key}
-              checked={false}
-              disabled
+              checked={confirmed.includes(warning.key)}
+              disabled={
+                !pending || busy || !!applyRequest.current || !job?.requiredWarningKeys.includes(warning.key)
+              }
+              onChange={(event) =>
+                setConfirmed((previous) =>
+                  event.target.checked
+                    ? [...previous, warning.key]
+                    : previous.filter((key) => key !== warning.key),
+                )
+              }
             >
               <span className="text-caption text-(--ant-color-warning)">
                 <WarningOutlined /> {warning.field}: {warning.message}
@@ -162,6 +247,25 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
         className="max-w-[450px]"
         items={[{ title: '파일 선택' }, { title: '미리보기 확인' }, { title: '등록' }]}
       />
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          title={error}
+          description={
+            mustPreview
+              ? '기준이 바뀌었을 수 있어요. 작업 상태를 확인하고 적용 전이면 새 미리보기를 만들어 주세요.'
+              : needsCheck
+                ? '응답을 확인하지 못했어요. 적용·취소 결과를 먼저 확인해 주세요.'
+                : undefined
+          }
+          action={
+            <Button loading={busy} onClick={checkJob}>
+              작업 상태 확인
+            </Button>
+          }
+        />
+      )}
       {!!queryError && (
         <Alert
           type="error"
@@ -219,6 +323,12 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
             body: { cell: 'px-sm py-xs text-caption' },
           }}
         />
+        {!!job?.requiredWarningKeys.length && (
+          <p className="mb-0 text-caption">
+            경고 확인 {confirmed.length} / {job.requiredWarningKeys.length}건 · 페이지를 이동해 각 경고를
+            확인해 주세요.
+          </p>
+        )}
       </Card>
       {!!job?.summary.missingCourseCount && (
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
@@ -247,9 +357,37 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
         </Card>
       )}
       <div className={`flex flex-wrap gap-xs ${isMobile ? '[&>button]:flex-1' : 'justify-end'}`}>
-        <Button icon={<UploadOutlined aria-hidden />} onClick={onReset}>
+        <Button icon={<UploadOutlined aria-hidden />} disabled={busy} onClick={onReset}>
           다른 파일 올리기
         </Button>
+        {pending && (
+          <>
+            <Button disabled={busy || needsCheck || !!applyRequest.current} onClick={cancel}>
+              미리보기 취소
+            </Button>
+            <Button
+              type="primary"
+              loading={busy}
+              disabled={
+                !job.canApply ||
+                !allConfirmed ||
+                mustPreview ||
+                needsCheck ||
+                !!queryError ||
+                jobQuery.isLoading ||
+                rowsQuery.isLoading
+              }
+              onClick={apply}
+            >
+              {job.summary.totalRowCount}건 전체 적용
+            </Button>
+          </>
+        )}
+        {pending && needsCheck && !mustPreview && applyRequest.current && (
+          <Button disabled={busy} onClick={apply}>
+            동일 요청 다시 보내기
+          </Button>
+        )}
         {job?.status === 'APPLIED' && (
           <Link to="/admin/courses">
             <Button type="primary">과정 목록으로</Button>
