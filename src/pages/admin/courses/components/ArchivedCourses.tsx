@@ -1,3 +1,8 @@
+import { Result } from 'antd'
+import { Link } from 'react-router'
+
+// 백엔드 보관 목록과 복원 API 구현되면 연동 예정
+/*
 import { Breadcrumb, Button, Card, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link } from 'react-router'
@@ -101,5 +106,17 @@ export default function ArchivedCourses({ courses, isMobile, onRestore }: Archiv
         </Card>
       )}
     </div>
+  )
+}
+*/
+
+export default function ArchivedCourses() {
+  return (
+    <Result
+      status="info"
+      title="보관 목록"
+      subTitle="현재 사용할 수 없어요."
+      extra={<Link to="/admin/courses">목록으로</Link>}
+    />
   )
 }

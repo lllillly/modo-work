@@ -1,127 +1,21 @@
-import { useState } from 'react'
-import { App, Button, Result } from 'antd'
+import { useCallback } from 'react'
+import { Button, Result, Spin } from 'antd'
 import { Link, Route, Routes, useOutletContext, useParams } from 'react-router'
 
+import { getAssignmentContext, getCourse, getCourseOptions, getScheduleContext } from '../../../api/courses'
+import { ApiError, getApiErrorMessage } from '../../../api/client'
+import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
-import type { CourseDraft, CourseSaveResult, ManagedCourse } from '../../../types/adminCourses'
 import { useAuth } from '../../../providers/AuthContext'
-import { formatCourseHistoryValue, getCourseState } from './courseManagementData'
-import {
-  courseSaveSummaryMock,
-  createCourseManagementMockData,
-} from './courseManagementMockData'
+import { toManagedCourse } from './courseManagementData'
 import ArchivedCourses from './components/ArchivedCourses'
 import CourseEditor from './components/CourseEditor'
 import CourseImport from './components/CourseImport'
 import CourseList from './components/CourseList'
 
-type CourseEditorRouteProps = {
-  courses: ManagedCourse[]
-  business: string
-  onSave: (draft: CourseDraft, version?: number, reason?: string, courseId?: string) => CourseSaveResult | null
-}
-
-function CourseEditorRoute({ courses, business, onSave }: CourseEditorRouteProps) {
-  const { courseId } = useParams()
-  const course = courses.find((item) => item.id === courseId)
-  if (courseId && !course)
-    return <Result status="404" title="과정을 찾을 수 없어요" extra={<Link to="/admin/courses">목록으로</Link>} />
-  return (
-    <CourseEditor
-      key={`${business}-${courseId ?? 'new'}`}
-      course={course}
-      onSave={(draft, version, reason) => onSave(draft, version, reason, courseId)}
-    />
-  )
-}
-
-export default function CoursesPage() {
-  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
-  const { user } = useAuth()
-  const { modal, message } = App.useApp()
-  const [courses, setCourses] = useState(createCourseManagementMockData)
-  const visibleCourses = courses.filter((course) => course.businessName === selectedBusiness)
-
-  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
-    return (
-      <Result
-        status="403"
-        title="이 화면에 접근할 권한이 없어요"
-        subTitle="과정과 담당 배정은 관리자만 관리할 수 있어요."
-        extra={
-          <Link to="/">
-            <Button type="primary">홈으로</Button>
-          </Link>
-        }
-      />
-    )
-  }
-
-  if (!selectedBusinessId) {
-    return <Result status="info" title="선택할 수 있는 사업이 없어요" />
-  }
-
-  const actorName = user.name
-
-  function buildCourse(draft: CourseDraft, previous?: ManagedCourse, reason = ''): ManagedCourse {
-    const now = new Date().toISOString()
-    const history = [...(previous?.history ?? [])]
-    if (previous) {
-      const fields = ['externalKey', 'name', 'orgUnitId', 'startDate', 'endDate', 'capacity', 'assignees'] as const
-      const labels = {
-        externalKey: '외부 키 변경',
-        name: '과정명 변경',
-        orgUnitId: '조직 단위 변경',
-        startDate: '시작일 변경',
-        endDate: '종료일 변경',
-        capacity: '정원 변경',
-        assignees: '담당자 교체',
-      }
-      for (const key of fields) {
-        if (JSON.stringify(previous[key]) === JSON.stringify(draft[key])) continue
-        const before = formatCourseHistoryValue(previous, key)
-        const after = formatCourseHistoryValue(draft, key)
-        history.push({
-          id: crypto.randomUUID(),
-          label: labels[key],
-          before,
-          after,
-          reason,
-          actor: actorName,
-          createdAt: now,
-        })
-      }
-    }
-    return {
-      id: previous?.id ?? crypto.randomUUID(),
-      businessName: selectedBusiness,
-      ...draft,
-      version: previous ? previous.version + 1 : 0,
-      updatedAt: now,
-      updatedBy: actorName,
-      archivedAt: null,
-      archivedBy: null,
-      hasProcessingHistory: previous?.hasProcessingHistory ?? false,
-      pendingByArea: previous?.pendingByArea ?? {},
-      history,
-    }
-  }
-
-  function saveCourse(draft: CourseDraft, version?: number, reason = '', courseId?: string): CourseSaveResult | null {
-    const previous = courses.find((course) => course.id === courseId)
-    if (previous && (previous.version !== version || previous.archivedAt)) return null
-    if (previous && getCourseState(previous) === '종료' && !reason.trim()) return null
-
-    const saved = buildCourse(draft, previous, reason)
-    setCourses((current) =>
-      previous ? current.map((course) => (course.id === previous.id ? saved : course)) : [saved, ...current],
-    )
-    return {
-      course: saved,
-      ...courseSaveSummaryMock,
-    }
-  }
-
+// 백엔드 삭제와 보관, 복원 API 구현되면 연동 예정
+// 목업의 상태 변경과 version 계산은 서버 응답으로 교체
+/*
   function archiveCourse(course: ManagedCourse) {
     const archive = course.hasProcessingHistory
     modal.confirm({
@@ -156,42 +50,119 @@ export default function CoursesPage() {
     )
     message.success('과정을 복원했어요.')
   }
+*/
+
+type CourseRouteProps = { businessId: string }
+
+function CourseEditorRoute({ businessId }: CourseRouteProps) {
+  const { courseId } = useParams()
+  const load = useCallback(
+    async (signal: AbortSignal) => {
+      if (!courseId) {
+        const options = await getCourseOptions(businessId, signal)
+        return { ...options, course: undefined, schedule: undefined, assignment: undefined }
+      }
+
+      const [options, detail, schedule, assignment] = await Promise.all([
+        getCourseOptions(businessId, signal),
+        getCourse(courseId, signal),
+        getScheduleContext(courseId, signal),
+        getAssignmentContext(courseId, signal),
+      ])
+      if (detail.course.businessId !== businessId) {
+        throw new ApiError(404, {
+          code: 'NOT_FOUND',
+          message: '선택한 사업의 과정이 아니에요.',
+          fieldErrors: [],
+        })
+      }
+      // 서로 다른 시점의 조회 결과로 저장하지 않고 전체 정보를 다시 받도록 안내한다.
+      if (
+        detail.course.version !== schedule.course.version ||
+        detail.course.version !== assignment.course.version
+      ) {
+        throw new ApiError(409, {
+          code: 'CONFLICT',
+          message: '조회 중 과정이 변경됐어요. 다시 불러와 주세요.',
+          fieldErrors: [],
+        })
+      }
+      return { ...options, course: toManagedCourse(detail.course), schedule, assignment }
+    },
+    [businessId, courseId],
+  )
+  const query = useApiQuery(`${businessId}:${courseId ?? 'new'}`, load)
+
+  if (query.isLoading) return <Spin className="m-auto" aria-label="과정 정보 불러오는 중" />
+  if (query.error) {
+    return (
+      <Result
+        status="warning"
+        title="과정을 불러오지 못했어요"
+        subTitle={getApiErrorMessage(query.error)}
+        extra={
+          <>
+            <Button onClick={query.reload}>다시 시도</Button>
+            <Link to="/admin/courses">목록으로</Link>
+          </>
+        }
+      />
+    )
+  }
+  if (!query.data) return null
+
+  return (
+    <CourseEditor
+      key={`${businessId}:${courseId ?? 'new'}`}
+      businessId={businessId}
+      {...query.data}
+      onReload={query.reload}
+    />
+  )
+}
+
+export default function CoursesPage() {
+  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
+  const { user } = useAuth()
+
+  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
+    return (
+      <Result
+        status="403"
+        title="이 화면에 접근할 권한이 없어요"
+        subTitle="과정과 담당 배정은 관리자만 관리할 수 있어요."
+        extra={
+          <Link to="/">
+            <Button type="primary">홈으로</Button>
+          </Link>
+        }
+      />
+    )
+  }
+  if (!selectedBusinessId) {
+    return <Result status="info" title="선택할 수 있는 사업이 없어요" />
+  }
 
   return (
     <Routes key={selectedBusinessId}>
-      <Route
-        index
-        element={
-          <CourseList key={selectedBusiness} courses={visibleCourses} isMobile={isMobile} onArchive={archiveCourse} />
-        }
-      />
-      <Route
-        path="new"
-        element={<CourseEditorRoute courses={visibleCourses} business={selectedBusiness} onSave={saveCourse} />}
-      />
-      <Route
-        path=":courseId"
-        element={<CourseEditorRoute courses={visibleCourses} business={selectedBusiness} onSave={saveCourse} />}
-      />
-      <Route
-        path="archived"
-        element={<ArchivedCourses courses={visibleCourses} isMobile={isMobile} onRestore={restoreCourse} />}
-      />
+      <Route index element={<CourseList businessId={selectedBusinessId} isMobile={isMobile} />} />
+      <Route path="new" element={<CourseEditorRoute businessId={selectedBusinessId} />} />
+      <Route path=":courseId" element={<CourseEditorRoute businessId={selectedBusinessId} />} />
+      <Route path="archived" element={<ArchivedCourses />} />
       <Route
         path="import"
         element={
-          <CourseImport
-            key={selectedBusiness}
-            businessId={selectedBusinessId}
-            business={selectedBusiness}
-            isMobile={isMobile}
-          />
+          <CourseImport businessId={selectedBusinessId} business={selectedBusiness} isMobile={isMobile} />
         }
       />
       <Route
         path="*"
         element={
-          <Result status="404" title="페이지를 찾을 수 없어요" extra={<Link to="/admin/courses">목록으로</Link>} />
+          <Result
+            status="404"
+            title="페이지를 찾을 수 없어요"
+            extra={<Link to="/admin/courses">목록으로</Link>}
+          />
         }
       />
     </Routes>

@@ -1,8 +1,17 @@
 import dayjs from 'dayjs'
 
 import type { CourseDraft, ManagedCourse } from '../../../types/adminCourses'
+import type { CourseResponse, OptionItem } from '../../../types/courseApi'
+import type { AuthUser } from '../../../types/auth'
 import { getToday } from '../../home/dateUtils'
-import { courseAreas, courseAssignees, courseOrgUnits } from './courseManagementMockData'
+
+export function getOrgUnitName(id: string, options: OptionItem[], user: AuthUser | null) {
+  const knownOrgUnits = [user?.orgUnit, ...(user?.roles.map((role) => role.orgUnit) ?? [])]
+  return (
+    options.find((org) => org.id === id)?.name ??
+    knownOrgUnits.find((org) => org?.id === id)?.name
+  )
+}
 
 export function getCoursePeriod(startDate: string, endDate: string) {
   const days = dayjs(endDate).diff(dayjs(startDate), 'day') + 1
@@ -15,29 +24,25 @@ export function getCourseState(course: Pick<ManagedCourse, 'startDate' | 'endDat
   return '진행 중'
 }
 
-export function getAssignmentIssues(assignees: CourseDraft['assignees']) {
-  const empty = courseAreas.filter((area) => !assignees[area.id]?.length).length
-  const inactive = courseAreas.reduce(
-    (count, area) =>
-      count +
-      (assignees[area.id] ?? []).filter((id) => courseAssignees.find((user) => user.id === id)?.status === 'INACTIVE')
-        .length,
-    0,
-  )
-  return { empty, inactive }
+export function toManagedCourse(course: CourseResponse): ManagedCourse {
+  return {
+    ...course,
+    assignees: Object.fromEntries(course.assignees.map((area) => [area.areaId, area.userIds])),
+    assignedUsers: Object.fromEntries(course.assignees.map((area) => [area.areaId, area.users])),
+  }
 }
 
-export function formatCourseHistoryValue(course: CourseDraft, key: keyof CourseDraft) {
-  if (key === 'orgUnitId') return courseOrgUnits.find((org) => org.id === course.orgUnitId)?.name ?? '-'
-  if (key === 'assignees') {
-    return courseAreas
-      .map((area) => {
-        const names = courseAssignees
-          .filter((user) => course.assignees[area.id]?.includes(user.id))
-          .map((user) => user.name)
-        return `${area.name}: ${names.join(', ') || '미배정'}`
-      })
-      .join(' · ')
-  }
-  return String(course[key] ?? '-')
+export function hasAssignmentChanges(before: CourseDraft['assignees'], after: CourseDraft['assignees']) {
+  const areaIds = new Set([...Object.keys(before), ...Object.keys(after)])
+  return [...areaIds].some((areaId) => {
+    const previous = [...(before[areaId] ?? [])].sort()
+    const next = [...(after[areaId] ?? [])].sort()
+    return previous.length !== next.length || previous.some((id, index) => id !== next[index])
+  })
+}
+
+export function getInactiveAssignees(course: ManagedCourse) {
+  return Object.values(course.assignedUsers)
+    .flat()
+    .filter((user) => user.status === 'INACTIVE')
 }
