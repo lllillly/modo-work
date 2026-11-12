@@ -97,7 +97,10 @@ export function recalculateCourseTasks(course: CourseTasksCourse, tasks: CourseT
   const cycles = getMonthlyCycles(course.startDate, course.endDate, course.monthlyOffsetDays)
 
   return tasks.map((task) => {
-    if (task.courseId !== course.id || task.referenceType === 'ALWAYS') return task
+    if (
+      task.server || task.offsetDays === null ||
+      task.courseId !== course.id || task.referenceType === 'ALWAYS'
+    ) return task
 
     const reference = task.referenceType === 'COURSE_START' ? course.startDate
       : task.referenceType === 'COURSE_END' ? course.endDate
@@ -185,12 +188,34 @@ export function getTaskPermissions(user: AuthUser, course: CourseTasksCourse, ta
   const scope = getLeaderReviewScope(user)
   const isMyArea = task.assignees.some((assignee) => assignee.id === user.id)
 
-  const canView = canViewTaskArea(user, course, task.areaId)
+  const canView = !!task.server || canViewTaskArea(user, course, task.areaId)
   const canManage = canView && (isAdmin || (isLeader && scope.canReview(course.orgUnit, task.areaId)))
-  const canWork = canView && (canManage || (isAssignee && isMyArea)) && !course.archived
 
   const completion = getCurrentAction(task, 'COMPLETE')
+  if (task.server) {
+    const writable = !task.server.isReadOnly && user.status === 'ACTIVE'
+    const canProcess = writable && (canManage || (isAssignee && task.isMyArea))
+    const cancellableCompletion = isAdmin || (canManage && completion?.actor.role === 'ASSIGNEE')
+    const canCancelCompletion =
+      writable && canManage && task.isCompleted && cancellableCompletion &&
+      !!task.server.completionActionLogId && (!task.server.reviewActionLogId || isAdmin)
+
+    return {
+      canView,
+      canManage,
+      isMyArea: task.isMyArea,
+      showCheckbox: canProcess && task.referenceType !== 'ALWAYS',
+      canComplete: canProcess && !task.isCompleted && task.referenceType !== 'ALWAYS',
+      canReview: writable && canManage && task.requiresReview && task.reviewStatus === 'pending',
+      canCancelCompletion,
+      canCancelReview: writable && isAdmin && !!task.server.reviewActionLogId,
+      canEditMemo: false,
+      canAddMemo: canProcess && task.referenceType === 'ALWAYS',
+    }
+  }
+
   const review = getCurrentAction(task, 'REVIEW')
+  const canWork = canView && (canManage || (isAssignee && isMyArea)) && !course.archived
   const canCancel = (action?: TaskAction) =>
     action && (isAdmin || (canManage && action.actor.role === 'ASSIGNEE'))
   const canCancelCompletion = canManage

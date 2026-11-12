@@ -5,6 +5,8 @@ import { Alert, App, Button, Drawer, Input, Tag, Timeline } from 'antd'
 import type { AuthUser } from '../../../types/auth'
 import type { CourseTasksCourse, CourseTaskView, TaskActionType } from '../../../types/courseTasks'
 
+import { getApiErrorMessage } from '../../../api/client'
+
 import DeadlineTag from '../../home/components/DeadlineTag'
 import { formatActionTime, formatTaskDate, getCompletionMemo, getTaskPermissions } from '../courseTasksData'
 
@@ -16,7 +18,9 @@ type TaskDetailDrawerProps = {
   user: AuthUser
   isMobile: boolean
   onClose: () => void
-  onAction: (type: TaskActionType, memo: string) => void
+  onAction: (type: TaskActionType, memo: string) => void | Promise<void>
+  isProcessing?: boolean
+  onReload?: () => void
 }
 
 const actionLabels: Record<TaskActionType, string> = {
@@ -26,8 +30,18 @@ const actionLabels: Record<TaskActionType, string> = {
 
 const sectionClassName = 'mb-md border-0 border-b border-solid border-(--ant-color-border-secondary) pb-md'
 
-export default function TaskDetailDrawer({ task, course, user, isMobile, onClose, onAction }: TaskDetailDrawerProps) {
+export default function TaskDetailDrawer({
+  task,
+  course,
+  user,
+  isMobile,
+  onClose,
+  onAction,
+  isProcessing = false,
+  onReload,
+}: TaskDetailDrawerProps) {
   const { modal } = App.useApp()
+  const [actionError, setActionError] = useState('')
   const [memo, setMemo] = useState(() => getCompletionMemo(task))
 
   const permissions = getTaskPermissions(user, course, task)
@@ -92,28 +106,82 @@ export default function TaskDetailDrawer({ task, course, user, isMobile, onClose
     }
   })
 
+  async function recordAction(type: TaskActionType, content: string) {
+    setActionError('')
+    try {
+      await onAction(type, content)
+      setMemo('')
+    } catch (error) {
+      setActionError(getApiErrorMessage(error))
+      throw error
+    }
+  }
+
   function submit(type: TaskActionType) {
+    if (isProcessing) return
     if (type === 'UPDATE_MEMO' && (!memo.trim() || memo.trim() === getCompletionMemo(task))) return
     if (type === 'CANCEL_COMPLETION' || type === 'CANCEL_REVIEW') {
       modal.confirm({
         title: `${actionLabels[type]}할까요?`, content: '처리 기록은 유지되고 취소 기록이 추가돼요.',
         okText: actionLabels[type], cancelText: '닫기', okButtonProps: { danger: true },
-        onOk: () => { onAction(type, ''); setMemo('') },
+        onOk: () => recordAction(type, ''),
       })
       return
     }
-    onAction(type, type === 'REVIEW' ? '' : memo)
-    if (type === 'COMPLETE' || type === 'UPDATE_MEMO' || type === 'MEMO') setMemo('')
+    void recordAction(type, type === 'REVIEW' ? '' : memo).catch(() => {})
   }
 
   const actionButtons = (
     <div className="flex flex-wrap gap-xs [&>button]:h-[34px] [&>button]:px-md [&>button]:shadow-none min-[992px]:[&>button]:h-9">
-      {permissions.canComplete && <Button block type={permissions.canManage ? 'default' : 'primary'} onClick={() => submit('COMPLETE')}>{permissions.canManage ? '담당자 대신 완료' : '완료로 기록'}</Button>}
-      {permissions.canEditMemo && <Button block={isMobile} disabled={!memo.trim() || memo.trim() === getCompletionMemo(task)} onClick={() => submit('UPDATE_MEMO')}>메모 저장</Button>}
-      {permissions.canAddMemo && <Button type="primary" block onClick={() => submit('MEMO')} disabled={!memo.trim()}>메모 남기기</Button>}
-      {permissions.canReview && <Button type="primary" className="min-w-0 flex-1" onClick={() => submit('REVIEW')}>확인</Button>}
-      {permissions.canCancelReview && <Button danger onClick={() => submit('CANCEL_REVIEW')}>확인 취소</Button>}
-      {permissions.canCancelCompletion && <Button danger onClick={() => submit('CANCEL_COMPLETION')}>완료 취소</Button>}
+      {permissions.canComplete && (
+        <Button
+          disabled={isProcessing}
+          block
+          type={permissions.canManage ? 'default' : 'primary'}
+          onClick={() => submit('COMPLETE')}
+        >
+          {permissions.canManage ? '담당자 대신 완료' : '완료로 기록'}
+        </Button>
+      )}
+      {permissions.canEditMemo && (
+        <Button
+          block={isMobile}
+          disabled={isProcessing || !memo.trim() || memo.trim() === getCompletionMemo(task)}
+          onClick={() => submit('UPDATE_MEMO')}
+        >
+          메모 저장
+        </Button>
+      )}
+      {permissions.canAddMemo && (
+        <Button
+          type="primary"
+          block
+          onClick={() => submit('MEMO')}
+          disabled={isProcessing || !memo.trim()}
+        >
+          메모 남기기
+        </Button>
+      )}
+      {permissions.canReview && (
+        <Button
+          disabled={isProcessing}
+          type="primary"
+          className="min-w-0 flex-1"
+          onClick={() => submit('REVIEW')}
+        >
+          확인
+        </Button>
+      )}
+      {permissions.canCancelReview && (
+        <Button disabled={isProcessing} danger onClick={() => submit('CANCEL_REVIEW')}>
+          확인 취소
+        </Button>
+      )}
+      {permissions.canCancelCompletion && (
+        <Button disabled={isProcessing} danger onClick={() => submit('CANCEL_COMPLETION')}>
+          완료 취소
+        </Button>
+      )}
     </div>
   )
 
@@ -137,6 +205,8 @@ export default function TaskDetailDrawer({ task, course, user, isMobile, onClose
       }
       footer={isMobile && hasActions ? actionButtons : undefined}
     >
+      {actionError && <Alert type="error" showIcon title={actionError} className="mb-md"
+        action={onReload && <Button onClick={onReload}>최신 내용 불러오기</Button>} />}
       {showMismatch && task.mismatch && (
         <div className="mb-md border-0 border-b border-solid border-(--ant-color-border-secondary) pb-sm">
           <Alert type="warning" title="완료 뒤에 할 일 기준이 바뀌었어요" className="p-2.5" classNames={{ title: 'mb-xxs text-caption leading-[18px] font-medium', description: 'text-caption leading-[18px]' }}
@@ -153,7 +223,7 @@ export default function TaskDetailDrawer({ task, course, user, isMobile, onClose
               {task.dueDate && <span className="text-body font-medium">{formatTaskDate(task.dueDate, true)}</span>}
             </div>
             <p className="mt-xs mb-0 text-caption leading-[18px] text-(--ant-color-text-tertiary)">
-              기준: {task.referenceType === 'MONTH_END' ? '주기 종료일' : task.referenceType === 'COURSE_END' ? '과정 종료일' : '과정 시작일'} {task.offsetDays >= 0 ? '+' : '-'} {Math.abs(task.offsetDays)}일
+              기준: {task.referenceType === 'MONTH_END' ? '주기 종료일' : task.referenceType === 'COURSE_END' ? '과정 종료일' : '과정 시작일'} {task.offsetDays !== null && <>{task.offsetDays >= 0 ? '+' : '-'} {Math.abs(task.offsetDays)}일</>}
             </p>
             {task.rawDueDate !== task.dueDate && task.rawDueDate && task.dueDate && (
               <p className="mt-xs mb-0 leading-4">
@@ -192,7 +262,7 @@ export default function TaskDetailDrawer({ task, course, user, isMobile, onClose
         {canWriteMemo && (
           <div className="mb-xs">
             <label htmlFor="task-action-memo" className="mb-xs block text-caption leading-[18px] font-medium">처리 메모</label>
-            <Input.TextArea id="task-action-memo" aria-describedby="task-memo-help" value={memo} onChange={(event) => setMemo(event.target.value)}
+            <Input.TextArea id="task-action-memo" readOnly={isProcessing} aria-describedby="task-memo-help" value={memo} onChange={(event) => setMemo(event.target.value)}
               maxLength={500} rows={3} placeholder="처리 내용을 남겨 주세요" className="h-16 min-h-16 resize-none min-[992px]:h-18 min-[992px]:min-h-18" />
             <div id="task-memo-help" className={isMobile ? 'sr-only' : 'mt-xs flex items-start justify-between gap-xs text-caption leading-[18px] text-(--ant-color-text-tertiary)'}>
               <span>이름과 연락처 같은 개인정보는 적지 마세요.</span><span className="shrink-0">{memo.length} / 500</span>

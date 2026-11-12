@@ -9,7 +9,7 @@ type MonthlyWorkProps = {
   tasks: CourseTaskView[]
   today: string
   courseEndDate: string
-  offsetDays: number
+  offsetDays?: number
   onOpenTask: (taskId: string) => void
 }
 
@@ -22,6 +22,7 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
       render: (_, cycle) => (
         <span className="flex flex-wrap items-center gap-xxs">
           {formatTaskDate(cycle.dueDate)}
+          {cycle.title && <span className="text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</span>}
           {cycle.rawDueDate !== cycle.dueDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">{formatTaskDate(cycle.rawDueDate).split('(')[0]} 당김</span>}
           {cycle.dueDate > courseEndDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">종료일 뒤</span>}
           {cycle.startDate <= today && cycle.endDate >= today && <span className="text-[11px] font-medium text-(--ant-color-primary)">현재</span>}
@@ -33,10 +34,10 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
   return (
     <>
       <h3 className="m-0 mb-md flex flex-wrap items-center gap-xs text-body leading-5 font-medium">
-        월 주기 <span className="text-caption font-regular text-(--ant-color-text-tertiary)">주기 종료일 {offsetDays >= 0 ? '+' : '-'} {Math.abs(offsetDays)}일{today > courseEndDate && ' · 모든 주기 종료'}</span>
+        월 주기 <span className="text-caption font-regular text-(--ant-color-text-tertiary)">{offsetDays !== undefined && <>주기 종료일 {offsetDays >= 0 ? '+' : '-'} {Math.abs(offsetDays)}일</>}{today > courseEndDate && ' · 모든 주기 종료'}</span>
       </h3>
       <Table<MonthlyCycle>
-        rowKey="number" columns={columns} dataSource={cycles} size="small" pagination={false} rowHoverable={false}
+        rowKey={(cycle) => cycle.id ?? String(cycle.number)} columns={columns} dataSource={cycles} size="small" pagination={false} rowHoverable={false}
         rowClassName={(cycle) => cycle.startDate <= today && cycle.endDate >= today ? '[&>td]:bg-(--ant-color-primary-bg) [&>td:first-child]:rounded-l-md [&>td:last-child]:rounded-r-md [&>td:not(:last-child)]:text-(--ant-color-primary)' : ''}
         classNames={{ header: { cell: 'rounded-none! px-xs py-xs text-caption font-regular text-(--ant-color-text-secondary)' }, body: { cell: 'border-b-0! px-xs py-sm text-caption' } }}
       />

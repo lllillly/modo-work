@@ -2,7 +2,7 @@ import type { Course, HomeTask, Task } from './home'
 import type { UserRole } from './user'
 
 export type TaskActor = { id: string; name: string; role: UserRole }
-export type TaskAssignee = { id: string; name: string; status: 'ACTIVE' | 'INACTIVE' }
+export type TaskAssignee = { id: string; name: string; status: 'ACTIVE' | 'INACTIVE' | 'PENDING' }
 export type TaskActionType = 'COMPLETE' | 'REVIEW' | 'CANCEL_COMPLETION' | 'CANCEL_REVIEW' | 'UPDATE_MEMO' | 'MEMO'
 
 export type TaskAction = {
@@ -16,13 +16,19 @@ export type TaskAction = {
 }
 
 export type CourseTask = Task & {
+  server?: {
+    version: number
+    isReadOnly: boolean
+    completionActionLogId: string | null
+    reviewActionLogId: string | null
+  }
   phaseId: string
   tag: string
   areaId: string
   assignees: TaskAssignee[]
   requiresReview: boolean
   referenceType: 'COURSE_START' | 'COURSE_END' | 'MONTH_END' | 'ALWAYS'
-  offsetDays: number
+  offsetDays: number | null
   occurrenceNo: number
   rawDueDate: string | null
   shiftReasons: string[]
@@ -54,6 +60,8 @@ export type CourseTasksCourse = Course & {
 }
 
 export type MonthlyCycle = {
+  id?: string
+  title?: string
   number: number
   startDate: string
   endDate: string

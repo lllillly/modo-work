@@ -17,9 +17,18 @@ type TaskPhaseListProps = {
   isMobile: boolean
   onOpenTask: (taskId: string) => void
   onComplete: (taskId: string) => void
+  disabled?: boolean
 }
 
-export default function TaskPhaseList({ course, tasks, user, isMobile, onOpenTask, onComplete }: TaskPhaseListProps) {
+export default function TaskPhaseList({
+  course,
+  tasks,
+  user,
+  isMobile,
+  onOpenTask,
+  onComplete,
+  disabled = false,
+}: TaskPhaseListProps) {
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({})
   const [expandedCompleted, setExpandedCompleted] = useState<Record<string, boolean>>({})
 
@@ -90,7 +99,7 @@ export default function TaskPhaseList({ course, tasks, user, isMobile, onOpenTas
                     return (
                       <li key={task.id} className="flex min-h-14 items-center gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md">
                         {permissions.showCheckbox && (
-                          <Checkbox aria-label={`${task.title} 완료`} checked={task.isCompleted} disabled={!permissions.canComplete}
+                          <Checkbox aria-label={`${task.title} 완료`} checked={task.isCompleted} disabled={disabled || !permissions.canComplete}
                             onChange={() => onComplete(task.id)} className="shrink-0"
                             classNames={{ icon: task.isCompleted ? 'border-(--ant-color-primary)! bg-(--ant-color-primary)! after:border-(--ant-color-white)!' : '' }} />
                         )}
@@ -99,8 +108,8 @@ export default function TaskPhaseList({ course, tasks, user, isMobile, onOpenTas
                             {task.title}
                           </button>
                           <p className="m-0 truncate text-caption leading-4 text-(--ant-color-text-tertiary)">
-                            {(!isMobile || !completion) && `${task.tag} · ${task.areaName} · `}
-                            {completion ? `${completion.actor.name} 완료 ${formatTaskDate(completion.createdAt)}` : task.assignees.map((assignee) => assignee.name).join(', ')}
+                            {(!isMobile || !completion) && `${task.tag ? `${task.tag} · ` : ''}${task.areaName} · `}
+                            {completion ? `${completion.actor.name} 완료 ${formatTaskDate(completion.createdAt)}` : task.isCompleted && task.completedBy ? `${task.completedBy} 완료` : task.assignees.map((assignee) => assignee.name).join(', ')}
                             {review && ` · 확인 ${review.actor.name}`}
                           </p>
                           {task.rawDueDate !== task.dueDate && task.rawDueDate && task.dueDate && (

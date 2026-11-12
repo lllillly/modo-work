@@ -7,17 +7,26 @@ import 'dayjs/locale/ko'
 
 import type { CourseTasksCourse } from '../../../types/courseTasks'
 import { getToday } from '../../home/dateUtils'
+import CourseHistoryModal from '../../admin/courses/components/CourseHistoryModal'
 import { formatActionTime, getCourseDays, getMonthlyCycles } from '../courseTasksData'
 
 type CourseScheduleProps = {
   course: CourseTasksCourse
   isMobile: boolean
   canEdit: boolean
-  onSave: (startDate: string, endDate: string, reason: string) => void
+  remote?: boolean
+  onSave: (startDate: string, endDate: string, reason: string) => void | Promise<void>
 }
 
-export default function CourseSchedule({ course, isMobile, canEdit, onSave }: CourseScheduleProps) {
+export default function CourseSchedule({
+  course,
+  isMobile,
+  canEdit,
+  onSave,
+  remote = false,
+}: CourseScheduleProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [form] = Form.useForm<{ startDate: Dayjs; endDate: Dayjs; reason?: string }>()
   const selectedStartDate: Dayjs | undefined = Form.useWatch('startDate', form)
@@ -32,14 +41,34 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
 
   const currentDays = getCourseDays(course)
   const nextDays = isValidRange ? getCourseDays(nextCourse) : currentDays
-  const currentCycleCount = getMonthlyCycles(course.startDate, course.endDate, course.monthlyOffsetDays).length
-  const nextCycleCount = isValidRange ? getMonthlyCycles(nextCourse.startDate, nextCourse.endDate, course.monthlyOffsetDays).length : currentCycleCount
+  const currentCycleCount = remote
+    ? 0
+    : getMonthlyCycles(course.startDate, course.endDate, course.monthlyOffsetDays).length
+  const nextCycleCount = !remote && isValidRange
+    ? getMonthlyCycles(nextCourse.startDate, nextCourse.endDate, course.monthlyOffsetDays).length
+    : currentCycleCount
   const currentLengthType = currentDays >= 180 ? '장기' : '단기'
   const nextLengthType = nextDays >= 180 ? '장기' : '단기'
 
   const scheduleForm = (
     <Form form={form} layout="vertical" className="flex flex-col gap-md" initialValues={{ startDate: dayjs(course.startDate), endDate: dayjs(course.endDate) }} preserve={false}
-      onFinish={(values) => { onSave(values.startDate.format('YYYY-MM-DD'), values.endDate.format('YYYY-MM-DD'), values.reason?.trim() ?? ''); setIsEditing(false) }}>
+      disabled={isSaving}
+      onFinish={async (values) => {
+        if (isSaving) return
+        setIsSaving(true)
+        try {
+          await onSave(
+            values.startDate.format('YYYY-MM-DD'),
+            values.endDate.format('YYYY-MM-DD'),
+            values.reason?.trim() ?? '',
+          )
+          setIsEditing(false)
+        } catch {
+          // 저장 실패 시 입력을 유지하고 상위 화면의 오류 안내를 표시
+        } finally {
+          setIsSaving(false)
+        }
+      }}>
       <div className={`grid gap-md ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <Form.Item name="startDate" label="시작일" className="mb-0 min-w-0" rules={[{ required: true, message: '시작일을 입력해 주세요.' }]}>
           <DatePicker format="YYYY-MM-DD" allowClear={false} className="h-10 w-full min-w-0" />
@@ -52,18 +81,18 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
           <DatePicker format="YYYY-MM-DD" allowClear={false} className="h-10 w-full min-w-0" />
         </Form.Item>
       </div>
-      {/* API 연동 후에는 서버의 변경 결과와 상태에 맞춰 안내 문구가 수정되도록 할 예정입니다 */}
+      {/* 목업 화면의 월 주기 예상값은 API 연결 화면에서는 표시하지 않음 */}
       <Alert type="info" className="p-sm" classNames={{ title: 'text-caption font-regular' }} title={isValidRange ? (
         <ul className="m-0 flex list-disc flex-col gap-xxs pl-md">
           <li>지금 {course.startDate} ~ {course.endDate} <ArrowRightOutlined aria-label="에서" /> 바꾼 뒤 {nextCourse.startDate} ~ {nextCourse.endDate}</li>
-          <li>월 주기 {currentCycleCount}개 <ArrowRightOutlined aria-label="에서" /> {nextCycleCount}개로 {nextCycleCount > currentCycleCount ? '늘고' : nextCycleCount < currentCycleCount ? '줄고' : '같고'}, 미완료 할 일 마감이 다시 계산됩니다.</li>
+          {!remote && <li>월 주기 {currentCycleCount}개 <ArrowRightOutlined aria-label="에서" /> {nextCycleCount}개로 {nextCycleCount > currentCycleCount ? '늘고' : nextCycleCount < currentCycleCount ? '줄고' : '같고'}, 미완료 할 일 마감이 다시 계산됩니다.</li>}
           <li>구분은 {currentLengthType}({currentDays}일) <ArrowRightOutlined aria-label="에서" /> {nextLengthType}({nextDays}일), {currentLengthType === nextLengthType ? '그대로입니다.' : '바뀝니다.'}</li>
           <li>완료한 할 일과 처리 기록은 유지됩니다</li>
         </ul>
       ) : '시작일과 종료일을 확인해 주세요.'} />
-      <Form.Item name="reason" label="바꾸는 이유 (선택)" className="mb-0">
+      {!remote && <Form.Item name="reason" label="바꾸는 이유 (선택)" className="mb-0">
         <Input.TextArea rows={4} placeholder="남기면 변경 이력에 같이 보여요" className="h-24 min-h-24 resize-none" />
-      </Form.Item>
+      </Form.Item>}
     </Form>
   )
 
@@ -83,7 +112,7 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
           )}
           {canEdit && <Button type="link" className="ml-auto px-0 text-caption" onClick={() => setIsEditing(true)}>일정 수정</Button>}
           {!isMobile && <span className={`${canEdit ? '' : 'ml-auto'} text-caption text-(--ant-color-text-tertiary)`}>{isReadOnly ? '종료되거나 보관된 과정의 일정은 변경할 수 없어요' : canEdit ? '일정을 바꾸면 미완료 할 일 마감과 월 주기가 다시 계산돼요' : '이 과정의 일정 수정 권한이 없어요'}</span>}
-          <Button type="link" className={`${isMobile ? 'ml-auto h-auto' : ''} px-0 text-caption`} onClick={() => setShowHistory(true)}>변경 이력 {course.changeHistory.length}건</Button>
+          <Button type="link" className={`${isMobile ? 'ml-auto h-auto' : ''} px-0 text-caption`} onClick={() => setShowHistory(true)}>{remote ? '일정 변경 이력' : `변경 이력 ${course.changeHistory.length}건`}</Button>
         </div>
       </Card>
 
@@ -96,7 +125,7 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
         width={480} centered className="max-w-[calc(100vw-32px)]" mask={{ blur: false }}
         classNames={{ container: 'p-lg', header: 'mb-0 border-0 border-b border-solid border-(--ant-color-border-secondary) pb-md', body: 'max-h-[calc(100svh-220px)] overflow-y-auto pt-md',
           footer: `mt-lg flex gap-xs border-0 border-t border-solid border-(--ant-color-border-secondary) pt-md [&>button]:m-0 ${isMobile ? '[&>button]:flex-1' : 'justify-end'}` }}
-        okText="저장" cancelText="취소" onCancel={() => setIsEditing(false)}
+        okText="저장" cancelText="취소" confirmLoading={isSaving} onCancel={() => { if (!isSaving) setIsEditing(false) }}
         okButtonProps={{ className: 'h-9 min-w-20 shadow-none' }} cancelButtonProps={{ className: 'h-9 min-w-20 shadow-none' }}
         onOk={() => form.submit()} destroyOnHidden
       >
@@ -105,16 +134,18 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
       {isMobile && (
         <Drawer
           open={isEditing && canEdit} placement="bottom" size="auto" closable={false}
-          onClose={() => setIsEditing(false)} mask={{ blur: false, closable: true }} destroyOnHidden
+          onClose={() => { if (!isSaving) setIsEditing(false) }} mask={{ blur: false, closable: !isSaving }} destroyOnHidden
           title={<div><div aria-hidden className="mx-auto mb-md h-1 w-9 rounded-full bg-(--ant-color-fill-tertiary)" />일정 수정</div>}
           classNames={{ section: 'max-h-[calc(100svh-16px)] rounded-t-lg', header: 'border-0 px-md pt-sm pb-sm', body: 'min-h-0 overflow-y-auto px-md pt-0 pb-md', footer: 'border-0 p-md pt-0' }}
-          footer={<div className="flex gap-xs"><Button className="h-9 flex-1 shadow-none" onClick={() => setIsEditing(false)}>취소</Button><Button type="primary" className="h-9 flex-1 shadow-none" onClick={() => form.submit()}>저장</Button></div>}
+          footer={<div className="flex gap-xs"><Button className="h-9 flex-1 shadow-none" disabled={isSaving} onClick={() => setIsEditing(false)}>취소</Button><Button type="primary" loading={isSaving} className="h-9 flex-1 shadow-none" onClick={() => form.submit()}>저장</Button></div>}
         >
           {scheduleForm}
         </Drawer>
       )}
 
-      <Modal
+      {remote && showHistory && <CourseHistoryModal courseId={course.id} courseName={course.name}
+        onClose={() => setShowHistory(false)} />}
+      {!remote && <Modal
         open={showHistory} title={<span className="text-card-title leading-5 font-bold">변경 이력 · {course.name}</span>}
         width={560} centered footer={null} className="max-w-[calc(100vw-32px)] pb-0" onCancel={() => setShowHistory(false)}
         mask={{ blur: false }} classNames={{ container: 'flex max-h-[calc(100svh-32px)] flex-col overflow-hidden p-lg shadow-none',
@@ -136,7 +167,7 @@ export default function CourseSchedule({ course, isMobile, canEdit, onSave }: Co
             ))}
           </ul>
         )}
-      </Modal>
+      </Modal>}
     </>
   )
 }
