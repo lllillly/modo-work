@@ -9,35 +9,6 @@ import { formatActionTime } from '../../../tasks/courseTasksData'
 
 type CourseHistoryModalProps = { courseId: string; courseName: string; onClose: () => void }
 
-// 일정 이력 API에 과정 정보 수정과 담당자 교체 이력 없음
-/*
-      <Modal
-        open={showHistory}
-        title={`변경 이력 · ${course?.name}`}
-        centered
-        footer={null}
-        onCancel={() => setShowHistory(false)}
-        mask={{ blur: false }}
-        classNames={{ body: 'max-h-[calc(100svh-200px)] overflow-y-auto' }}
-      >
-        {[...(course?.history ?? [])].reverse().map((entry) => (
-          <div
-            key={entry.id}
-            className="flex flex-col gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) py-md last:border-b-0"
-          >
-            <p className="m-0 text-body font-medium">{entry.label}</p>
-            <p className="m-0 break-words text-body text-(--ant-color-primary)">
-              {entry.before} <ArrowRightOutlined aria-label="에서" /> {entry.after}
-            </p>
-            <p className="m-0 text-caption">{entry.reason || '사유 없음 (진행 중 과정의 일반 수정)'}</p>
-            <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
-              {formatActionTime(entry.createdAt, true)} · {entry.actor}
-            </p>
-          </div>
-        ))}
-      </Modal>
-*/
-
 export default function CourseHistoryModal({ courseId, courseName, onClose }: CourseHistoryModalProps) {
   const [page, setPage] = useState(0)
   const load = useCallback(

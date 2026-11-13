@@ -20,7 +20,7 @@ import { Link, useNavigate } from 'react-router'
 
 import type { CourseDraft, CourseSaveResult, ManagedCourse } from '../../../../types/adminCourses'
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
-import { replaceAssignees, updateSchedule } from '../../../../api/courses'
+import { getCourseChanges, replaceAssignees, updateSchedule } from '../../../../api/courses'
 import type { AssignmentContext, OptionItem, ScheduleContext } from '../../../../types/courseApi'
 import { useAuth } from '../../../../providers/AuthContext'
 import { CourseSaveError, requiresSaveReload, saveManagedCourse } from '../courseManagementApi'
@@ -28,21 +28,10 @@ import { getCoursePeriod, getInactiveAssignees, getOrgUnitName } from '../course
 import { getCourseTaskSummary, getPendingTasksByArea } from '../../../../api/tasks'
 import type { CourseTaskSummary } from '../../../../types/taskApi'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import CourseHistoryModal from './CourseHistoryModal'
+import { formatActionTime } from '../../../tasks/courseTasksData'
+import CourseChangesModal from './CourseChangesModal'
 import AssigneeFields from './AssigneeFields'
 import CourseCorrectionModal from './CourseCorrectionModal'
-
-// 과정 응답에 전체 변경 이력 건수와 마지막 수정자, 수정 시각 없음
-/*
-              <span>
-                변경 이력 {course.history.length}건 · 마지막 수정 {formatActionTime(course.updatedAt, true)} {course.updatedBy}
-                {course.history.length > 0 && (
-                  <span className="ml-xs text-[11px] text-(--ant-color-text-quaternary)">
-                    클릭해서 자세히 보기
-                  </span>
-                )}
-              </span>
-*/
 
 type CourseEditorProps = {
   businessId: string
@@ -105,6 +94,17 @@ export default function CourseEditor({
       return { areaNames: {}, pendingByArea }
     },
     [businessId, courseId, needsAreaNames],
+  )
+  const loadHistorySummary = useCallback(
+    async (signal: AbortSignal) => {
+      if (!courseId) throw new Error('과정을 먼저 선택해 주세요.')
+      return getCourseChanges(courseId, 0, signal, 1)
+    },
+    [courseId],
+  )
+  const historySummary = useApiQuery(
+    courseId ? `${courseId}:${course?.version}` : null,
+    loadHistorySummary,
   )
   const taskSummary = useApiQuery(
     courseId && (needsAreaNames || needsPendingCounts)
@@ -525,7 +525,11 @@ export default function CourseEditor({
           >
             {course ? (
               <span>
-                일정 변경 이력
+                {historySummary.data ? `변경 이력 ${historySummary.data.totalElements}건` : '변경 이력'}
+                {historySummary.data?.lastModifiedAt &&
+                  ` · 마지막 수정 ${formatActionTime(historySummary.data.lastModifiedAt, true)} ${
+                    historySummary.data.lastModifiedBy?.name ?? ''
+                  }`}
                 <span className="ml-xs text-[11px] text-(--ant-color-text-quaternary)">
                   클릭해서 자세히 보기
                 </span>
@@ -646,9 +650,10 @@ export default function CourseEditor({
         </p>
       </Modal>
       {course && showHistory && (
-        <CourseHistoryModal
+        <CourseChangesModal
           courseId={course.id}
           courseName={course.name}
+          orgUnits={orgUnits}
           onClose={() => setShowHistory(false)}
         />
       )}

@@ -2,6 +2,7 @@ import type {
   ApplyImportRequest,
   AssigneeCandidate,
   AssignmentContext,
+  CourseHistory,
   CourseProgressStatus,
   CourseResponse,
   ImportJob,
@@ -145,6 +146,13 @@ export function replaceAssignees(
 export function getScheduleChanges(id: string, page: number, signal?: AbortSignal) {
   return getApi<PageResponse<ScheduleChange>>(
     `/courses/${encodeURIComponent(id)}/schedule-changes?page=${page}&size=20`,
+    signal,
+  )
+}
+
+export function getCourseChanges(id: string, page: number, signal?: AbortSignal, size = 20) {
+  return getApi<CourseHistory>(
+    `/admin/courses/${encodeURIComponent(id)}/changes?page=${page}&size=${size}`,
     signal,
   )
 }

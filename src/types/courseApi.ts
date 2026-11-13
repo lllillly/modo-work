@@ -82,6 +82,31 @@ export type ScheduleChange = {
 
 export type CourseProgressStatus = 'UPCOMING' | 'ONGOING' | 'ENDED'
 
+export type CourseChangeSource =
+  | 'COURSE_UPDATE'
+  | 'COURSE_ASSIGNMENTS_UPDATE'
+  | 'COURSE_ENDED_ASSIGNMENTS_UPDATE'
+  | 'SCHEDULE_UPDATE'
+  | 'END_DATE_CORRECTION'
+  | 'CSV_IMPORT'
+
+export type CourseChangeActor = { id: string; name: string; role: string | null }
+
+export type CourseChange = {
+  id: string
+  source: CourseChangeSource
+  importJobId: string | null
+  changes: { field: string; before: unknown; after: unknown }[]
+  actor: CourseChangeActor | null
+  reason: string | null
+  createdAt: string
+}
+
+export type CourseHistory = PageResponse<CourseChange> & {
+  lastModifiedBy: CourseChangeActor | null
+  lastModifiedAt: string | null
+}
+
 export type ImportRow = {
   rowNumber: number
   externalKey: string | null
