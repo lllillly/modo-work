@@ -7,7 +7,7 @@ import {
   UploadOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Card, Checkbox, Dropdown, Input, Pagination, Select, Skeleton, Table } from 'antd'
+import { Alert, Button, Card, Checkbox, Dropdown, Input, Pagination, Select, Skeleton, Table, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -18,6 +18,17 @@ import { getAssignmentAreas, getCourses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
+
+const SELECT_PADDING = 48
+const MAX_SELECT_WIDTH = 280
+
+function getSelectWidth(labels: string[], font: string) {
+  const context = document.createElement('canvas').getContext('2d')
+  if (!context) return undefined
+  context.font = font
+  const textWidth = Math.max(...labels.map((label) => context.measureText(label).width))
+  return Math.min(Math.ceil(textWidth) + SELECT_PADDING, MAX_SELECT_WIDTH)
+}
 
 const progressOptions: { value: CourseProgressStatus; label: string }[] = [
   { value: 'UPCOMING', label: '예정' },
@@ -32,6 +43,8 @@ type CourseListProps = {
 
 export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const navigate = useNavigate()
+  const { token } = theme.useToken()
+  const selectFont = `${token.fontSize}px ${token.fontFamily}`
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(0)
@@ -65,6 +78,11 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const activeCourses = query.data?.items.map(toManagedCourse) ?? []
   const visibleCourses = preview === 'empty' ? [] : activeCourses
   const courseOrgUnits = orgs.data?.orgUnits ?? []
+  const orgOptions = [
+    { value: 'all', label: isMobile ? '조직 단위' : '조직 단위: 전체' },
+    ...courseOrgUnits.map((org) => ({ value: org.id, label: org.name })),
+  ]
+  const statusOptions = [{ value: 'all', label: isMobile ? '상태' : '상태: 전체' }, ...progressOptions]
   const hasFilter = !!search.trim() || orgUnitId !== 'all' || progressStatus !== 'all' || needsAssignment
 
   useEffect(() => {
@@ -222,23 +240,21 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
         />
         <Select
           aria-label="조직 단위 필터"
+          style={{ width: getSelectWidth(orgOptions.map((option) => option.label), selectFont) }}
+          popupMatchSelectWidth={false}
           value={orgUnitId}
           onChange={(value) => changeFilter(() => setOrgUnitId(value))}
           size={isMobile ? 'small' : 'middle'}
-          options={[
-            { value: 'all', label: isMobile ? '조직 단위' : '조직 단위: 전체' },
-            ...courseOrgUnits.map((org) => ({ value: org.id, label: org.name })),
-          ]}
+          options={orgOptions}
         />
         <Select
           aria-label="과정 상태 필터"
+          style={{ width: getSelectWidth(statusOptions.map((option) => option.label), selectFont) }}
+          popupMatchSelectWidth={false}
           value={progressStatus}
           onChange={(value) => changeFilter(() => setProgressStatus(value))}
           size={isMobile ? 'small' : 'middle'}
-          options={[
-            { value: 'all', label: isMobile ? '상태' : '상태: 전체' },
-            ...progressOptions,
-          ]}
+          options={statusOptions}
         />
         {isMobile ? (
           <Button
