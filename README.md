@@ -86,8 +86,8 @@ Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치�
 
 | 파일 | 역할 |
 | --- | --- |
-| `CourseList.tsx`, `CourseLabels.tsx` | 과정 목록과 상태 표시 |
-| `CourseEditor.tsx` | 과정 등록과 수정 |
+| `CourseList.tsx`, `CourseLabels.tsx` | 과정 목록, 검색과 필터, 상태 표시. 행을 누르면 과정 보기로 이동 |
+| `CourseEditor.tsx` | 과정 등록, 보기, 수정. 보기 화면에서 수정 버튼을 누르면 같은 화면에서 수정 |
 | `AssigneeFields.tsx`, `AssigneeSearch.tsx` | 공동 담당 배정과 이름, 이메일 검색 |
 | `CourseCorrectionModal.tsx` | 종료일 정정과 담당 배정 변경 |
 | `CourseHistoryModal.tsx` | 일정 변경 이력 조회 (할 일 화면에서도 사용) |
