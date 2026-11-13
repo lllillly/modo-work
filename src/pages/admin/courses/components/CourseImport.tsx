@@ -136,8 +136,12 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
                 </p>
               </div>
             </Upload.Dragger>
-            {/* CSV 양식 다운로드 API와 공식 파일 없음 */}
-            <Button type="link" disabled className="mt-sm h-auto p-0 text-body">
+            <Button
+              type="link"
+              href={`${import.meta.env.BASE_URL}templates/courses_template.csv`}
+              download="courses_template.csv"
+              className="mt-sm h-auto p-0 text-body"
+            >
               양식 내려받기 (courses_template.csv)
             </Button>
           </Card>
