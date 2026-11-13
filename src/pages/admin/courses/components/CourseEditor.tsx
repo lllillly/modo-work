@@ -82,14 +82,18 @@ export default function CourseEditor({
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
   const orgUnitId = Form.useWatch('orgUnitId', form) ?? course?.orgUnitId ?? ''
-  const orgUnitName = getOrgUnitName(orgUnitId, orgUnits, user)
-  const knownAreaNames = Object.fromEntries(
-    [
-      ...(user?.areas ?? []),
-      ...(user?.roles.flatMap((role) => (role.area ? [role.area] : [])) ?? []),
-      ...areas,
-    ].map((area) => [area.id, area.name]),
-  )
+  const orgUnitName =
+    getOrgUnitName(orgUnitId, orgUnits, user) ?? (orgUnitId === course?.orgUnitId ? course.orgUnitName : undefined)
+  const knownAreaNames = {
+    ...course?.areaNames,
+    ...Object.fromEntries(
+      [
+        ...(user?.areas ?? []),
+        ...(user?.roles.flatMap((role) => (role.area ? [role.area] : [])) ?? []),
+        ...areas,
+      ].map((area) => [area.id, area.name]),
+    ),
+  }
   const needsAreaNames = Object.keys(course?.assignees ?? {}).some((id) => !knownAreaNames[id])
   const needsPendingCounts = !!course && isEnded && getInactiveAssignees(course).length > 0
   const courseId = course?.id
@@ -219,11 +223,6 @@ export default function CourseEditor({
       setIsSaving(false)
     }
   }
-
-  // 과정 응답에 조직 이름 없음, 선택 목록과 로그인 정보에서 확인된 이름만 표시
-  /*
-    const orgUnitName = courseOrgUnits.find((org) => org.id === course.orgUnitId)?.name
-  */
 
   function changeOrgUnit(nextOrgId: string) {
     const hasAssignees = Object.values(assignees ?? {}).some((ids) => ids.length > 0)

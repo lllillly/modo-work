@@ -117,14 +117,6 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const visibleCourses = preview === 'empty' ? [] : activeCourses
   const courseOrgUnits = orgs.data?.orgUnits ?? []
 
-  // 과정 응답에 조직 이름 없음, 선택 목록과 로그인 정보에서 확인된 이름만 표시
-  /*
-      {
-        title: '조직 단위',
-        dataIndex: 'orgUnitId',
-        render: (id: string) => courseOrgUnits.find((org) => org.id === id)?.name,
-      },
-  */
 
   const columns = [
     { title: '외부 키', dataIndex: 'externalKey', width: 112 },
@@ -133,7 +125,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       title: '조직 단위',
       dataIndex: 'orgUnitId',
       width: 94,
-      render: (id: string) => getOrgUnitName(id, courseOrgUnits, user) ?? '-',
+      render: (_, course) => course.orgUnitName ?? getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-',
     },
     {
       title: '기간',
@@ -382,7 +374,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
                     </span>
                     <span className="text-caption text-(--ant-color-text-secondary)">
                       {course.externalKey} ·{' '}
-                      {getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-'} · 정원{' '}
+                      {course.orgUnitName ?? getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-'} · 정원{' '}
                       {course.capacity ?? '-'}
                     </span>
                     <span

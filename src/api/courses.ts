@@ -1,6 +1,5 @@
 import type {
   ApplyImportRequest,
-  AssignedUser,
   AssigneeCandidate,
   AssignmentContext,
   CourseResponse,
@@ -71,43 +70,6 @@ export function getAssigneeCandidates(parameters: AssigneeCandidateQuery, signal
   })
   if (courseId) query.set('courseId', courseId)
   return getApi<PageResponse<AssigneeCandidate>>(`/admin/assignee-candidates?${query}`, signal)
-}
-
-type AssignedUserEmailQuery = {
-  businessId: string
-  orgUnitId: string
-  courseId: string
-  areaIds: string[]
-  assignedUsers: Record<string, AssignedUser[]>
-}
-
-export async function getAssignedUserEmails(parameters: AssignedUserEmailQuery, signal?: AbortSignal) {
-  const { businessId, orgUnitId, courseId, areaIds, assignedUsers } = parameters
-  const targets = Object.entries(assignedUsers).filter(
-    ([areaId, users]) => areaIds.includes(areaId) && users.some((user) => user.status === 'ACTIVE'),
-  )
-  const results = await Promise.all(
-    targets.map(async ([areaId, users]) => {
-      const remaining = new Set(users.filter((user) => user.status === 'ACTIVE').map((user) => user.id))
-      const emails: Record<string, string> = {}
-      let page = 0
-      let totalPages = 1
-
-      while (page < totalPages && remaining.size > 0) {
-        const result = await getAssigneeCandidates(
-          { businessId, orgUnitId, courseId, areaId, q: '', page, size: 100 },
-          signal,
-        )
-        for (const candidate of result.items) {
-          if (remaining.delete(candidate.id)) emails[candidate.id] = candidate.email
-        }
-        totalPages = result.totalPages
-        page++
-      }
-      return emails
-    }),
-  )
-  return Object.fromEntries(results.flatMap((emails) => Object.entries(emails)))
 }
 
 export function createCourse(businessId: string, draft: CourseDraft) {

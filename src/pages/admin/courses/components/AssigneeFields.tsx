@@ -1,21 +1,10 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { PlusOutlined, WarningOutlined } from '@ant-design/icons'
-import { Alert, Button, Tag } from 'antd'
+import { Button, Tag } from 'antd'
 
 import type { CourseDraft } from '../../../../types/adminCourses'
 import type { AssignedUser, AssigneeCandidate, OptionItem } from '../../../../types/courseApi'
 import AssigneeSearch from './AssigneeSearch'
-import { getAssignedUserEmails } from '../../../../api/courses'
-import useApiQuery from '../../../../hooks/useApiQuery'
-
-// 과정 배정 응답에 이메일 없음, 현재 후보 조회에서 확인된 이메일만 표시
-/*
-        const selected = courseAssignees.filter((user) => selectedIds.includes(user.id))
-
-                    <span className={user.status === 'INACTIVE' ? '' : 'text-(--ant-color-text-tertiary)'}>
-                      {user.email}
-                    </span>
-*/
 
 type AssigneeFieldsProps = {
   businessId: string
@@ -44,55 +33,14 @@ export default function AssigneeFields({
   onChange,
   readOnly = false,
 }: AssigneeFieldsProps) {
-  const emailKey =
-    courseId &&
-    Object.values(assignedUsers).some((users) => users.some((user) => user.status === 'ACTIVE'))
-      ? `${businessId}:${orgUnitId}:${courseId}`
-      : null
-  const loadEmails = useCallback(
-    (signal: AbortSignal) => {
-      if (!courseId) return Promise.resolve<Record<string, string>>({})
-      return getAssignedUserEmails(
-        {
-          businessId,
-          orgUnitId,
-          courseId,
-          areaIds: areas.map((area) => area.id),
-          assignedUsers,
-        },
-        signal,
-      )
-    },
-    [businessId, orgUnitId, courseId, areas, assignedUsers],
-  )
-  const emails = useApiQuery(emailKey, loadEmails)
-
   const [addingArea, setAddingArea] = useState<string | null>(null)
   const [replacingArea, setReplacingArea] = useState<string | null>(null)
   const [pickedUsers, setPickedUsers] = useState<Record<string, AssigneeCandidate>>({})
-
-  // 과정 배정 응답에 영역 이름 없음, 선택 목록과 인증 정보, 기존 할 일로 보완
-  /*
-    const areaName = courseAreas.find((area) => area.id === areaId)?.name
-  */
 
   const areaIds = [...new Set([...areas.map((area) => area.id), ...Object.keys(value)])]
 
   return (
     <div className="flex flex-col">
-      {!!emails.error && (
-        <Alert
-          type="warning"
-          showIcon
-          className="mb-sm"
-          title="담당자 이메일을 불러오지 못했어요."
-          action={
-            <Button size="small" onClick={emails.reload}>
-              다시 시도
-            </Button>
-          }
-        />
-      )}
       {areaIds.map((areaId) => {
         const area = areas.find((item) => item.id === areaId)
         const areaName = area?.name ?? areaNames[areaId] ?? '-'
@@ -103,7 +51,7 @@ export default function AssigneeFields({
           return {
             id,
             name: picked?.name ?? existing?.name ?? '-',
-            email: picked?.email ?? emails.data?.[id],
+            email: picked?.email ?? existing?.email,
             status: picked ? 'ACTIVE' : existing?.status,
           }
         })
@@ -132,7 +80,9 @@ export default function AssigneeFields({
                   >
                     {user.name}{' '}
                     {user.email && (
-                      <span className="text-(--ant-color-text-tertiary)">{user.email}</span>
+                      <span className={user.status === 'INACTIVE' ? '' : 'text-(--ant-color-text-tertiary)'}>
+                        {user.email}
+                      </span>
                     )}
                     {user.status === 'INACTIVE' && ' · 비활성'}
                     {user.status === 'PENDING' && ' · 승인 대기'}

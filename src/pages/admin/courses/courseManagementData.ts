@@ -29,6 +29,9 @@ export function toManagedCourse(course: CourseResponse): ManagedCourse {
     ...course,
     assignees: Object.fromEntries(course.assignees.map((area) => [area.areaId, area.userIds])),
     assignedUsers: Object.fromEntries(course.assignees.map((area) => [area.areaId, area.users])),
+    areaNames: Object.fromEntries(
+      course.assignees.flatMap((area) => (area.areaName ? [[area.areaId, area.areaName]] : [])),
+    ),
   }
 }
 

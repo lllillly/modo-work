@@ -3,6 +3,7 @@ import type { AssignedUser, CourseResponse, Recalculation } from './courseApi'
 export type ManagedCourse = Omit<CourseResponse, 'assignees'> & {
   assignees: Record<string, string[]>
   assignedUsers: Record<string, AssignedUser[]>
+  areaNames: Record<string, string>
 }
 
 export type CourseDraft = Pick<

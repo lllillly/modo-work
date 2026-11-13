@@ -11,11 +11,13 @@ export type PageResponse<T> = {
 export type AssignedUser = {
   id: string
   name: string
+  email?: string
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
 }
 
 export type AreaAssignment = {
   areaId: string
+  areaName?: string
   userIds: string[]
   users: AssignedUser[]
 }
@@ -25,6 +27,7 @@ export type CourseResponse = {
   businessId: string
   externalKey: string
   orgUnitId: string
+  orgUnitName?: string
   name: string
   startDate: string
   endDate: string
