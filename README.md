@@ -90,7 +90,8 @@ Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치�
 | `CourseEditor.tsx` | 과정 등록과 수정 |
 | `AssigneeFields.tsx`, `AssigneeSearch.tsx` | 공동 담당 배정과 이름, 이메일 검색 |
 | `CourseCorrectionModal.tsx` | 종료일 정정과 담당 배정 변경 |
-| `CourseHistoryModal.tsx` | 일정 변경 이력 조회 |
+| `CourseHistoryModal.tsx` | 일정 변경 이력 조회 (할 일 화면에서도 사용) |
+| `CourseChangesModal.tsx` | 관리자용 통합 변경 이력 조회 |
 | `CourseImport.tsx` | CSV 파일 선택과 업로드 |
 | `CourseImportPreview.tsx` | 미리보기, 경고 확인, 적용과 취소 |
 
@@ -104,14 +105,9 @@ CSV 파일은 `FormData`로 전송합니다. 서버에서 검사한 행별 변�
 
 | 항목 | 현재 상태 |
 | --- | --- |
-| 과정명과 외부 키 검색, 조직 필터 | 비활성, 백엔드 API 추가 후 연결 |
-| 진행 상태와 배정 상태 필터 | 비활성, 백엔드 후속 구현 예정 |
 | 삭제, 보관, 복원과 보관 목록 | 비활성, 백엔드 구현 후 연결 |
-| 정보 수정과 담당 배정 변경 이력, 마지막 수정자와 시각 | 통합 변경 이력 API 추가 후 연결 |
-| 조직명과 영역명, 현재 담당자 이메일 | 비활성 담당자를 포함한 과정 응답 보완 후 연결 |
-| CSV 양식 다운로드 | 백엔드에서 `courses_template.csv` 전달 후 프론트 정적 파일로 연결 |
 
-일반 담당 배정 변경 이력은 사유 없이 변경 전후 값과 수정자, 시각을 표시할 예정입니다. 사유는 종료 과정의 관리자 예외 교체 이력에서 표시합니다.
+통합 변경 이력은 변경 전후 값과 수정자, 시각을 표시합니다. 사유는 종료일 정정과 종료 과정의 관리자 예외 교체 이력에서만 표시합니다.
 
 ## 상태별 화면 확인
 
