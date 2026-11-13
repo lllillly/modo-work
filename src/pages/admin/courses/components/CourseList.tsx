@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   InboxOutlined,
   MoreOutlined,
@@ -12,83 +12,18 @@ import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import type { ManagedCourse } from '../../../../types/adminCourses'
+import type { CourseProgressStatus } from '../../../../types/courseApi'
 import { getOrgUnitName, toManagedCourse } from '../courseManagementData'
 import { getAssignmentAreas, getCourses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
 
-// 백엔드 진행 상태와 배정 확인 필터 API 구현되면 연동 예정
-/*
-  const [state, setState] = useState('all')
-  const [needsAssignment, setNeedsAssignment] = useState(false)
-
-  const visibleCourses = activeCourses.filter((course) => {
-    const issues = getAssignmentIssues(course.assignees)
-    return (
-      (state === 'all' || getCourseState(course) === state) &&
-      (!needsAssignment || issues.empty > 0 || issues.inactive > 0)
-    )
-  })
-
-        <Select
-          aria-label="과정 상태 필터"
-          value={state}
-          onChange={setState}
-          size={isMobile ? 'small' : 'middle'}
-          options={[
-            { value: 'all', label: isMobile ? '상태' : '상태: 전체' },
-            ...['예정', '진행 중', '종료'].map((label) => ({ value: label, label })),
-          ]}
-        />
-        {isMobile ? (
-          <Button
-            size="small"
-            shape="round"
-            color={needsAssignment ? 'primary' : 'default'}
-            variant="outlined"
-            aria-pressed={needsAssignment}
-            onClick={() => setNeedsAssignment(!needsAssignment)}
-          >
-            확인 필요
-          </Button>
-        ) : (
-          <Checkbox checked={needsAssignment} onChange={(event) => setNeedsAssignment(event.target.checked)}>
-            배정 확인 필요한 것만 보기
-          </Checkbox>
-        )}
-*/
-
-// 과정 목록 API에 과정명과 외부 키 검색, 조직 필터 없음
-/*
-  const [search, setSearch] = useState('')
-  const [orgUnitId, setOrgUnitId] = useState('all')
-
-  const visibleCourses = activeCourses.filter((course) => {
-    const matchesSearch = `${course.name} ${course.externalKey}`
-      .toLowerCase().includes(search.trim().toLowerCase())
-    return matchesSearch && (orgUnitId === 'all' || course.orgUnitId === orgUnitId)
-  })
-
-        <Input
-          aria-label="과정명·외부 키 검색"
-          prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-          placeholder="과정명·외부 키 검색"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="w-full min-[992px]:w-[280px]"
-        />
-        <Select
-          aria-label="조직 단위 필터"
-          value={orgUnitId}
-          onChange={setOrgUnitId}
-          size={isMobile ? 'small' : 'middle'}
-          options={[
-            { value: 'all', label: isMobile ? '조직 단위' : '조직 단위: 전체' },
-            ...courseOrgUnits.map((org) => ({ value: org.id, label: org.name })),
-          ]}
-        />
-*/
+const progressOptions: { value: CourseProgressStatus; label: string }[] = [
+  { value: 'UPCOMING', label: '예정' },
+  { value: 'ONGOING', label: '진행 중' },
+  { value: 'ENDED', label: '종료' },
+]
 
 type CourseListProps = {
   businessId: string
@@ -100,15 +35,29 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(0)
+  const [searchText, setSearchText] = useState('')
+  const [search, setSearch] = useState('')
+  const [orgUnitId, setOrgUnitId] = useState('all')
+  const [progressStatus, setProgressStatus] = useState<CourseProgressStatus | 'all'>('all')
+  const [needsAssignment, setNeedsAssignment] = useState(false)
   const load = useCallback(
-    (signal: AbortSignal) => getCourses(businessId, page, signal),
-    [businessId, page],
+    (signal: AbortSignal) =>
+      getCourses(businessId, page, signal, {
+        q: search,
+        orgUnitId: orgUnitId === 'all' ? undefined : orgUnitId,
+        progressStatus: progressStatus === 'all' ? undefined : progressStatus,
+        needsAssignmentReview: needsAssignment,
+      }),
+    [businessId, page, search, orgUnitId, progressStatus, needsAssignment],
   )
   const loadOrgs = useCallback(
     (signal: AbortSignal) => getAssignmentAreas(businessId, signal),
     [businessId],
   )
-  const query = useApiQuery(`${businessId}:${page}`, load)
+  const query = useApiQuery(
+    `${businessId}:${page}:${search}:${orgUnitId}:${progressStatus}:${needsAssignment}`,
+    load,
+  )
   const orgs = useApiQuery(businessId, loadOrgs)
   const preview = params.get('preview')
   const isLoading = query.isLoading || preview === 'loading'
@@ -116,7 +65,20 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const activeCourses = query.data?.items.map(toManagedCourse) ?? []
   const visibleCourses = preview === 'empty' ? [] : activeCourses
   const courseOrgUnits = orgs.data?.orgUnits ?? []
+  const hasFilter = !!search.trim() || orgUnitId !== 'all' || progressStatus !== 'all' || needsAssignment
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchText)
+      setPage(0)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchText])
+
+  function changeFilter(change: () => void) {
+    change()
+    setPage(0)
+  }
 
   const columns = [
     { title: '외부 키', dataIndex: 'externalKey', width: 112 },
@@ -196,7 +158,18 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
     </div>
   )
 
-  const empty = (
+  const empty = hasFilter ? (
+    <div
+      className="flex min-h-[260px] flex-col items-center justify-center gap-sm py-xl
+      text-center"
+    >
+      <SearchOutlined className="text-[30px] text-(--ant-color-text-tertiary)" />
+      <h3 className="m-0 text-card-title font-medium">조건에 맞는 과정이 없어요</h3>
+      <p className="m-0 text-caption text-(--ant-color-text-secondary)">
+        검색어나 필터를 바꿔 다시 찾아보세요.
+      </p>
+    </div>
+  ) : (
     <div
       className="flex min-h-[260px] flex-col items-center justify-center gap-sm py-xl
       text-center"
@@ -242,14 +215,15 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           aria-label="과정명·외부 키 검색"
           prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
           placeholder="과정명·외부 키 검색"
-          value=""
-          disabled
+          value={searchText}
+          allowClear
+          onChange={(event) => setSearchText(event.target.value)}
           className="w-full min-[992px]:w-[280px]"
         />
         <Select
           aria-label="조직 단위 필터"
-          value="all"
-          disabled
+          value={orgUnitId}
+          onChange={(value) => changeFilter(() => setOrgUnitId(value))}
           size={isMobile ? 'small' : 'middle'}
           options={[
             { value: 'all', label: isMobile ? '조직 단위' : '조직 단위: 전체' },
@@ -258,20 +232,30 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
         />
         <Select
           aria-label="과정 상태 필터"
-          value="all"
-          disabled
+          value={progressStatus}
+          onChange={(value) => changeFilter(() => setProgressStatus(value))}
           size={isMobile ? 'small' : 'middle'}
           options={[
             { value: 'all', label: isMobile ? '상태' : '상태: 전체' },
-            ...['예정', '진행 중', '종료'].map((label) => ({ value: label, label })),
+            ...progressOptions,
           ]}
         />
         {isMobile ? (
-          <Button size="small" shape="round" color="default" variant="outlined" aria-pressed={false} disabled>
+          <Button
+            size="small"
+            shape="round"
+            color={needsAssignment ? 'primary' : 'default'}
+            variant="outlined"
+            aria-pressed={needsAssignment}
+            onClick={() => changeFilter(() => setNeedsAssignment(!needsAssignment))}
+          >
             확인 필요
           </Button>
         ) : (
-          <Checkbox checked={false} disabled>
+          <Checkbox
+            checked={needsAssignment}
+            onChange={(event) => changeFilter(() => setNeedsAssignment(event.target.checked))}
+          >
             배정 확인 필요한 것만 보기
           </Checkbox>
         )}

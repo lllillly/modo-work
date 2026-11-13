@@ -2,6 +2,7 @@ import type {
   ApplyImportRequest,
   AssigneeCandidate,
   AssignmentContext,
+  CourseProgressStatus,
   CourseResponse,
   ImportJob,
   ImportRow,
@@ -34,8 +35,24 @@ export async function getCourseOptions(businessId: string, signal?: AbortSignal)
   return { orgUnits: orgs.items, areas: areas.items }
 }
 
-export function getCourses(businessId: string, page: number, signal?: AbortSignal) {
+type CourseListFilter = {
+  q?: string
+  orgUnitId?: string
+  progressStatus?: CourseProgressStatus
+  needsAssignmentReview?: boolean
+}
+
+export function getCourses(
+  businessId: string,
+  page: number,
+  signal?: AbortSignal,
+  filter: CourseListFilter = {},
+) {
   const query = new URLSearchParams({ businessId, page: String(page), size: '20', state: 'active' })
+  if (filter.q?.trim()) query.set('q', filter.q.trim())
+  if (filter.orgUnitId) query.set('orgUnitId', filter.orgUnitId)
+  if (filter.progressStatus) query.set('progressStatus', filter.progressStatus)
+  if (filter.needsAssignmentReview) query.set('needsAssignmentReview', 'true')
   return getApi<PageResponse<CourseResponse>>(`/admin/courses?${query}`, signal)
 }
 

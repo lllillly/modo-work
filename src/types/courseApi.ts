@@ -80,6 +80,8 @@ export type ScheduleChange = {
   createdAt: string
 }
 
+export type CourseProgressStatus = 'UPCOMING' | 'ONGOING' | 'ENDED'
+
 export type ImportRow = {
   rowNumber: number
   externalKey: string | null
