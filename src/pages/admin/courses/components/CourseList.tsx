@@ -19,6 +19,8 @@ import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
 
+const ALL_FILTER = 'all'
+const SEARCH_DELAY = 300
 const SELECT_PADDING = 48
 const MAX_SELECT_WIDTH = 280
 
@@ -50,17 +52,22 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const [page, setPage] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [search, setSearch] = useState('')
-  const [orgUnitId, setOrgUnitId] = useState('all')
-  const [progressStatus, setProgressStatus] = useState<CourseProgressStatus | 'all'>('all')
+  const [orgUnitId, setOrgUnitId] = useState(ALL_FILTER)
+  const [progressStatus, setProgressStatus] = useState<CourseProgressStatus | typeof ALL_FILTER>(ALL_FILTER)
   const [needsAssignment, setNeedsAssignment] = useState(false)
   const load = useCallback(
     (signal: AbortSignal) =>
-      getCourses(businessId, page, signal, {
-        q: search,
-        orgUnitId: orgUnitId === 'all' ? undefined : orgUnitId,
-        progressStatus: progressStatus === 'all' ? undefined : progressStatus,
-        needsAssignmentReview: needsAssignment,
-      }),
+      getCourses(
+        businessId,
+        page,
+        {
+          q: search,
+          orgUnitId: orgUnitId === ALL_FILTER ? undefined : orgUnitId,
+          progressStatus: progressStatus === ALL_FILTER ? undefined : progressStatus,
+          needsAssignmentReview: needsAssignment,
+        },
+        signal,
+      ),
     [businessId, page, search, orgUnitId, progressStatus, needsAssignment],
   )
   const loadOrgs = useCallback(
@@ -79,24 +86,19 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const visibleCourses = preview === 'empty' ? [] : activeCourses
   const courseOrgUnits = orgs.data?.orgUnits ?? []
   const orgOptions = [
-    { value: 'all', label: isMobile ? '조직 단위' : '조직 단위: 전체' },
+    { value: ALL_FILTER, label: isMobile ? '조직 단위' : '조직 단위: 전체' },
     ...courseOrgUnits.map((org) => ({ value: org.id, label: org.name })),
   ]
-  const statusOptions = [{ value: 'all', label: isMobile ? '상태' : '상태: 전체' }, ...progressOptions]
-  const hasFilter = !!search.trim() || orgUnitId !== 'all' || progressStatus !== 'all' || needsAssignment
+  const statusOptions = [{ value: ALL_FILTER, label: isMobile ? '상태' : '상태: 전체' }, ...progressOptions]
+  const hasFilter = !!search.trim() || orgUnitId !== ALL_FILTER || progressStatus !== ALL_FILTER || needsAssignment
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchText)
       setPage(0)
-    }, 300)
+    }, SEARCH_DELAY)
     return () => clearTimeout(timer)
   }, [searchText])
-
-  function changeFilter(change: () => void) {
-    change()
-    setPage(0)
-  }
 
   const columns = [
     { title: '외부 키', dataIndex: 'externalKey', width: 112 },
@@ -129,22 +131,25 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       title: '',
       key: 'actions',
       width: 90,
-      render: (_, course) =>
-        course.isReadOnly ? (
-          <Link to={course.id}>보기</Link>
-        ) : (
-          <span className="flex items-center gap-xs">
-            <Link to={course.id}>수정</Link>
-            <Button
-              type="text"
-              size="small"
-              className="h-auto p-0 text-caption text-(--ant-color-text-secondary)"
-              disabled
-            >
-              보관
-            </Button>
-          </span>
-        ),
+      render: (_, course) => (
+        <span className="flex items-center gap-xs" onClick={(event) => event.stopPropagation()}>
+          {course.isReadOnly ? (
+            <Link to={course.id}>보기</Link>
+          ) : (
+            <>
+              <Link to={course.id} state={{ edit: true }}>수정</Link>
+              <Button
+                type="text"
+                size="small"
+                className="h-auto p-0 text-caption text-(--ant-color-text-secondary)"
+                disabled
+              >
+                보관
+              </Button>
+            </>
+          )}
+        </span>
+      ),
     },
   ] satisfies TableColumnsType<ManagedCourse>
 
@@ -243,7 +248,10 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           style={{ width: getSelectWidth(orgOptions.map((option) => option.label), selectFont) }}
           popupMatchSelectWidth={false}
           value={orgUnitId}
-          onChange={(value) => changeFilter(() => setOrgUnitId(value))}
+          onChange={(value) => {
+            setOrgUnitId(value)
+            setPage(0)
+          }}
           size={isMobile ? 'small' : 'middle'}
           options={orgOptions}
         />
@@ -252,7 +260,10 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           style={{ width: getSelectWidth(statusOptions.map((option) => option.label), selectFont) }}
           popupMatchSelectWidth={false}
           value={progressStatus}
-          onChange={(value) => changeFilter(() => setProgressStatus(value))}
+          onChange={(value) => {
+            setProgressStatus(value)
+            setPage(0)
+          }}
           size={isMobile ? 'small' : 'middle'}
           options={statusOptions}
         />
@@ -263,14 +274,20 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             color={needsAssignment ? 'primary' : 'default'}
             variant="outlined"
             aria-pressed={needsAssignment}
-            onClick={() => changeFilter(() => setNeedsAssignment(!needsAssignment))}
+            onClick={() => {
+              setNeedsAssignment(!needsAssignment)
+              setPage(0)
+            }}
           >
             확인 필요
           </Button>
         ) : (
           <Checkbox
             checked={needsAssignment}
-            onChange={(event) => changeFilter(() => setNeedsAssignment(event.target.checked))}
+            onChange={(event) => {
+              setNeedsAssignment(event.target.checked)
+              setPage(0)
+            }}
           >
             배정 확인 필요한 것만 보기
           </Checkbox>

@@ -20,7 +20,7 @@ export default function ApiCourseSelect({
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
   const load = useCallback(
-    (signal: AbortSignal) => getCourses(businessId, page, signal),
+    (signal: AbortSignal) => getCourses(businessId, page, {}, signal),
     [businessId, page],
   )
   const query = useApiQuery(open ? `${businessId}:${page}` : null, load)

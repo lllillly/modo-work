@@ -46,8 +46,8 @@ type CourseListFilter = {
 export function getCourses(
   businessId: string,
   page: number,
-  signal?: AbortSignal,
   filter: CourseListFilter = {},
+  signal?: AbortSignal,
 ) {
   const query = new URLSearchParams({ businessId, page: String(page), size: '20', state: 'active' })
   if (filter.q?.trim()) query.set('q', filter.q.trim())

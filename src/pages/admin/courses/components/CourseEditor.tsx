@@ -33,6 +33,8 @@ import CourseChangesModal from './CourseChangesModal'
 import AssigneeFields from './AssigneeFields'
 import CourseCorrectionModal from './CourseCorrectionModal'
 
+const HISTORY_SUMMARY_SIZE = 1
+
 type CourseEditorProps = {
   businessId: string
   course?: ManagedCourse
@@ -101,7 +103,7 @@ export default function CourseEditor({
   const loadHistorySummary = useCallback(
     async (signal: AbortSignal) => {
       if (!courseId) throw new Error('과정을 먼저 선택해 주세요.')
-      return getCourseChanges(courseId, 0, signal, 1)
+      return getCourseChanges(courseId, 0, signal, HISTORY_SUMMARY_SIZE)
     },
     [courseId],
   )
