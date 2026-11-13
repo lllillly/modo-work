@@ -361,7 +361,7 @@ export default function CourseEditor({
                     ? [
                         {
                           id: course.orgUnitId,
-                          name: getOrgUnitName(course.orgUnitId, orgUnits, user) ?? '-',
+                          name: course.orgUnitName ?? getOrgUnitName(course.orgUnitId, orgUnits, user) ?? '-',
                         },
                       ]
                     : []),
