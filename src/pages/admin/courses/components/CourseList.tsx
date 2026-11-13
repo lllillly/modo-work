@@ -405,9 +405,16 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             dataSource={visibleCourses}
             pagination={false}
             size="small"
-            rowHoverable={false}
             scroll={{ x: 1030 }}
             locale={{ emptyText: empty }}
+            onRow={(course) => ({
+              onClick: () => navigate(course.id),
+              onKeyDown: (event) => {
+                if (event.key === 'Enter' && event.target === event.currentTarget) navigate(course.id)
+              },
+              tabIndex: 0,
+              className: 'cursor-pointer',
+            })}
             classNames={{
               header: { cell: 'text-caption font-medium' },
               body: { cell: 'px-sm py-xs text-caption' },

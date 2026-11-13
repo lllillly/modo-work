@@ -16,7 +16,7 @@ import {
 } from 'antd'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 import type { CourseDraft, CourseSaveResult, ManagedCourse } from '../../../../types/adminCourses'
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
@@ -55,19 +55,22 @@ export default function CourseEditor({
   onReload,
 }: CourseEditorProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { modal } = App.useApp()
   const { user, refreshUser } = useAuth()
   const [form] = Form.useForm<CourseFormValues>()
   const [result, setResult] = useState<CourseSaveResult | null>(null)
   const [saveError, setSaveError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const openedForEdit = (location.state as { edit?: boolean } | null)?.edit
+  const [isEditing, setIsEditing] = useState(!course || !!openedForEdit)
   const [needsReload, setNeedsReload] = useState(false)
   const [conflict, setConflict] = useState(false)
   const [correction, setCorrection] = useState<{ type: 'endDate' | 'assignee' } | null>(null)
   const [showHistory, setShowHistory] = useState(false)
 
   const isEnded = !!course?.isReadOnly
-  const readOnly = isEnded || needsReload
+  const readOnly = isEnded || needsReload || !isEditing
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
   const orgUnitId = Form.useWatch('orgUnitId', form) ?? course?.orgUnitId ?? ''
@@ -224,6 +227,20 @@ export default function CourseEditor({
     }
   }
 
+  function leaveEdit() {
+    setIsEditing(false)
+    if (location.state) navigate(location.pathname, { replace: true, state: null })
+  }
+
+  function cancelEdit() {
+    if (!course || readOnly) {
+      navigate('/admin/courses')
+      return
+    }
+    form.resetFields()
+    leaveEdit()
+  }
+
   function changeOrgUnit(nextOrgId: string) {
     const hasAssignees = Object.values(assignees ?? {}).some((ids) => ids.length > 0)
     if (!hasAssignees) return nextOrgId
@@ -333,7 +350,7 @@ export default function CourseEditor({
               label="외부 키"
               extra={
                 course
-                  ? '이 화면에서는 기존 외부 키를 수정할 수 없어요'
+                  ? !readOnly && '이 화면에서는 기존 외부 키를 수정할 수 없어요'
                   : '시스템 전체에서 하나만 쓸 수 있어요'
               }
               rules={[
@@ -341,7 +358,7 @@ export default function CourseEditor({
                 { max: 100 },
               ]}
             >
-              <Input disabled={readOnly || isSaving || !!course} maxLength={100} />
+              <Input readOnly={readOnly} disabled={isSaving || (!!course && !readOnly)} maxLength={100} />
             </Form.Item>
             <Form.Item
               name="orgUnitId"
@@ -352,7 +369,9 @@ export default function CourseEditor({
             >
               <Select
                 aria-label="조직 단위"
-                disabled={readOnly || isSaving || !!course}
+                open={readOnly ? false : undefined}
+                suffixIcon={readOnly ? null : undefined}
+                disabled={isSaving || (!!course && !readOnly)}
                 placeholder="조직 단위 선택"
                 className="w-full"
                 options={[
@@ -377,7 +396,7 @@ export default function CourseEditor({
                 { max: 255 },
               ]}
             >
-              <Input disabled={readOnly || isSaving} maxLength={255} />
+              <Input readOnly={readOnly} disabled={isSaving} maxLength={255} />
             </Form.Item>
           </div>
           <div
@@ -397,8 +416,10 @@ export default function CourseEditor({
                   <DatePicker
                     id="managed-course-start"
                     aria-label="시작일"
+                    inputReadOnly={readOnly}
+                    open={readOnly ? false : undefined}
                     disabled={
-                      readOnly || isSaving || (!!course && !schedule?.permissions.canEditSchedule)
+                      isSaving || (!readOnly && !!course && !schedule?.permissions.canEditSchedule)
                     }
                     allowClear={false}
                     format={['YYYY.MM.DD', 'YYYY-MM-DD']}
@@ -425,8 +446,10 @@ export default function CourseEditor({
                 >
                   <DatePicker
                     aria-label="종료일"
+                    inputReadOnly={readOnly}
+                    open={readOnly ? false : undefined}
                     disabled={
-                      readOnly || isSaving || (!!course && !schedule?.permissions.canEditSchedule)
+                      isSaving || (!readOnly && !!course && !schedule?.permissions.canEditSchedule)
                     }
                     allowClear={false}
                     format={['YYYY.MM.DD', 'YYYY-MM-DD']}
@@ -454,7 +477,8 @@ export default function CourseEditor({
             </div>
             <Form.Item name="capacity" label="정원" className="mb-0">
               <InputNumber
-                disabled={readOnly || isSaving}
+                readOnly={readOnly}
+                disabled={isSaving}
                 min={0}
                 max={2147483647}
                 precision={0}
@@ -544,7 +568,12 @@ export default function CourseEditor({
                 일정을 바꾸면 미완료 할 일을 다시 계산해요
               </span>
             )}
-            <Button disabled={isSaving} onClick={() => navigate('/admin/courses')}>
+            {!!course && !isEnded && !isEditing && (
+              <Button type="primary" disabled={needsReload} onClick={() => setIsEditing(true)}>
+                수정
+              </Button>
+            )}
+            <Button disabled={isSaving} onClick={cancelEdit}>
               {readOnly ? '목록으로' : '취소'}
             </Button>
             {!readOnly && (
@@ -585,7 +614,10 @@ export default function CourseEditor({
         onCancel={() => {
           setResult(null)
           if (!course && result) navigate(`/admin/courses/${result.courseId}`, { replace: true })
-          else onReload()
+          else {
+            leaveEdit()
+            onReload()
+          }
         }}
         footer={
           <div className="flex justify-end gap-xs">
