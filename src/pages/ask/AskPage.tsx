@@ -1,5 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { PlusOutlined } from '@ant-design/icons'
 import { Button, Card, Divider } from 'antd'
+import type { InputRef } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import type { AppLayoutContext } from '../../layouts/AppLayout'
@@ -31,11 +33,20 @@ export default function AskPage() {
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? '-m-md' : 'gap-md'}`}>
       {!isMobile && (
-        <div className="flex flex-col gap-xxs">
-          <h2 className="m-0 text-section-title">물어보기</h2>
-          <p className="m-0 text-[13px] text-(--ant-color-text-secondary)">
-            회사 생활 안내와 등록된 운영 문서에서 답을 찾아 드려요.
-          </p>
+        <div className="flex items-start justify-between gap-md">
+          <div className="flex flex-col gap-xxs">
+            <h2 className="m-0 text-section-title">물어보기</h2>
+            <p className="m-0 text-caption text-(--ant-color-text-secondary)">
+              회사 생활 안내와 등록된 운영 문서에서 답을 찾아 드려요.
+            </p>
+          </div>
+          <Button
+            icon={<PlusOutlined />}
+            disabled={session.turns.length === 0}
+            onClick={() => resetAskSession(sessionKey)}
+          >
+            새 대화
+          </Button>
         </div>
       )}
       {selectedBusinessId ? (
@@ -61,7 +72,10 @@ function AskChat({ sessionKey, session }: AskChatProps) {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user, refreshUser } = useAuth()
   const { turns, conversationId, draft } = session
+  const inputRef = useRef<InputRef>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const isNearBottom = useRef(true)
+  const turnCount = useRef(0)
 
   const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
   const businessId = selectedBusinessId ?? ''
@@ -71,8 +85,14 @@ function AskChat({ sessionKey, session }: AskChatProps) {
   const isEnded = lastTurn?.status === 'done' && lastTurn.response?.guide?.kind === 'contact'
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
+    const isAdded = turns.length > turnCount.current
+    turnCount.current = turns.length
+    if (isAdded || isNearBottom.current) endRef.current?.scrollIntoView({ block: 'end' })
   }, [turns])
+
+  useEffect(() => {
+    if (!isMobile && !isPending && !isEnded) inputRef.current?.focus()
+  }, [isMobile, isPending, isEnded])
 
   const isBusy = () => getAskSession(sessionKey).turns.some((turn) => turn.status === 'loading')
 
@@ -152,7 +172,7 @@ function AskChat({ sessionKey, session }: AskChatProps) {
     return (
       <div key={turn.id} className="flex flex-col gap-sm min-[992px]:gap-md">
         {turn.type === 'question' && (
-          <p className="m-0 max-w-[85%] self-end rounded-[12px] border border-solid border-(--ant-color-primary-border) bg-(--ant-color-primary-bg) px-sm py-xs break-words whitespace-pre-line min-[992px]:max-w-[75%] min-[992px]:px-[14px] min-[992px]:py-[9px]">
+          <p className="m-0 max-w-5/6 self-end rounded-xl border border-solid border-(--ant-color-primary-border) bg-(--ant-color-primary-bg) px-sm py-xs break-words whitespace-pre-line min-[992px]:max-w-3/4 min-[992px]:px-md min-[992px]:py-xs">
             {turn.request.query}
           </p>
         )}
@@ -160,7 +180,6 @@ function AskChat({ sessionKey, session }: AskChatProps) {
           turn={turn}
           canChoose={isLast && !isPending}
           canRetry={isLast}
-          isMobile={isMobile}
           isAdmin={isAdmin}
           businessId={selectedBusinessId}
           onChoose={choose}
@@ -175,8 +194,25 @@ function AskChat({ sessionKey, session }: AskChatProps) {
       aria-label="물어보기 대화"
       className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container)'}`}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto"
+        onScroll={(event) => {
+          const { scrollHeight, scrollTop, clientHeight } = event.currentTarget
+          isNearBottom.current = scrollHeight - scrollTop - clientHeight < 80
+        }}
+      >
         <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-sm p-md min-[992px]:gap-md min-[992px]:px-0 min-[992px]:py-lg">
+          {isMobile && turns.length > 0 && (
+            <Button
+              type="text"
+              size="small"
+              icon={<PlusOutlined />}
+              className="self-end text-caption"
+              onClick={() => resetAskSession(sessionKey)}
+            >
+              새 대화
+            </Button>
+          )}
           {turns.length === 0 ? (
             <Welcome isMobile={isMobile} onSelect={sendQuestion} />
           ) : (
@@ -184,8 +220,8 @@ function AskChat({ sessionKey, session }: AskChatProps) {
           )}
 
           {isEnded && (
-            <div className="flex flex-col items-center gap-[10px] pt-md text-center">
-              <Divider plain className="my-0 text-[13px] text-(--ant-color-text-tertiary)">대화가 끝났어요</Divider>
+            <div className="flex flex-col items-center gap-sm pt-md text-center">
+              <Divider plain className="my-0 text-caption text-(--ant-color-text-tertiary)">대화가 끝났어요</Divider>
               <Button type="primary" onClick={() => resetAskSession(sessionKey)}>새 대화 시작</Button>
               <p className="m-0 text-caption text-(--ant-color-text-tertiary)">다른 질문은 새 대화에서 물어봐 주세요</p>
             </div>
@@ -203,6 +239,7 @@ function AskChat({ sessionKey, session }: AskChatProps) {
             isMobile={isMobile}
             isEnded={isEnded}
             isPending={isPending}
+            inputRef={inputRef}
           />
         </div>
       </div>
@@ -213,8 +250,8 @@ function AskChat({ sessionKey, session }: AskChatProps) {
 function Welcome({ isMobile, onSelect }: { isMobile: boolean; onSelect: (query: string) => void }) {
   return (
     <div className="m-auto flex w-full flex-col items-center gap-sm py-xl text-center">
-      <h3 className={`m-0 ${isMobile ? 'text-[18px] font-bold' : 'text-section-title'}`}>무엇이 궁금하세요?</h3>
-      <p className={`m-0 text-(--ant-color-text-secondary) ${isMobile ? 'text-[13px]' : 'text-body'}`}>
+      <h3 className={`m-0 ${isMobile ? 'text-card-title font-bold' : 'text-section-title'}`}>무엇이 궁금하세요?</h3>
+      <p className={`m-0 text-(--ant-color-text-secondary) ${isMobile ? 'text-caption' : 'text-body'}`}>
         찾은 답에는 어디서 온 답인지{!isMobile && '(등록된 안내 또는 문서 몇 쪽)를'} 같이 보여 드려요.
       </p>
       <div className={`flex w-full ${isMobile ? 'flex-col gap-sm' : 'flex-wrap justify-center gap-xs pt-xs'}`}>
@@ -223,7 +260,7 @@ function Welcome({ isMobile, onSelect }: { isMobile: boolean; onSelect: (query: 
             key={question}
             shape="round"
             onClick={() => onSelect(question)}
-            className={isMobile ? 'h-[37px] w-full text-[13px]' : 'h-[34px] px-[14px] text-[13px]'}
+            className={isMobile ? 'w-full text-caption' : 'px-md text-caption'}
           >
             {question}
           </Button>

@@ -1,18 +1,17 @@
-import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
-import { Avatar, Button, Spin, Tag } from 'antd'
+import { CopyOutlined, ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
+import { App, Button, Tag } from 'antd'
 import type { ReactNode } from 'react'
 
 import { ApiError } from '../../../api/client'
 import type { Evidence } from '../../../types/question'
 import type { AskTurn } from '../askData'
-import { getAskErrorView, getSourceText } from '../askData'
+import { getAskErrorView, getCopyText, getSourceText } from '../askData'
 import EvidenceView from './EvidenceView'
 
 type BotMessageProps = {
   turn: AskTurn
   canChoose: boolean
   canRetry: boolean
-  isMobile: boolean
   isAdmin: boolean
   businessId?: string
   onChoose: (turn: AskTurn, choice: number | 'none') => void
@@ -23,7 +22,6 @@ export default function BotMessage({
   turn,
   canChoose,
   canRetry,
-  isMobile,
   isAdmin,
   businessId,
   onChoose,
@@ -38,12 +36,9 @@ export default function BotMessage({
   }[tone]
 
   return (
-    <div className="flex items-start gap-[10px]">
-      {!isMobile && (
-        <Avatar size={28} className="shrink-0 bg-(--ant-color-primary) text-[10px] font-bold">AX</Avatar>
-      )}
+    <div className="flex items-start gap-sm">
       <div
-        className={`flex min-w-0 flex-1 flex-col gap-xs rounded-[12px] border border-solid px-[14px] py-sm min-[992px]:max-w-[560px] min-[992px]:gap-[10px] min-[992px]:px-md ${toneClass}`}
+        className={`flex min-w-0 flex-1 flex-col gap-xs rounded-xl border border-solid px-md py-sm min-[992px]:max-w-[560px] min-[992px]:gap-sm min-[992px]:px-md ${toneClass}`}
       >
         <BotContent
           turn={turn}
@@ -67,14 +62,14 @@ function getTone(turn: AskTurn) {
   return 'default'
 }
 
-type BotContentProps = Omit<BotMessageProps, 'isMobile'>
+type BotContentProps = BotMessageProps
 
 function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, onRetry }: BotContentProps) {
   if (turn.status === 'loading') {
     return (
       <>
         {turn.selected && <EvidenceView evidence={turn.selected} isAdmin={isAdmin} businessId={businessId} />}
-        <Spin size="small" className="self-start" aria-label="답을 찾는 중" />
+        <TypingDots />
       </>
     )
   }
@@ -116,7 +111,7 @@ function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, 
   if (response.status === 'no_answer') {
     if (response.guide?.kind === 'contact') {
       return (
-        <p className="m-0 rounded-md bg-(--ant-color-fill-quaternary) px-[14px] py-2.5 font-medium">{guideText}</p>
+        <p className="m-0 rounded-md bg-(--ant-color-fill-quaternary) px-md py-2.5 font-medium">{guideText}</p>
       )
     }
     return <p className="m-0">{guideText}</p>
@@ -128,7 +123,42 @@ function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, 
     <>
       {evidence && <EvidenceView evidence={evidence} isAdmin={isAdmin} businessId={businessId} />}
       {guideText && <p className="m-0">{guideText}</p>}
+      {evidence && <CopyButton text={getCopyText(evidence)} />}
     </>
+  )
+}
+
+function TypingDots() {
+  return (
+    <span role="status" aria-label="답을 찾는 중" className="flex gap-xxs py-xxs">
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          className="size-1.5 animate-bounce rounded-full bg-(--ant-color-text-quaternary)"
+          style={{ animationDelay: `${delay}ms` }}
+        />
+      ))}
+    </span>
+  )
+}
+
+function CopyButton({ text }: { text: string | null }) {
+  const { message } = App.useApp()
+  if (!text) return null
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text ?? '')
+      message.success('답변을 복사했어요.')
+    } catch {
+      message.error('복사하지 못했어요.')
+    }
+  }
+
+  return (
+    <Button type="text" size="small" icon={<CopyOutlined />} className="self-end text-caption text-(--ant-color-text-tertiary)" onClick={copy}>
+      복사
+    </Button>
   )
 }
 
@@ -144,7 +174,7 @@ function ErrorContent({ turn, canRetry, isAdmin, businessId, onRetry }: ErrorCon
   const view = getAskErrorView(turn.error)
   const isRecordError = turn.type !== 'question' && turn.error instanceof ApiError && turn.error.status === 500
   const retry = view.canRetry && canRetry && !isRecordError && (
-    <Button type="primary" className="h-7 self-start px-[14px] text-[13px]" onClick={() => onRetry(turn)}>다시 시도</Button>
+    <Button type="primary" className="h-7 self-start px-md text-caption" onClick={() => onRetry(turn)}>다시 시도</Button>
   )
 
   if (turn.selected) {
@@ -187,7 +217,7 @@ function ClarifyContent({ turn, candidates, contextUsed, canChoose, onChoose }: 
         <Tag color="processing" variant="filled" className="m-0 self-start">앞 질문에 이어서</Tag>
       )}
       <p className="m-0">혹시 이 중에 물어보신 게 있나요?</p>
-      <div className="flex flex-col gap-xs min-[992px]:gap-[10px]">
+      <div className="flex flex-col gap-xs min-[992px]:gap-sm">
         {candidates.map((candidate, index) => (
           <CandidateButton
             key={index}
@@ -201,7 +231,7 @@ function ClarifyContent({ turn, candidates, contextUsed, canChoose, onChoose }: 
       </div>
       <Button
         type="link"
-        className={`h-auto self-start p-0 text-[13px] ${isNoneChosen ? 'font-medium' : ''}`}
+        className={`h-auto self-start p-0 text-caption ${isNoneChosen ? 'font-medium' : ''}`}
         disabled={!canChoose && !isNoneChosen}
         aria-pressed={isNoneChosen}
         onClick={canChoose ? () => onChoose(turn, 'none') : undefined}
@@ -238,7 +268,7 @@ function CandidateButton({ label, source, isChosen, disabled, onClick }: Candida
       disabled={disabled && !isChosen}
       aria-pressed={isChosen}
       onClick={disabled ? undefined : onClick}
-      className={`h-auto min-h-[37px] flex-wrap justify-between gap-x-sm gap-y-0 px-sm py-[7px] text-left whitespace-normal shadow-none ${
+      className={`h-auto flex-wrap justify-between gap-x-sm gap-y-0 px-sm py-xs text-left whitespace-normal shadow-none ${
         isChosen ? 'bg-(--ant-color-primary-bg)' : ''
       }`}
     >

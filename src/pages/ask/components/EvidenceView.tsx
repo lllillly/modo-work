@@ -18,14 +18,14 @@ export default function EvidenceView({ evidence, isAdmin, businessId }: Evidence
 
   if (evidence.type === 'SCREEN') {
     return (
-      <div className="flex flex-col items-start gap-[10px]">
+      <div className="flex flex-col items-start gap-sm">
         <p className="m-0">{evidence.label}</p>
         {openPath && (
           <Button
             color="primary"
             variant="outlined"
             onClick={() => navigate(openPath)}
-            className="h-auto border-(--ant-color-primary-border) px-sm py-xxs text-[13px] shadow-none"
+            className="h-auto border-(--ant-color-primary-border) px-sm py-xxs text-caption shadow-none"
           >
             관련 화면 열기
           </Button>
@@ -41,7 +41,7 @@ export default function EvidenceView({ evidence, isAdmin, businessId }: Evidence
       : null
   const source = sourceText && (
     <div className="flex min-w-0 items-center gap-xs text-caption text-(--ant-color-text-secondary)">
-      <span className="shrink-0 rounded-sm bg-(--ant-color-fill-tertiary) px-1.5 py-px text-[11px] font-medium">
+      <span className="shrink-0 rounded-sm bg-(--ant-color-fill-tertiary) px-1.5 py-px text-caption font-medium">
         {typeLabels[evidence.type]}
       </span>
       <span className="min-w-0 truncate" title={sourceText}>{sourceText}</span>
@@ -55,7 +55,7 @@ export default function EvidenceView({ evidence, isAdmin, businessId }: Evidence
 
   if (evidence.type === 'QA') {
     return (
-      <div className="flex flex-col gap-[10px]">
+      <div className="flex flex-col gap-sm">
         <p className="m-0 whitespace-pre-line">{evidence.text ?? evidence.label}</p>
         {source && (
           <div className="border-0 border-t border-solid border-(--ant-color-border-secondary) pt-xs">{source}</div>
@@ -65,11 +65,11 @@ export default function EvidenceView({ evidence, isAdmin, businessId }: Evidence
   }
 
   return (
-    <div className="flex flex-col gap-[10px]">
+    <div className="flex flex-col gap-sm">
       <p className="m-0">운영 문서에서 관련 구절을 찾았어요.</p>
-      <div className="flex flex-col gap-[6px]">
+      <div className="flex flex-col gap-xs">
         {evidence.quote && (
-          <blockquote className="m-0 rounded-md border-0 border-l-[3px] border-solid border-(--ant-color-primary) bg-(--ant-color-fill-tertiary) px-[14px] py-2.5 whitespace-pre-line">
+          <blockquote className="m-0 rounded-md border-0 border-l-4 border-solid border-(--ant-color-primary) bg-(--ant-color-fill-tertiary) px-md py-2.5 whitespace-pre-line">
             {evidence.quote}
           </blockquote>
         )}

@@ -1,7 +1,8 @@
 import { Button, Input } from 'antd'
-import type { KeyboardEvent } from 'react'
+import type { InputRef } from 'antd'
+import type { KeyboardEvent, RefObject } from 'react'
 
-import { getQueryLength, MAX_QUERY_LENGTH } from '../askData'
+import { getQueryLength, hasPersonalInfo, MAX_QUERY_LENGTH } from '../askData'
 
 type QuestionInputProps = {
   value: string
@@ -10,11 +11,13 @@ type QuestionInputProps = {
   isMobile: boolean
   isEnded: boolean
   isPending: boolean
+  inputRef: RefObject<InputRef | null>
 }
 
-export default function QuestionInput({ value, onChange, onSend, isMobile, isEnded, isPending }: QuestionInputProps) {
+export default function QuestionInput({ value, onChange, onSend, isMobile, isEnded, isPending, inputRef }: QuestionInputProps) {
   const length = getQueryLength(value)
   const overCount = length - MAX_QUERY_LENGTH
+  const hasPersonal = hasPersonalInfo(value)
   const canSend = !isEnded && !isPending && value.trim() !== '' && overCount <= 0
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -28,19 +31,20 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
     <div className="flex flex-col gap-1.5">
       <div className="flex items-end gap-xs">
         <Input.TextArea
+          ref={inputRef}
           aria-label="질문 입력"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isEnded}
           placeholder={isEnded && !isMobile ? '대화가 끝났어요. 새 대화를 시작해 주세요' : '궁금한 것을 물어보세요'}
-          status={overCount > 0 ? 'error' : undefined}
+          status={overCount > 0 ? 'error' : hasPersonal ? 'warning' : undefined}
           autoSize={{ minRows: 1, maxRows: isMobile ? 4 : 5 }}
           count={{ show: true, max: MAX_QUERY_LENGTH, strategy: getQueryLength }}
-          className={isMobile ? 'rounded-[20px]' : 'rounded-lg'}
+          className={isMobile ? 'rounded-xl' : 'rounded-lg'}
           classNames={{
-            textarea: `resize-none pr-[72px] pl-sm ${isMobile ? 'min-h-[41px] py-[9px]' : 'min-h-[43px] py-2.5'}`,
-            count: `right-sm bottom-2.5 ${isMobile ? 'text-[11px]' : 'text-caption'} ${overCount > 0 ? 'text-(--ant-color-error)' : ''}`,
+            textarea: `resize-none pr-16 pl-sm ${isMobile ? 'py-xs' : 'py-2.5'}`,
+            count: `right-sm bottom-2.5 ${isMobile ? 'text-caption' : 'text-caption'} ${overCount > 0 ? 'text-(--ant-color-error)' : ''}`,
           }}
         />
         <Button
@@ -49,7 +53,7 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
           onClick={() => {
             if (canSend) onSend()
           }}
-          className={`shrink-0 ${isMobile ? 'mb-[1.5px] h-[38px] rounded-[19px] px-[14px] text-[13px]' : 'h-[41px] rounded-lg px-md'}`}
+          className={`shrink-0 ${isMobile ? 'rounded-full px-md text-caption' : 'rounded-lg px-md'}`}
         >
           보내기
         </Button>
@@ -60,7 +64,12 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
           {MAX_QUERY_LENGTH}자까지 입력할 수 있어요. {overCount}자를 줄여 주세요.
         </p>
       )}
-      <p className={`m-0 text-(--ant-color-text-tertiary) ${isMobile ? 'text-[11px]' : 'text-caption'}`}>
+      {hasPersonal && overCount <= 0 && (
+        <p role="alert" className="m-0 text-caption text-(--ant-color-warning-text)">
+          개인정보로 보이는 내용이 있어요. 빼고 보내 주세요.
+        </p>
+      )}
+      <p className={`m-0 text-(--ant-color-text-tertiary) ${isMobile ? 'text-caption' : 'text-caption'}`}>
         {isMobile ? '개인정보는 넣지 마세요' : '이름·전화번호 같은 개인정보는 넣지 마세요. 질문 기록은 개인정보를 가린 상태로 저장돼요.'}
       </p>
     </div>

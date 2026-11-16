@@ -24,6 +24,20 @@ export function getQueryLength(value: string) {
   return Array.from(value).length
 }
 
+export function getCopyText(evidence: Evidence) {
+  return evidence.type === 'QA' ? (evidence.text ?? evidence.label) : evidence.type === 'DOC' ? evidence.quote : null
+}
+
+const personalInfoPatterns = [
+  /\d{6}\s?-\s?[1-4]\d{6}/,
+  /01[016789][-\s]?\d{3,4}[-\s]?\d{4}/,
+  /[\w.+-]+@[\w-]+\.[\w.-]+/,
+]
+
+export function hasPersonalInfo(value: string) {
+  return personalInfoPatterns.some((pattern) => pattern.test(value))
+}
+
 export function getSourceText(evidence: Evidence) {
   const page = evidence.page === null ? null : `${evidence.page}쪽`
   const source = [evidence.docTitle, page].filter(Boolean).join(' · ')
