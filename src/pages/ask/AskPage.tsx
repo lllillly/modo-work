@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { Button, Card, Divider } from 'antd'
 import { useOutletContext } from 'react-router'
 
@@ -10,14 +10,23 @@ import { askQuestion } from '../../api/questions'
 import { useAuth } from '../../providers/AuthContext'
 import type { AskTurn } from './askData'
 import { exampleQuestions } from './askData'
+import type { AskSession } from './askSession'
+import {
+  createTurnId,
+  getAskSession,
+  resetAskSession,
+  subscribeAskSession,
+  updateAskSession,
+} from './askSession'
 
 import BotMessage from './components/BotMessage'
 import QuestionInput from './components/QuestionInput'
 
 export default function AskPage() {
-  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
+  const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user } = useAuth()
-  const [chatKey, setChatKey] = useState(0)
+  const sessionKey = `${user?.id}-${selectedBusinessId}`
+  const session = useSyncExternalStore(subscribeAskSession, () => getAskSession(sessionKey))
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? '-m-md' : 'gap-md'}`}>
@@ -30,10 +39,7 @@ export default function AskPage() {
         </div>
       )}
       {selectedBusinessId ? (
-        <AskChat
-          key={`${user?.id}-${selectedBusiness}-${chatKey}`}
-          onNewChat={() => setChatKey((key) => key + 1)}
-        />
+        <AskChat key={sessionKey} sessionKey={sessionKey} session={session} />
       ) : (
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
           <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
@@ -46,14 +52,15 @@ export default function AskPage() {
   )
 }
 
-function AskChat({ onNewChat }: { onNewChat: () => void }) {
+type AskChatProps = {
+  sessionKey: string
+  session: AskSession
+}
+
+function AskChat({ sessionKey, session }: AskChatProps) {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user, refreshUser } = useAuth()
-  const [turns, setTurns] = useState<AskTurn[]>([])
-  const [conversationId, setConversationId] = useState<string | null>(null)
-  const [draft, setDraft] = useState('')
-  const isSending = useRef(false)
-  const nextId = useRef(1)
+  const { turns, conversationId, draft } = session
   const endRef = useRef<HTMLDivElement>(null)
 
   const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
@@ -67,33 +74,48 @@ function AskChat({ onNewChat }: { onNewChat: () => void }) {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [turns])
 
+  const isBusy = () => getAskSession(sessionKey).turns.some((turn) => turn.status === 'loading')
+
   function updateTurn(id: number, values: Partial<AskTurn>) {
-    setTurns((current) => current.map((turn) => (turn.id === id ? { ...turn, ...values } : turn)))
+    updateAskSession(sessionKey, (current) => ({
+      ...current,
+      turns: current.turns.map((turn) => (turn.id === id ? { ...turn, ...values } : turn)),
+    }))
   }
 
   async function runTurn(id: number, request: QuestionRequest) {
-    if (isSending.current) return
-    isSending.current = true
     updateTurn(id, { status: 'loading', error: undefined })
 
     try {
       const response = await askQuestion(request)
-      setConversationId(response.conversationId)
-      updateTurn(id, { status: 'done', response })
+      updateAskSession(sessionKey, (current) =>
+        current.turns.some((turn) => turn.id === id)
+          ? {
+              ...current,
+              conversationId: response.conversationId,
+              turns: current.turns.map((turn) => (turn.id === id ? { ...turn, status: 'done', response } : turn)),
+            }
+          : current,
+      )
     } catch (error) {
       updateTurn(id, { status: 'error', error })
       if (isAuthStateError(error)) void refreshUser()
-    } finally {
-      isSending.current = false
     }
   }
 
   function addTurn(turn: Omit<AskTurn, 'id' | 'status'>) {
-    if (isSending.current || isEnded) return
+    if (isBusy() || isEnded) return
 
-    const id = nextId.current++
-    setTurns((current) => [...current, { ...turn, id, status: 'loading' }])
+    const id = createTurnId()
+    updateAskSession(sessionKey, (current) => ({
+      ...current,
+      turns: [...current.turns, { ...turn, id, status: 'loading' }],
+    }))
     void runTurn(id, turn.request)
+  }
+
+  function setDraft(value: string) {
+    updateAskSession(sessionKey, (current) => ({ ...current, draft: value }))
   }
 
   function sendQuestion(query: string) {
@@ -107,7 +129,7 @@ function AskChat({ onNewChat }: { onNewChat: () => void }) {
   }
 
   function choose(turn: AskTurn, choice: number | 'none') {
-    if (isSending.current || !turn.response) return
+    if (isBusy() || !turn.response) return
 
     const base = { ...turn.request, conversationId: turn.response.conversationId }
     updateTurn(turn.id, { chosen: choice })
@@ -164,7 +186,7 @@ function AskChat({ onNewChat }: { onNewChat: () => void }) {
           {isEnded && (
             <div className="flex flex-col items-center gap-[10px] pt-md text-center">
               <Divider plain className="my-0 text-[13px] text-(--ant-color-text-tertiary)">대화가 끝났어요</Divider>
-              <Button type="primary" onClick={onNewChat}>새 대화 시작</Button>
+              <Button type="primary" onClick={() => resetAskSession(sessionKey)}>새 대화 시작</Button>
               <p className="m-0 text-caption text-(--ant-color-text-tertiary)">다른 질문은 새 대화에서 물어봐 주세요</p>
             </div>
           )}

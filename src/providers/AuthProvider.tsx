@@ -5,6 +5,7 @@ import { AuthApiError, getCurrentUser, logout as requestLogout, testLogin } from
 import type { AuthUser, TestLoginRequest } from '../types/auth'
 import { AuthContext } from './AuthContext'
 import type { AuthNotice } from './AuthContext'
+import { resetAskSession } from '../pages/ask/askSession'
 
 type AuthState = {
   user: AuthUser | null
@@ -103,6 +104,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
     try {
       await requestLogout()
+      resetAskSession()
 
       if (currentRequest === requestId.current) {
         setAuth({ user: null, isLoading: false, error: null, notice: null })
