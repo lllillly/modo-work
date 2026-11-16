@@ -27,8 +27,7 @@ API 요청은 세션 쿠키와 동일 출처 상대 경로 `/api`를 사용합�
 | S10에서 연결한 할 일과 상세 | `/tasks?courseId=실제ID&source=api` | 관리자용 실제 API 연결 |
 | 과정 & 담당 배정 (S10) | `/admin/courses` | 실제 API 연결 |
 | CSV 가져오기 | `/admin/courses/import` | 미리보기, 적용, 취소 API 연결 |
-| 문서 (S08) | `/documents` | 문서 목록, 종류 필터, 제목 검색, 앱 안 PDF 보기 API 연결. 본문 검색과 연결된 할 일은 API가 없어 비활성 |
-| 문서 업로드 (S13) | `/admin/documents` | 목록, PDF 올리기, 삭제, 읽기 다시 시도 API 연결. 파일 교체, 외부 링크 등록, 템플릿 연결은 API가 없어 비활성 |
+| 물어보기 (S16) | `/ask` | 질문 보내기, 되묻기 후보 선택, 근거 표시 API 연결 |
 
 홈과 기존 할 일 화면의 목업은 새로고침하면 초기화됩니다. 실제 API 화면과 목업 상태는 공유하지 않습니다. `source=api`는 프론트 화면 구분용이며 서버에는 보내지 않습니다.
 
@@ -46,8 +45,7 @@ API 요청은 세션 쿠키와 동일 출처 상대 경로 `/api`를 사용합�
 | `src/pages/home/` | 담당자와 리더 홈 |
 | `src/pages/tasks/` | 과정별 할 일, 상세, 일정과 월 주기 |
 | `src/pages/admin/courses/` | 과정 관리와 CSV 가져오기 |
-| `src/pages/documents/`, `src/pages/admin/documents/` | 문서 보기와 문서 업로드 |
-| `src/components/common/NoticeCard.tsx` | 오류, 권한, 빈 상태 안내 카드 |
+| `src/pages/ask/` | 물어보기 |
 
 Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치지 않도록 Tailwind Preflight는 제외했습니다.
 992px 이상은 데스크탑, 그 미만은 모바일입니다. 본문과 사이드바는 각각 스크롤하며 모바일에서는 메뉴 버튼으로 사이드바를 엽니다. 모바일 스크롤바는 숨기되 스크롤은 유지합니다.
@@ -113,29 +111,20 @@ CSV 파일은 `FormData`로 전송합니다. 서버에서 검사한 행별 변�
 
 통합 변경 이력은 변경 전후 값과 수정자, 시각을 표시합니다. 사유는 종료일 정정과 종료 과정의 관리자 예외 교체 이력에서만 표시합니다.
 
-## 문서와 문서 업로드
+## 물어보기
 
-`DocumentsPage.tsx`에서 사업 선택 여부를 확인하고 목록과 보기 화면을 연결합니다.
+`AskPage.tsx`에서 대화 상태를 관리합니다. 선택한 사업으로 질문을 보내고, 응답의 `conversationId`를 같은 대화의 다음 요청에 사용합니다. 새 대화를 시작하거나 사업, 사용자가 바뀌면 대화를 초기화합니다. 사업 ID는 관리자만 받을 수 있어 다른 역할에는 안내 카드를 표시합니다.
 
 | 파일 | 역할 |
 | --- | --- |
-| `DocumentList.tsx` | 종류 필터, 제목 검색, 문서 목록. 외부 링크 문서는 새 탭에서 열기 |
-| `DocumentViewer.tsx` | 앱 안 PDF 보기, 쪽 이동과 전체 화면. 쪽은 `?page=` 로 유지 |
-| `documentData.ts` | 종류 목록, 안내 문구, 색인 상태 표시 |
-| `AdminDocumentList.tsx` | 관리자 문서 목록, 검색과 필터, 삭제, 읽기 다시 시도 |
-| `DocumentUploadDrawer.tsx` | PDF 올리기. 10MB 이하 PDF만 받고 제목은 파일명으로 채움 |
+| `components/BotMessage.tsx` | 응답 상태별 말풍선. 즉답, 되묻기 후보와 해당 없음, 답 없음, 개인정보 경고, 오류 |
+| `components/EvidenceView.tsx` | 근거 표시. 등록 안내, 문서 구절, 관련 화면 열기 |
+| `components/QuestionInput.tsx` | 질문 입력. 500자 제한과 개인정보 패턴 경고 |
+| `askData.ts` | 글자 수 계산, 출처 문구, 이동 가능한 화면 경로, 오류 안내 문구 |
 
-PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 위쪽 쪽수는 바뀌지 않습니다. 추후 방안을 찾아 변경 예정입니다. 업로드는 `metadata`와 `file`을 `FormData`로 전송하고, 삭제는 목록에서 받은 `contentRevision`을 함께 보냅니다. 삭제한 문서의 제목은 다시 사용할 수 없습니다. 작성 규칙은 [문서 API](../../contracts/api/documents.md)를 따릅니다.
+응답은 `answered`, `clarify`, `no_answer`, `pii_warning` 네 가지입니다. 되묻기에서 후보를 고르면 해당 근거를 답으로 보여 주고 `candidateSelected`로 알립니다. 해당 없음은 `noneSelected`로 알리고, 이후 안내 문구는 응답의 `guide.text`를 그대로 표시합니다. 안내 종류가 `contact`이면 입력을 막고 새 대화를 시작하게 합니다.
 
-### 미연동 항목 (추후 연동 예정)
-
-| 항목 | 현재 상태 |
-| --- | --- |
-| 문서 안 구절 검색 | 검색창은 제목만 검색, 구절 검색은 비활성 |
-| 문서 보기의 연결된 할 일 | 비활성 |
-| 새 파일로 교체, 버전, 연결할 템플릿 | 비활성 |
-| 외부 링크 등록 | 비활성 |
-| 담당자와 리더의 문서 보기 | 사업 정보를 받을 수 없어 안내 화면 표시 |
+질문은 500자(유니코드 코드 포인트 기준)까지 입력합니다. 전화번호, 주민등록번호, 이메일 형식이 들어 있으면 입력칸에서 먼저 경고하며 전송은 막지 않습니다. 관련 화면은 앱에 있는 경로만 버튼으로 표시하고 관리자 화면은 관리자에게만 엽니다. 요청과 응답 형식은 [물어보기 API](../../contracts/api/questions.md)를 따릅니다.
 
 ## 상태별 화면 확인
 
