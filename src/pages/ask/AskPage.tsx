@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Divider } from 'antd'
+import { Button, Card, Divider } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import type { QuestionRequest } from '../../types/question'
 
 import { isAuthStateError } from '../../api/client'
+import { askQuestion } from '../../api/questions'
 import { useAuth } from '../../providers/AuthContext'
 import type { AskTurn } from './askData'
-import { askQuestionMock, exampleQuestions } from './askMockData'
+import { exampleQuestions } from './askData'
 
 import BotMessage from './components/BotMessage'
 import QuestionInput from './components/QuestionInput'
 
 export default function AskPage() {
-  const { isMobile, selectedBusiness } = useOutletContext<AppLayoutContext>()
+  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user } = useAuth()
   const [chatKey, setChatKey] = useState(0)
 
@@ -28,16 +29,25 @@ export default function AskPage() {
           </p>
         </div>
       )}
-      <AskChat
-        key={`${user?.id}-${selectedBusiness}-${chatKey}`}
-        onNewChat={() => setChatKey((key) => key + 1)}
-      />
+      {selectedBusinessId ? (
+        <AskChat
+          key={`${user?.id}-${selectedBusiness}-${chatKey}`}
+          onNewChat={() => setChatKey((key) => key + 1)}
+        />
+      ) : (
+        <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
+          <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
+          <p className="m-0 mt-xxs text-caption text-(--ant-color-text-secondary)">
+            사업 정보를 받을 수 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
+          </p>
+        </Card>
+      )}
     </div>
   )
 }
 
 function AskChat({ onNewChat }: { onNewChat: () => void }) {
-  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
+  const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user, refreshUser } = useAuth()
   const [turns, setTurns] = useState<AskTurn[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -47,7 +57,7 @@ function AskChat({ onNewChat }: { onNewChat: () => void }) {
   const endRef = useRef<HTMLDivElement>(null)
 
   const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
-  const businessId = selectedBusinessId ?? selectedBusiness
+  const businessId = selectedBusinessId ?? ''
 
   const lastTurn = turns.at(-1)
   const isPending = lastTurn?.status === 'loading'
@@ -67,7 +77,7 @@ function AskChat({ onNewChat }: { onNewChat: () => void }) {
     updateTurn(id, { status: 'loading', error: undefined })
 
     try {
-      const response = await askQuestionMock(request)
+      const response = await askQuestion(request)
       setConversationId(response.conversationId)
       updateTurn(id, { status: 'done', response })
     } catch (error) {

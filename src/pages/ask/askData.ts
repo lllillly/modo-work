@@ -3,6 +3,12 @@ import type { Evidence, QuestionRequest, QuestionResponse } from '../../types/qu
 
 export const MAX_QUERY_LENGTH = 500
 
+export const exampleQuestions = [
+  '연차는 어떻게 신청해요?',
+  '마감이 주말이면 어떻게 돼요?',
+  '증빙 자료는 언제까지 보관해요?',
+]
+
 export type AskTurn = {
   id: number
   type: 'question' | 'candidate' | 'none'
@@ -25,13 +31,15 @@ export function getSourceText(evidence: Evidence) {
 }
 
 const appPaths = ['/', '/tasks', '/admin/courses', '/admin/courses/import']
+const pathAliases: Record<string, string> = { '/my-tasks': '/tasks' }
 
-export function canOpenPath(path: string | null, isAdmin: boolean) {
-  if (!path) return false
+export function getOpenablePath(path: string | null, isAdmin: boolean) {
+  if (!path) return null
 
-  const pathname = path.split(/[?#]/)[0]
-  if (pathname.startsWith('/admin') && !isAdmin) return false
-  return appPaths.includes(pathname)
+  const [pathname, ...rest] = path.split(/(?=[?#])/)
+  const target = pathAliases[pathname] ?? pathname
+  if (target.startsWith('/admin') && !isAdmin) return null
+  return appPaths.includes(target) ? target + rest.join('') : null
 }
 
 export function getDocumentUrl(docId: string, businessId: string, page: number | null) {

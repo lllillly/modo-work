@@ -2,7 +2,7 @@ import { Button } from 'antd'
 import { useNavigate } from 'react-router'
 
 import type { Evidence } from '../../../types/question'
-import { canOpenPath, getDocumentUrl, getSourceText } from '../askData'
+import { getDocumentUrl, getOpenablePath, getSourceText } from '../askData'
 
 type EvidenceViewProps = {
   evidence: Evidence
@@ -14,17 +14,17 @@ const typeLabels = { QA: '안내', DOC: '문서', SCREEN: '화면' } as const
 
 export default function EvidenceView({ evidence, isAdmin, businessId }: EvidenceViewProps) {
   const navigate = useNavigate()
-  const { path } = evidence
+  const openPath = getOpenablePath(evidence.path, isAdmin)
 
   if (evidence.type === 'SCREEN') {
     return (
       <div className="flex flex-col items-start gap-[10px]">
         <p className="m-0">{evidence.label}</p>
-        {path && canOpenPath(path, isAdmin) && (
+        {openPath && (
           <Button
             color="primary"
             variant="outlined"
-            onClick={() => navigate(path)}
+            onClick={() => navigate(openPath)}
             className="h-auto border-(--ant-color-primary-border) px-sm py-xxs text-[13px] shadow-none"
           >
             관련 화면 열기

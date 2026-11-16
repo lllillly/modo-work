@@ -2,6 +2,7 @@ import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import { Avatar, Button, Spin, Tag } from 'antd'
 import type { ReactNode } from 'react'
 
+import { ApiError } from '../../../api/client'
 import type { Evidence } from '../../../types/question'
 import type { AskTurn } from '../askData'
 import { getAskErrorView, getSourceText } from '../askData'
@@ -141,7 +142,8 @@ type ErrorContentProps = {
 
 function ErrorContent({ turn, canRetry, isAdmin, businessId, onRetry }: ErrorContentProps) {
   const view = getAskErrorView(turn.error)
-  const retry = view.canRetry && canRetry && (
+  const isRecordError = turn.type !== 'question' && turn.error instanceof ApiError && turn.error.status === 500
+  const retry = view.canRetry && canRetry && !isRecordError && (
     <Button type="primary" className="h-7 self-start px-[14px] text-[13px]" onClick={() => onRetry(turn)}>다시 시도</Button>
   )
 
