@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { InboxOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
 import { App, Button, Card, Input, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -10,7 +10,7 @@ import NoticeCard, { ErrorTriangle } from '../../../../components/common/NoticeC
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
-import { getIndexStatus } from '../../../documents/documentData'
+import { getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
 import DocumentUploadDrawer from './DocumentUploadDrawer'
 
 const ALL_FILTER = 'all'
@@ -40,6 +40,8 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       (businessId === ALL_FILTER || item.businessScope === 'ALL' || item.businessIds.includes(businessId)),
   )
 
+  const reloadDocuments = useEffectEvent(() => documents.reload())
+
   useEffect(() => {
     const ids = Object.keys(indexing)
     if (ids.length === 0) return
@@ -49,11 +51,15 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       try {
         const latest = await getAdminDocuments()
         if (stopped) return
-        const finished = ids.flatMap((id) => {
-          const found = latest.find((item) => item.id === id)
-          return found && found.indexStatus !== 'PENDING' && found.indexStatus !== 'PROCESSING' ? [found] : []
-        })
-        if (finished.length === 0) return
+        const finished = latest.filter(
+          (item) =>
+            item.id in indexing &&
+            item.indexStatus !== 'PENDING' &&
+            item.indexStatus !== 'PROCESSING' &&
+            !isIndexRetrying(item),
+        )
+        const removedIds = ids.filter((id) => !latest.some((item) => item.id === id))
+        if (finished.length === 0 && removedIds.length === 0) return
         finished.forEach((item) => {
           const title = indexing[item.id]
           if (item.indexStatus === 'READY') message.success(`'${title}' 문서를 다 읽었어요. 이제 물어보기에서 쓸 수 있어요.`)
@@ -63,9 +69,10 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
         setIndexing((current) => {
           const rest = { ...current }
           finished.forEach((item) => delete rest[item.id])
+          removedIds.forEach((id) => delete rest[id])
           return rest
         })
-        documents.reload()
+        reloadDocuments()
       } catch {
         return
       }
@@ -75,7 +82,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       stopped = true
       window.clearInterval(timer)
     }
-  }, [indexing, message, documents])
+  }, [indexing, message])
 
   function showError(error: unknown) {
     message.error(getApiErrorMessage(error))
@@ -86,6 +93,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     try {
       await retryDocumentIndex(item.id)
       message.success('다시 읽도록 요청했어요.')
+      setIndexing((current) => ({ ...current, [item.id]: item.title }))
       documents.reload()
     } catch (error) {
       showError(error)
@@ -152,7 +160,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             <Tag variant="outlined" color={status.color} className="m-0 text-caption">
               {status.label}
             </Tag>
-            {item.indexStatus === 'FAILED' && (
+            {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (
               <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => retry(item)}>
                 다시 시도
               </Button>
@@ -306,7 +314,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                       <Button type="link" size="small" className="h-auto p-0 text-(--ant-color-text-secondary)" onClick={() => confirmDelete(item)}>
                         삭제
                       </Button>
-                      {item.indexStatus === 'FAILED' && (
+                      {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (
                         <Button type="link" size="small" className="h-auto p-0" onClick={() => retry(item)}>
                           다시 시도
                         </Button>

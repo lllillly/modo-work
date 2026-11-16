@@ -33,7 +33,12 @@ export function getViewerMeta(item: DocumentItem, businessName: string) {
   return meta.join(' · ')
 }
 
+export function isIndexRetrying(item: DocumentItem) {
+  return item.indexStatus === 'FAILED' && item.indexError === 'RETRYABLE'
+}
+
 export function getIndexStatus(item: DocumentItem) {
+  if (isIndexRetrying(item)) return { label: '읽는 중…', color: 'processing' }
   if (item.indexStatus === 'READY') return { label: '색인 완료', color: 'success' }
   if (item.indexStatus === 'FAILED') return { label: '읽기 실패', color: 'error' }
   if (item.indexStatus === 'UNSUPPORTED') {
