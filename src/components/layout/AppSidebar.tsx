@@ -19,7 +19,7 @@ const menuItems = [
   { key: '/', label: <Link to="/">홈</Link> },
   { key: '/tasks', label: <Link to="/tasks">과정별 할 일</Link> },
   { key: '/ask', label: '물어보기', disabled: true },
-  { key: '/documents', label: '문서', disabled: true },
+  { key: '/documents', label: <Link to="/documents">문서</Link> },
   { key: '/notices', label: '공지', disabled: true },
   { key: '/education', label: '교육', disabled: true },
 ] satisfies MenuProps['items']
@@ -59,6 +59,7 @@ export default function AppSidebar({
   businessOptions,
 }: AppSidebarProps) {
   const { pathname } = useLocation()
+  const selectedMenuKey = pathname.startsWith('/documents') ? '/documents' : pathname
   const selectedAdminKey = pathname === '/admin/courses/import' ? '/admin/import'
     : pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
 
@@ -116,7 +117,7 @@ export default function AppSidebar({
           <Menu
             mode="inline"
             inlineIndent={12}
-            selectedKeys={[pathname]}
+            selectedKeys={[selectedMenuKey]}
             items={menuItems}
             onClick={onClose}
             className="border-e-0"

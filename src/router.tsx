@@ -9,6 +9,7 @@ const AppLayout = lazy(() => import('./layouts/AppLayout'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const HomePage = lazy(() => import('./pages/home/HomePage'))
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
+const DocumentsPage = lazy(() => import('./pages/documents/DocumentsPage'))
 const CoursesPage = lazy(() => import('./pages/admin/courses/CoursesPage'))
 
 type AppRouterProps = {
@@ -27,6 +28,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
             >
               <Route index element={<HomePage />} /> {/* 홈(역할별로 화면 변경) */}
               <Route path="/tasks" element={<TasksPage />} /> {/* 과정별 할 일 */}
+              <Route path="/documents/*" element={<DocumentsPage />} /> {/* 문서 */}
               <Route path="/admin/courses/*" element={<CoursesPage />} />
               <Route path="/admin/import" element={<Navigate to="/admin/courses/import" replace />} />
               <Route
