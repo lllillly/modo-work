@@ -1,0 +1,202 @@
+import { useEffect, useRef, useState } from 'react'
+import { Button, Divider } from 'antd'
+import { useOutletContext } from 'react-router'
+
+import type { AppLayoutContext } from '../../layouts/AppLayout'
+import type { QuestionRequest } from '../../types/question'
+
+import { isAuthStateError } from '../../api/client'
+import { useAuth } from '../../providers/AuthContext'
+import type { AskTurn } from './askData'
+import { askQuestionMock, exampleQuestions } from './askMockData'
+
+import BotMessage from './components/BotMessage'
+import QuestionInput from './components/QuestionInput'
+
+export default function AskPage() {
+  const { isMobile, selectedBusiness } = useOutletContext<AppLayoutContext>()
+  const { user } = useAuth()
+  const [chatKey, setChatKey] = useState(0)
+
+  return (
+    <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? '-m-md' : 'gap-md'}`}>
+      {!isMobile && (
+        <div className="flex flex-col gap-xxs">
+          <h2 className="m-0 text-section-title">물어보기</h2>
+          <p className="m-0 text-[13px] text-(--ant-color-text-secondary)">
+            회사 생활 안내와 등록된 운영 문서에서 답을 찾아 드려요.
+          </p>
+        </div>
+      )}
+      <AskChat
+        key={`${user?.id}-${selectedBusiness}-${chatKey}`}
+        onNewChat={() => setChatKey((key) => key + 1)}
+      />
+    </div>
+  )
+}
+
+function AskChat({ onNewChat }: { onNewChat: () => void }) {
+  const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
+  const { user, refreshUser } = useAuth()
+  const [turns, setTurns] = useState<AskTurn[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const isSending = useRef(false)
+  const nextId = useRef(1)
+  const endRef = useRef<HTMLDivElement>(null)
+
+  const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
+  const businessId = selectedBusinessId ?? selectedBusiness
+
+  const lastTurn = turns.at(-1)
+  const isPending = lastTurn?.status === 'loading'
+  const isEnded = lastTurn?.status === 'done' && lastTurn.response?.guide?.kind === 'contact'
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' })
+  }, [turns])
+
+  function updateTurn(id: number, values: Partial<AskTurn>) {
+    setTurns((current) => current.map((turn) => (turn.id === id ? { ...turn, ...values } : turn)))
+  }
+
+  async function runTurn(id: number, request: QuestionRequest) {
+    if (isSending.current) return
+    isSending.current = true
+    updateTurn(id, { status: 'loading', error: undefined })
+
+    try {
+      const response = await askQuestionMock(request)
+      setConversationId(response.conversationId)
+      updateTurn(id, { status: 'done', response })
+    } catch (error) {
+      updateTurn(id, { status: 'error', error })
+      if (isAuthStateError(error)) void refreshUser()
+    } finally {
+      isSending.current = false
+    }
+  }
+
+  function addTurn(turn: Omit<AskTurn, 'id' | 'status'>) {
+    if (isSending.current || isEnded) return
+
+    const id = nextId.current++
+    setTurns((current) => [...current, { ...turn, id, status: 'loading' }])
+    void runTurn(id, turn.request)
+  }
+
+  function sendQuestion(query: string) {
+    if (!query.trim()) return
+
+    addTurn({
+      type: 'question',
+      request: { businessId, query, conversationId, noneSelected: false, candidateSelected: false },
+    })
+    setDraft('')
+  }
+
+  function choose(turn: AskTurn, choice: number | 'none') {
+    if (isSending.current || !turn.response) return
+
+    const base = { ...turn.request, conversationId: turn.response.conversationId }
+    updateTurn(turn.id, { chosen: choice })
+
+    if (choice === 'none') {
+      addTurn({ type: 'none', request: { ...base, noneSelected: true, candidateSelected: false } })
+      return
+    }
+
+    addTurn({
+      type: 'candidate',
+      selected: turn.response.candidates[choice],
+      request: { ...base, noneSelected: false, candidateSelected: true },
+    })
+  }
+
+  const messages = turns.map((turn) => {
+    const isLast = turn === lastTurn
+
+    return (
+      <div key={turn.id} className="flex flex-col gap-sm min-[992px]:gap-md">
+        {turn.type === 'question' && (
+          <p className="m-0 max-w-[85%] self-end rounded-[12px] border border-solid border-(--ant-color-primary-border) bg-(--ant-color-primary-bg) px-sm py-xs break-words whitespace-pre-line min-[992px]:max-w-[75%] min-[992px]:px-[14px] min-[992px]:py-[9px]">
+            {turn.request.query}
+          </p>
+        )}
+        <BotMessage
+          turn={turn}
+          canChoose={isLast && !isPending}
+          canRetry={isLast}
+          isMobile={isMobile}
+          isAdmin={isAdmin}
+          businessId={selectedBusinessId}
+          onChoose={choose}
+          onRetry={(target) => void runTurn(target.id, target.request)}
+        />
+      </div>
+    )
+  })
+
+  return (
+    <section
+      aria-label="물어보기 대화"
+      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container)'}`}
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-sm p-md min-[992px]:gap-md min-[992px]:px-0 min-[992px]:py-lg">
+          {turns.length === 0 ? (
+            <Welcome isMobile={isMobile} onSelect={sendQuestion} />
+          ) : (
+            messages
+          )}
+
+          {isEnded && (
+            <div className="flex flex-col items-center gap-[10px] pt-md text-center">
+              <Divider plain className="my-0 text-[13px] text-(--ant-color-text-tertiary)">대화가 끝났어요</Divider>
+              <Button type="primary" onClick={onNewChat}>새 대화 시작</Button>
+              <p className="m-0 text-caption text-(--ant-color-text-tertiary)">다른 질문은 새 대화에서 물어봐 주세요</p>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      </div>
+
+      <div className="shrink-0 border-0 border-t border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container) px-sm pt-2.5 pb-3.5 min-[992px]:px-lg min-[992px]:pt-3.5 min-[992px]:pb-md">
+        <div className="mx-auto w-full max-w-[760px]">
+          <QuestionInput
+            value={draft}
+            onChange={setDraft}
+            onSend={() => sendQuestion(draft)}
+            isMobile={isMobile}
+            isEnded={isEnded}
+            isPending={isPending}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Welcome({ isMobile, onSelect }: { isMobile: boolean; onSelect: (query: string) => void }) {
+  return (
+    <div className="m-auto flex w-full flex-col items-center gap-sm py-xl text-center">
+      <h3 className={`m-0 ${isMobile ? 'text-[18px] font-bold' : 'text-section-title'}`}>무엇이 궁금하세요?</h3>
+      <p className={`m-0 text-(--ant-color-text-secondary) ${isMobile ? 'text-[13px]' : 'text-body'}`}>
+        찾은 답에는 어디서 온 답인지{!isMobile && '(등록된 안내 또는 문서 몇 쪽)를'} 같이 보여 드려요.
+      </p>
+      <div className={`flex w-full ${isMobile ? 'flex-col gap-sm' : 'flex-wrap justify-center gap-xs pt-xs'}`}>
+        {exampleQuestions.map((question) => (
+          <Button
+            key={question}
+            shape="round"
+            onClick={() => onSelect(question)}
+            className={isMobile ? 'h-[37px] w-full text-[13px]' : 'h-[34px] px-[14px] text-[13px]'}
+          >
+            {question}
+          </Button>
+        ))}
+      </div>
+    </div>
+  )
+}

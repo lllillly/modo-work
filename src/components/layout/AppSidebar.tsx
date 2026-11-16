@@ -18,8 +18,8 @@ type AppSidebarProps = {
 const menuItems = [
   { key: '/', label: <Link to="/">홈</Link> },
   { key: '/tasks', label: <Link to="/tasks">과정별 할 일</Link> },
-  { key: '/ask', label: '물어보기', disabled: true },
-  { key: '/documents', label: <Link to="/documents">문서</Link> },
+  { key: '/ask', label: <Link to="/ask">물어보기</Link> },
+  { key: '/documents', label: '문서', disabled: true },
   { key: '/notices', label: '공지', disabled: true },
   { key: '/education', label: '교육', disabled: true },
 ] satisfies MenuProps['items']
