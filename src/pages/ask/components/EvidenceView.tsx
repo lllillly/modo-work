@@ -1,18 +1,17 @@
 import { Button } from 'antd'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import type { Evidence } from '../../../types/question'
-import { getDocumentUrl, getOpenablePath, getSourceText } from '../askData'
+import { getDocumentPath, getOpenablePath, getSourceText } from '../askData'
 
 type EvidenceViewProps = {
   evidence: Evidence
   isAdmin: boolean
-  businessId?: string
 }
 
 const typeLabels = { QA: '안내', DOC: '문서', SCREEN: '화면' } as const
 
-export default function EvidenceView({ evidence, isAdmin, businessId }: EvidenceViewProps) {
+export default function EvidenceView({ evidence, isAdmin }: EvidenceViewProps) {
   const navigate = useNavigate()
   const openPath = getOpenablePath(evidence.path, isAdmin)
 
@@ -35,20 +34,17 @@ export default function EvidenceView({ evidence, isAdmin, businessId }: Evidence
   }
 
   const sourceText = getSourceText(evidence)
-  const documentUrl =
-    evidence.type === 'DOC' && evidence.docId && businessId
-      ? getDocumentUrl(evidence.docId, businessId, evidence.page)
-      : null
+  const documentPath = evidence.type === 'DOC' && evidence.docId ? getDocumentPath(evidence.docId, evidence.page) : null
   const source = sourceText && (
     <div className="flex min-w-0 items-center gap-xs text-caption text-(--ant-color-text-secondary)">
       <span className="shrink-0 rounded-sm bg-(--ant-color-fill-tertiary) px-1.5 py-px text-caption font-medium">
         {typeLabels[evidence.type]}
       </span>
       <span className="min-w-0 truncate" title={sourceText}>{sourceText}</span>
-      {documentUrl && (
-        <a href={documentUrl} target="_blank" rel="noreferrer" className="shrink-0 whitespace-nowrap">
+      {documentPath && (
+        <Link to={documentPath} className="shrink-0 whitespace-nowrap">
           문서 열기
-        </a>
+        </Link>
       )}
     </div>
   )

@@ -56,9 +56,8 @@ export function getOpenablePath(path: string | null, isAdmin: boolean) {
   return appPaths.includes(target) ? target + rest.join('') : null
 }
 
-export function getDocumentUrl(docId: string, businessId: string, page: number | null) {
-  const query = new URLSearchParams({ businessId })
-  return `/api/documents/${encodeURIComponent(docId)}/file?${query}${page ? `#page=${page}` : ''}`
+export function getDocumentPath(docId: string, page: number | null) {
+  return `/documents/${encodeURIComponent(docId)}${page ? `?page=${page}` : ''}`
 }
 
 export type AskErrorView = {

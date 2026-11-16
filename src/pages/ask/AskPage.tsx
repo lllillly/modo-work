@@ -181,7 +181,6 @@ function AskChat({ sessionKey, session }: AskChatProps) {
           canChoose={isLast && !isPending}
           canRetry={isLast}
           isAdmin={isAdmin}
-          businessId={selectedBusinessId}
           onChoose={choose}
           onRetry={(target) => void runTurn(target.id, target.request)}
         />

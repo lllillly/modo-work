@@ -13,7 +13,6 @@ type BotMessageProps = {
   canChoose: boolean
   canRetry: boolean
   isAdmin: boolean
-  businessId?: string
   onChoose: (turn: AskTurn, choice: number | 'none') => void
   onRetry: (turn: AskTurn) => void
 }
@@ -23,7 +22,6 @@ export default function BotMessage({
   canChoose,
   canRetry,
   isAdmin,
-  businessId,
   onChoose,
   onRetry,
 }: BotMessageProps) {
@@ -45,7 +43,6 @@ export default function BotMessage({
           canChoose={canChoose}
           canRetry={canRetry}
           isAdmin={isAdmin}
-          businessId={businessId}
           onChoose={onChoose}
           onRetry={onRetry}
         />
@@ -64,11 +61,11 @@ function getTone(turn: AskTurn) {
 
 type BotContentProps = BotMessageProps
 
-function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, onRetry }: BotContentProps) {
+function BotContent({ turn, canChoose, canRetry, isAdmin, onChoose, onRetry }: BotContentProps) {
   if (turn.status === 'loading') {
     return (
       <>
-        {turn.selected && <EvidenceView evidence={turn.selected} isAdmin={isAdmin} businessId={businessId} />}
+        {turn.selected && <EvidenceView evidence={turn.selected} isAdmin={isAdmin} />}
         <TypingDots />
       </>
     )
@@ -76,7 +73,7 @@ function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, 
 
   if (turn.status === 'error') {
     return (
-      <ErrorContent turn={turn} canRetry={canRetry} isAdmin={isAdmin} businessId={businessId} onRetry={onRetry} />
+      <ErrorContent turn={turn} canRetry={canRetry} isAdmin={isAdmin} onRetry={onRetry} />
     )
   }
 
@@ -121,7 +118,7 @@ function BotContent({ turn, canChoose, canRetry, isAdmin, businessId, onChoose, 
 
   return (
     <>
-      {evidence && <EvidenceView evidence={evidence} isAdmin={isAdmin} businessId={businessId} />}
+      {evidence && <EvidenceView evidence={evidence} isAdmin={isAdmin} />}
       {guideText && <p className="m-0">{guideText}</p>}
       {evidence && <CopyButton text={getCopyText(evidence)} />}
     </>
@@ -166,11 +163,10 @@ type ErrorContentProps = {
   turn: AskTurn
   canRetry: boolean
   isAdmin: boolean
-  businessId?: string
   onRetry: (turn: AskTurn) => void
 }
 
-function ErrorContent({ turn, canRetry, isAdmin, businessId, onRetry }: ErrorContentProps) {
+function ErrorContent({ turn, canRetry, isAdmin, onRetry }: ErrorContentProps) {
   const view = getAskErrorView(turn.error)
   const isRecordError = turn.type !== 'question' && turn.error instanceof ApiError && turn.error.status === 500
   const retry = view.canRetry && canRetry && !isRecordError && (
@@ -180,7 +176,7 @@ function ErrorContent({ turn, canRetry, isAdmin, businessId, onRetry }: ErrorCon
   if (turn.selected) {
     return (
       <>
-        <EvidenceView evidence={turn.selected} isAdmin={isAdmin} businessId={businessId} />
+        <EvidenceView evidence={turn.selected} isAdmin={isAdmin} />
         <p className="m-0 text-caption text-(--ant-color-error)">{view.title}. {view.description}</p>
         {retry}
       </>
