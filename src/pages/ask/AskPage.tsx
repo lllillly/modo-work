@@ -31,24 +31,7 @@ export default function AskPage() {
   const session = useSyncExternalStore(subscribeAskSession, () => getAskSession(sessionKey))
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? '-m-md' : 'gap-md'}`}>
-      {!isMobile && (
-        <div className="flex items-start justify-between gap-md">
-          <div className="flex flex-col gap-xxs">
-            <h2 className="m-0 text-section-title">물어보기</h2>
-            <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-              회사 생활 안내와 등록된 운영 문서에서 답을 찾아 드려요.
-            </p>
-          </div>
-          <Button
-            icon={<PlusOutlined />}
-            disabled={session.turns.length === 0}
-            onClick={() => resetAskSession(sessionKey)}
-          >
-            새 대화
-          </Button>
-        </div>
-      )}
+    <div className={`flex min-h-0 flex-1 basis-0 flex-col ${isMobile ? '-m-md' : ''}`}>
       {selectedBusinessId ? (
         <AskChat key={sessionKey} sessionKey={sessionKey} session={session} />
       ) : (
@@ -193,6 +176,12 @@ function AskChat({ sessionKey, session }: AskChatProps) {
       aria-label="물어보기 대화"
       className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container)'}`}
     >
+      <div className="flex shrink-0 items-center justify-between gap-sm px-sm pt-sm min-[992px]:justify-end min-[992px]:px-lg">
+        {isMobile && <span className="text-caption text-(--ant-color-text-tertiary)">개인정보는 넣지 마세요</span>}
+        <Button icon={<PlusOutlined />} disabled={turns.length === 0} onClick={() => resetAskSession(sessionKey)}>
+          새 대화
+        </Button>
+      </div>
       <div
         className="min-h-0 flex-1 overflow-y-auto"
         onScroll={(event) => {
@@ -201,17 +190,6 @@ function AskChat({ sessionKey, session }: AskChatProps) {
         }}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-sm p-md min-[992px]:gap-md min-[992px]:px-0 min-[992px]:py-lg">
-          {isMobile && turns.length > 0 && (
-            <Button
-              type="text"
-              size="small"
-              icon={<PlusOutlined />}
-              className="self-end text-caption"
-              onClick={() => resetAskSession(sessionKey)}
-            >
-              새 대화
-            </Button>
-          )}
           {turns.length === 0 ? (
             <Welcome isMobile={isMobile} onSelect={sendQuestion} />
           ) : (

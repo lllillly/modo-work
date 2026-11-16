@@ -43,17 +43,18 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
           count={{ show: true, max: MAX_QUERY_LENGTH, strategy: getQueryLength }}
           className={isMobile ? 'rounded-xl' : 'rounded-lg'}
           classNames={{
-            textarea: `resize-none pr-16 pl-sm ${isMobile ? 'py-xs' : 'py-2.5'}`,
-            count: `right-sm bottom-2.5 ${isMobile ? 'text-caption' : 'text-caption'} ${overCount > 0 ? 'text-(--ant-color-error)' : ''}`,
+            textarea: 'min-h-10! resize-none pr-16 pl-sm py-2',
+            count: `right-sm bottom-2 text-caption ${overCount > 0 ? 'text-(--ant-color-error)' : ''}`,
           }}
         />
         <Button
           type="primary"
+          size="large"
           disabled={isEnded || isPending || overCount > 0}
           onClick={() => {
             if (canSend) onSend()
           }}
-          className={`shrink-0 ${isMobile ? 'rounded-full px-md text-caption' : 'rounded-lg px-md'}`}
+          className={`shrink-0 px-md ${isMobile ? 'rounded-full' : 'rounded-lg'}`}
         >
           보내기
         </Button>
@@ -69,9 +70,11 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
           개인정보로 보이는 내용이 있어요. 빼고 보내 주세요.
         </p>
       )}
-      <p className={`m-0 text-(--ant-color-text-tertiary) ${isMobile ? 'text-caption' : 'text-caption'}`}>
-        {isMobile ? '개인정보는 넣지 마세요' : '이름·전화번호 같은 개인정보는 넣지 마세요. 질문 기록은 개인정보를 가린 상태로 저장돼요.'}
-      </p>
+      {!isMobile && (
+        <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
+          이름·전화번호 같은 개인정보는 넣지 마세요. 질문 기록은 개인정보를 가린 상태로 저장돼요.
+        </p>
+      )}
     </div>
   )
 }
