@@ -4,6 +4,7 @@ import { Link, Route, Routes, useOutletContext } from 'react-router'
 import NoticeCard, { ErrorTriangle } from '../../components/common/NoticeCard'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import DocumentList from './components/DocumentList'
+import DocumentViewer from './components/DocumentViewer'
 
 export default function DocumentsPage() {
   const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
@@ -23,6 +24,10 @@ export default function DocumentsPage() {
       <Route
         index
         element={<DocumentList businessId={selectedBusinessId} businessName={selectedBusiness} isMobile={isMobile} />}
+      />
+      <Route
+        path=":documentId"
+        element={<DocumentViewer businessId={selectedBusinessId} businessName={selectedBusiness} isMobile={isMobile} />}
       />
       <Route
         path="*"
