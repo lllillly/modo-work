@@ -24,6 +24,7 @@ const pageTitles: Record<string, string> = {
   '/': '홈',
   '/tasks': '과정별 할 일',
   '/documents': '문서',
+  '/admin/documents': '문서 업로드',
   '/admin/courses': '과정·담당 배정',
   '/admin/courses/import': '과정 가져오기',
 }
