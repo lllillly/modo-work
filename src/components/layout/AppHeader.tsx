@@ -26,6 +26,7 @@ const pageTitles: Record<string, string> = {
   '/ask': '물어보기',
   '/admin/courses': '과정·담당 배정',
   '/admin/courses/import': '과정 가져오기',
+  '/admin/users': '사용자와 승인',
 }
 
 export default function AppHeader({

@@ -13,6 +13,7 @@ const DocumentsPage = lazy(() => import('./pages/documents/DocumentsPage'))
 const AdminDocumentsPage = lazy(() => import('./pages/admin/documents/AdminDocumentsPage'))
 const CoursesPage = lazy(() => import('./pages/admin/courses/CoursesPage'))
 const AskPage = lazy(() => import('./pages/ask/AskPage'))
+const UsersPage = lazy(() => import('./pages/admin/users/UsersPage'))
 
 type AppRouterProps = {
   isDark: boolean
@@ -33,6 +34,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
               <Route path="/ask" element={<AskPage />} /> {/* 물어보기 */}
               <Route path="/admin/courses/*" element={<CoursesPage />} />
               <Route path="/admin/documents" element={<AdminDocumentsPage />} />
+              <Route path="/admin/users" element={<UsersPage />} /> {/* 사용자와 승인 */}
               <Route path="/admin/import" element={<Navigate to="/admin/courses/import" replace />} />
               <Route
                 path="*"

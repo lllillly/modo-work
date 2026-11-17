@@ -26,7 +26,7 @@ const menuItems = [
 
 const adminMenuItems = [
   { key: '/admin/courses', label: <Link to="/admin/courses">과정·담당 배정</Link> },
-  { key: '/admin/users', label: '사용자와 승인', disabled: true },
+  { key: '/admin/users', label: <Link to="/admin/users">사용자와 승인</Link> },
   { key: '/admin/task-templates', label: '할 일 템플릿', disabled: true },
   { key: '/admin/documents', label: <Link to="/admin/documents">문서 업로드</Link> },
   { key: '/admin/questions', label: '물어보기 관리', disabled: true },
@@ -63,11 +63,7 @@ export default function AppSidebar({
   const selectedAdminKey = pathname === '/admin/courses/import' ? '/admin/import'
     : pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
 
-  const visibleAdminItems = adminMenuItems.filter((item) => {
-    if (role === 'ADMIN') return true
-    if (role === 'LEADER') return item.key === '/admin/users'
-    return false
-  })
+  const visibleAdminItems = role === 'ADMIN' ? adminMenuItems : []
 
   const sidebarContent = (
     <ConfigProvider theme={sidebarTheme}>
