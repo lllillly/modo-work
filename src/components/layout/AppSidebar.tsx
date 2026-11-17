@@ -63,7 +63,11 @@ export default function AppSidebar({
   const selectedAdminKey = pathname === '/admin/courses/import' ? '/admin/import'
     : pathname.startsWith('/admin/courses') ? '/admin/courses' : pathname
 
-  const visibleAdminItems = role === 'ADMIN' ? adminMenuItems : []
+  const visibleAdminItems = adminMenuItems.filter((item) => {
+    if (role === 'ADMIN') return true
+    if (role === 'LEADER') return item.key === '/admin/users'
+    return false
+  })
 
   const sidebarContent = (
     <ConfigProvider theme={sidebarTheme}>

@@ -3,7 +3,7 @@ import { SearchOutlined, WarningOutlined } from '@ant-design/icons'
 import { Button, Card, Input, Pagination, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
-import { getAdminUsers } from '../../../../api/users'
+import type { getAdminUsers } from '../../../../api/users'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import type { ManagedUser, UserStatus } from '../../../../types/adminUsers'
 import type { OptionItem } from '../../../../types/courseApi'
@@ -28,10 +28,13 @@ const statusLabels: Record<UserStatus, { label: string; color: string }> = {
 type AllUsersProps = {
   orgUnits: OptionItem[]
   refreshKey: number
+  loadUsers: typeof getAdminUsers
+  editLabel: string
+  canEdit: (user: ManagedUser) => boolean
   onEdit: (user: ManagedUser) => void
 }
 
-export default function AllUsers({ orgUnits, refreshKey, onEdit }: AllUsersProps) {
+export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, canEdit, onEdit }: AllUsersProps) {
   const [page, setPage] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [search, setSearch] = useState('')
@@ -40,7 +43,7 @@ export default function AllUsers({ orgUnits, refreshKey, onEdit }: AllUsersProps
   const [status, setStatus] = useState<UserStatus | typeof ALL_FILTER>(ALL_FILTER)
   const load = useCallback(
     (signal: AbortSignal) =>
-      getAdminUsers(
+      loadUsers(
         page,
         {
           q: search,
@@ -50,7 +53,7 @@ export default function AllUsers({ orgUnits, refreshKey, onEdit }: AllUsersProps
         },
         signal,
       ),
-    [page, search, orgUnitId, role, status],
+    [loadUsers, page, search, orgUnitId, role, status],
   )
   const query = useApiQuery(`${refreshKey}:${page}:${search}:${orgUnitId}:${role}:${status}`, load)
   const hasFilter = !!search.trim() || orgUnitId !== ALL_FILTER || role !== ALL_FILTER || status !== ALL_FILTER
@@ -106,13 +109,13 @@ export default function AllUsers({ orgUnits, refreshKey, onEdit }: AllUsersProps
     {
       title: '',
       key: 'actions',
-      width: 56,
+      width: 72,
       render: (_, user) =>
-        user.status === 'PENDING' ? null : (
+        canEdit(user) ? (
           <Button type="link" size="small" className="h-auto p-0" onClick={() => onEdit(user)}>
-            수정
+            {editLabel}
           </Button>
-        ),
+        ) : null,
     },
   ] satisfies TableColumnsType<ManagedUser>
 
@@ -140,19 +143,21 @@ export default function AllUsers({ orgUnits, refreshKey, onEdit }: AllUsersProps
           onChange={(event) => setSearchText(event.target.value)}
           className="w-full min-[992px]:w-[240px]"
         />
-        <Select
-          aria-label="조직 단위 필터"
-          popupMatchSelectWidth={false}
-          value={orgUnitId}
-          onChange={(value) => {
-            setOrgUnitId(value)
-            setPage(0)
-          }}
-          options={[
-            { value: ALL_FILTER, label: '조직 단위: 전체' },
-            ...orgUnits.map((org) => ({ value: org.id, label: org.name })),
-          ]}
-        />
+        {orgUnits.length > 0 && (
+          <Select
+            aria-label="조직 단위 필터"
+            popupMatchSelectWidth={false}
+            value={orgUnitId}
+            onChange={(value) => {
+              setOrgUnitId(value)
+              setPage(0)
+            }}
+            options={[
+              { value: ALL_FILTER, label: '조직 단위: 전체' },
+              ...orgUnits.map((org) => ({ value: org.id, label: org.name })),
+            ]}
+          />
+        )}
         <Select
           aria-label="역할 필터"
           popupMatchSelectWidth={false}
