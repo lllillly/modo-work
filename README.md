@@ -141,7 +141,7 @@ PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 �
 | 파일 | 역할 |
 | --- | --- |
 | `components/BotMessage.tsx` | 응답 상태별 말풍선. 즉답, 되묻기 후보와 해당 없음, 답 없음, 개인정보 경고, 오류 |
-| `components/EvidenceView.tsx` | 근거 표시. 등록 안내, 문서 구절과 문서 보기 이동, 관련 화면 열기 |
+| `components/EvidenceView.tsx` | 근거 표시. 등록 안내와 문서 구절, 출처 문서 보기 이동, 관련 화면 열기 |
 | `components/QuestionInput.tsx` | 질문 입력. 500자 제한과 개인정보 패턴 경고 |
 | `askData.ts` | 글자 수 계산, 출처 문구, 이동 가능한 화면 경로, 오류 안내 문구 |
 

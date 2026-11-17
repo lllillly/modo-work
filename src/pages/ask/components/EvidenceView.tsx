@@ -34,7 +34,7 @@ export default function EvidenceView({ evidence, isAdmin }: EvidenceViewProps) {
   }
 
   const sourceText = getSourceText(evidence)
-  const documentPath = evidence.type === 'DOC' && evidence.docId ? getDocumentPath(evidence.docId, evidence.page) : null
+  const documentPath = evidence.docId ? getDocumentPath(evidence.docId, evidence.page) : null
   const source = sourceText && (
     <div className="flex min-w-0 items-center gap-xs text-caption text-(--ant-color-text-secondary)">
       <span className="shrink-0 rounded-sm bg-(--ant-color-fill-tertiary) px-1.5 py-px text-caption font-medium">
@@ -65,7 +65,7 @@ export default function EvidenceView({ evidence, isAdmin }: EvidenceViewProps) {
       <p className="m-0">운영 문서에서 관련 구절을 찾았어요.</p>
       <div className="flex flex-col gap-xs">
         {evidence.quote && (
-          <blockquote className="m-0 rounded-md border-0 border-l-4 border-solid border-(--ant-color-primary) bg-(--ant-color-fill-tertiary) px-md py-2.5 whitespace-pre-line">
+          <blockquote className="m-0 rounded-md bg-(--ant-color-fill-tertiary) px-md py-2.5 whitespace-pre-line">
             {evidence.quote}
           </blockquote>
         )}
