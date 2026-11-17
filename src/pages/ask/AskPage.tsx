@@ -38,7 +38,7 @@ export default function AskPage() {
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
           <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
           <p className="m-0 mt-xxs text-caption text-(--ant-color-text-secondary)">
-            사업 정보를 받을 수 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
+            선택할 수 있는 사업이 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
           </p>
         </Card>
       )}

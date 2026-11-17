@@ -9,11 +9,6 @@ export const currentUser = {
   roleLabel: '관리자',
 }
 
-export const businessOptions = [
-  { value: '사업 1', label: '사업 1' },
-  { value: '사업 2', label: '사업 2' },
-]
-
 export const notificationCount = 0
 export const invalidEmail = 'user@gmail.com'
 

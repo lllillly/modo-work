@@ -3,7 +3,7 @@ import { App, Button, Grid, Layout, Result, Spin } from 'antd'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { resetAskSession } from '../pages/ask/askSession'
-import { businessOptions as mockBusinessOptions, notificationCount } from '../pages/home/assigneeHomeMockData'
+import { notificationCount } from '../pages/home/assigneeHomeMockData'
 
 import { getBusinesses } from '../api/courses'
 import { getApiErrorMessage } from '../api/client'
@@ -36,16 +36,13 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [businessSelection, setBusinessSelection] = useState('')
-  const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
   const loadBusinesses = useCallback((signal: AbortSignal) => getBusinesses(signal), [])
-  const businesses = useApiQuery(isAdmin ? `businesses:${user?.id}` : null, loadBusinesses)
-  const businessOptions = isAdmin
-    ? (businesses.data?.items ?? []).map((item) => ({ value: item.id, label: item.name }))
-    : mockBusinessOptions
+  const businesses = useApiQuery(user ? `businesses:${user.id}` : null, loadBusinesses)
+  const businessOptions = (businesses.data?.items ?? []).map((item) => ({ value: item.id, label: item.name }))
   const selectedOption =
     businessOptions.find((item) => item.value === businessSelection) ?? businessOptions[0]
   const selectedBusiness = selectedOption?.label ?? ''
-  const selectedBusinessId = isAdmin ? selectedOption?.value : undefined
+  const selectedBusinessId = selectedOption?.value
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -79,8 +76,8 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   }
 
   if (!user) return null
-  if (isAdmin && businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
-  if (isAdmin && businesses.error) {
+  if (businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
+  if (businesses.error) {
     return (
       <Result
         status="warning"
