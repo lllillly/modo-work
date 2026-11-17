@@ -2,6 +2,7 @@ import { Suspense, useCallback, useState } from 'react'
 import { App, Button, Grid, Layout, Result, Spin } from 'antd'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
+import { resetAskSession } from '../pages/ask/askSession'
 import { businessOptions as mockBusinessOptions, notificationCount } from '../pages/home/assigneeHomeMockData'
 
 import { getBusinesses } from '../api/courses'
@@ -58,6 +59,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
 
     setSearchParams(next, { replace: true })
     setBusinessSelection(business)
+    resetAskSession()
     if (pathname.startsWith('/admin/courses/') && pathname !== '/admin/courses/import') {
       navigate({ pathname: '/admin/courses', search: next.toString() }, { replace: true })
     }

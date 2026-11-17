@@ -79,6 +79,10 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     return () => window.removeEventListener('focus', checkSession)
   }, [auth.user?.status, refreshUser])
 
+  useEffect(() => {
+    if (auth.user?.status !== 'ACTIVE') resetAskSession()
+  }, [auth.user?.status])
+
   async function login(data: TestLoginRequest) {
     const currentRequest = ++requestId.current
 
@@ -104,7 +108,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
     try {
       await requestLogout()
-      resetAskSession()
 
       if (currentRequest === requestId.current) {
         setAuth({ user: null, isLoading: false, error: null, notice: null })
