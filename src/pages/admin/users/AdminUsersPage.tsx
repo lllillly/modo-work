@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Result, Skeleton, Tabs, Tag } from 'antd'
+import { Button, Card, Skeleton, Tabs, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
-import { getCourseOptions } from '../../../api/courses'
-import { getAdminUsers } from '../../../api/users'
+import { getOrgUnits } from '../../../api/courses'
+import { getAdminUsers, getUserAreas } from '../../../api/users'
 import { getAllPages } from '../../../api/pagination'
 import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
@@ -16,7 +16,7 @@ import { getSameNameUsers } from './usersData'
 
 type UsersTab = 'pending' | 'all'
 
-type UsersContentProps = { businessId: string; isMobile: boolean }
+type UsersContentProps = { businessId?: string; isMobile: boolean }
 
 function UsersContent({ businessId, isMobile }: UsersContentProps) {
   const [tab, setTab] = useState<UsersTab>('pending')
@@ -27,10 +27,19 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
     [],
   )
   const loadTotal = useCallback((signal: AbortSignal) => getAdminUsers(0, {}, signal, 1), [])
-  const loadOptions = useCallback((signal: AbortSignal) => getCourseOptions(businessId, signal), [businessId])
+  const loadOptions = useCallback(
+    async (signal: AbortSignal) => {
+      const [orgs, areas] = await Promise.all([
+        businessId ? getOrgUnits(businessId, signal) : { items: [] },
+        getUserAreas(signal),
+      ])
+      return { orgUnits: orgs.items, areas: areas.items }
+    },
+    [businessId],
+  )
   const pending = useApiQuery('pending-users', loadPending)
   const total = useApiQuery('total-users', loadTotal)
-  const options = useApiQuery(businessId, loadOptions)
+  const options = useApiQuery(`user-options:${businessId ?? ''}`, loadOptions)
   const pendingUsers = pending.data ?? []
   const orgUnits = options.data?.orgUnits ?? []
 
@@ -148,9 +157,5 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
 export default function AdminUsersPage() {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
 
-  if (!selectedBusinessId) {
-    return <Result status="info" title="선택할 수 있는 사업이 없어요" />
-  }
-
-  return <UsersContent key={selectedBusinessId} businessId={selectedBusinessId} isMobile={isMobile} />
+  return <UsersContent key={selectedBusinessId ?? ''} businessId={selectedBusinessId} isMobile={isMobile} />
 }

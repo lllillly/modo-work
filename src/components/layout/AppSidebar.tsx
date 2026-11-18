@@ -10,6 +10,7 @@ type AppSidebarProps = {
   isOpen: boolean
   onClose: () => void
   role?: UserRole
+  isOrgLeader: boolean
   selectedBusiness: string
   onBusinessChange: (business: string) => void
   businessOptions: { value: string; label: string }[]
@@ -54,6 +55,7 @@ export default function AppSidebar({
   isOpen,
   onClose,
   role,
+  isOrgLeader,
   selectedBusiness,
   onBusinessChange,
   businessOptions,
@@ -65,7 +67,7 @@ export default function AppSidebar({
 
   const visibleAdminItems = adminMenuItems.filter((item) => {
     if (role === 'ADMIN') return true
-    if (role === 'LEADER') return item.key === '/admin/users'
+    if (isOrgLeader) return item.key === '/admin/users'
     return false
   })
 
@@ -125,7 +127,7 @@ export default function AppSidebar({
           {visibleAdminItems.length > 0 && (
             <>
               <div className="mt-[2px] border-0 border-t border-solid border-(--ant-color-border-secondary) pt-xs pl-xs text-caption font-medium text-(--ant-color-text-tertiary)">
-                관리자
+                {role === 'ADMIN' ? '관리자' : '리더'}
               </div>
               <Menu
                 mode="inline"

@@ -8,10 +8,11 @@ import { formatDateTime, getSameNameUsers } from '../usersData'
 type PendingUsersProps = {
   users: ManagedUser[]
   activeUsers: ManagedUser[]
+  getBlockReason?: (user: ManagedUser) => string | null
   onApprove: (user: ManagedUser) => void
 }
 
-export default function PendingUsers({ users, activeUsers, onApprove }: PendingUsersProps) {
+export default function PendingUsers({ users, activeUsers, getBlockReason, onApprove }: PendingUsersProps) {
   const columns = [
     { title: '이름', dataIndex: 'name', width: 128 },
     { title: '이메일', dataIndex: 'email', width: 232 },
@@ -24,12 +25,19 @@ export default function PendingUsers({ users, activeUsers, onApprove }: PendingU
     {
       title: '안내',
       key: 'notice',
-      render: (_, user) =>
-        getSameNameUsers(user, activeUsers).length > 0 ? (
-          <span className="text-(--ant-color-warning-text)">같은 이름의 활성 사용자가 있어요 · 이메일로 확인</span>
-        ) : (
-          '-'
-        ),
+      render: (_, user) => {
+        const blockReason = getBlockReason?.(user)
+        const hasSameName = getSameNameUsers(user, activeUsers).length > 0
+        if (!blockReason && !hasSameName) return '-'
+        return (
+          <span className="flex flex-col">
+            {blockReason && <span className="text-(--ant-color-text-secondary)">{blockReason}</span>}
+            {hasSameName && (
+              <span className="text-(--ant-color-warning-text)">같은 이름의 활성 사용자가 있어요 · 이메일로 확인</span>
+            )}
+          </span>
+        )
+      },
     },
     {
       title: '',
@@ -40,7 +48,12 @@ export default function PendingUsers({ users, activeUsers, onApprove }: PendingU
           <Button size="small" disabled>
             거절
           </Button>
-          <Button type="primary" size="small" onClick={() => onApprove(user)}>
+          <Button
+            type="primary"
+            size="small"
+            disabled={!!getBlockReason?.(user)}
+            onClick={() => onApprove(user)}
+          >
             승인하기
           </Button>
         </span>

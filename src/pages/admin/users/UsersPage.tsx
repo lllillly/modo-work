@@ -1,7 +1,8 @@
 import { lazy } from 'react'
-import { Button, Result } from 'antd'
+import { Button } from 'antd'
 import { Link } from 'react-router'
 
+import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
 import { useAuth } from '../../../providers/AuthContext'
 
 const AdminUsersPage = lazy(() => import('./AdminUsersPage'))
@@ -12,18 +13,18 @@ export default function UsersPage() {
   if (!user) return null
 
   if (user.roles.some((role) => role.role === 'ADMIN')) return <AdminUsersPage />
-  if (user.roles.some((role) => role.role === 'LEADER') && user.orgUnit) {
-    return <LeaderUsersPage key={user.id} user={user} />
+  if (user.orgUnit && user.roles.some((role) => role.role === 'LEADER' && role.leaderType === 'ORG_UNIT')) {
+    return <LeaderUsersPage key={user.id} user={user} orgUnit={user.orgUnit} />
   }
 
   return (
-    <Result
-      status="403"
+    <NoticeCard
+      icon={<ErrorTriangle />}
       title="이 화면에 접근할 권한이 없어요"
-      subTitle="사용자와 승인은 관리자와 리더만 볼 수 있어요."
-      extra={
+      description="필요하면 관리자에게 권한을 요청해 주세요."
+      action={
         <Link to="/">
-          <Button type="primary">홈으로</Button>
+          <Button className="h-7">홈으로</Button>
         </Link>
       }
     />

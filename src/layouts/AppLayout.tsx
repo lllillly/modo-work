@@ -93,6 +93,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
     roles.includes(role),
   )
   const roleLabel = [...new Set(roles)].map((role) => userRoleLabels[role]).join(', ') || '역할 미지정'
+  const isOrgLeader = !!user.orgUnit && user.roles.some((item) => item.role === 'LEADER' && item.leaderType === 'ORG_UNIT')
 
   return (
     <Layout hasSider={!isMobile} className="h-svh overflow-hidden">
@@ -101,6 +102,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         role={primaryRole}
+        isOrgLeader={isOrgLeader}
         businessOptions={businessOptions}
         selectedBusiness={selectedOption?.value ?? ''}
         onBusinessChange={handleBusinessChange}

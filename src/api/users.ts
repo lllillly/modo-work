@@ -1,4 +1,4 @@
-import type { PageResponse } from '../types/courseApi'
+import type { OptionItem, PageResponse } from '../types/courseApi'
 import type { ManagedUser, UserSettingsRequest, UserStatus } from '../types/adminUsers'
 import type { UserRole } from '../types/user'
 import { getApi, sendApi } from './client'
@@ -25,7 +25,10 @@ export const getAdminUsers = (page: number, filter: UserFilter = {}, signal?: Ab
 export const getManagedUsers = (page: number, filter: UserFilter = {}, signal?: AbortSignal, size = 20) =>
   getApi<PageResponse<ManagedUser>>(`/users?${getUserQuery(page, filter, size)}`, signal)
 
-export const approveUser = (id: string, data: UserSettingsRequest) =>
+export const getUserAreas = (signal?: AbortSignal) =>
+  getApi<{ items: OptionItem[] }>('/options/user-areas', signal)
+
+export const approveUser =(id: string, data: UserSettingsRequest) =>
   sendApi<{ user: ManagedUser }>(`/users/${encodeURIComponent(id)}/approval`, 'POST', data)
 
 export const updateUserSettings = (
