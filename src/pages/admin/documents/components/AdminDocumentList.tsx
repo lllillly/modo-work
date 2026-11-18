@@ -17,6 +17,7 @@ import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
 import { formatShortDate, getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
+import DocumentVersionsDrawer from '../../../documents/components/DocumentVersionsDrawer'
 import DocumentReplaceModal from './DocumentReplaceModal'
 import DocumentUploadDrawer from './DocumentUploadDrawer'
 
@@ -32,6 +33,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
   const [businessId, setBusinessId] = useState(ALL_FILTER)
   const [showUpload, setShowUpload] = useState(false)
   const [replaceItem, setReplaceItem] = useState<DocumentItem | null>(null)
+  const [versionItem, setVersionItem] = useState<DocumentItem | null>(null)
   const [indexing, setIndexing] = useState<Record<string, string>>({})
   const documents = useApiQuery('admin-documents', getAdminDocuments)
   const kinds = useApiQuery('document-kinds', getDocumentKinds)
@@ -207,7 +209,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     {
       title: '',
       key: 'actions',
-      width: 170,
+      width: 200,
       render: (_, item) => (
         <span className="flex items-center justify-end gap-sm">
           <Button
@@ -218,6 +220,9 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             onClick={() => setReplaceItem(item)}
           >
             새 파일로 교체
+          </Button>
+          <Button type="link" size="small" className="h-auto p-0" onClick={() => setVersionItem(item)}>
+            버전
           </Button>
           <Button type="link" size="small" danger className="h-auto p-0" onClick={() => void confirmDelete(item)}>
             삭제
@@ -353,6 +358,9 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                       >
                         새 파일로 교체
                       </Button>
+                      <Button type="link" size="small" className="h-auto p-0" onClick={() => setVersionItem(item)}>
+                        버전
+                      </Button>
                       <Button
                         type="link"
                         size="small"
@@ -408,6 +416,21 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
           onClose={() => setReplaceItem(null)}
           onReplaced={() => {
             setIndexing((current) => ({ ...current, [replaceItem.id]: replaceItem.title }))
+            documents.reload()
+          }}
+        />
+      )}
+
+      {versionItem && (
+        <DocumentVersionsDrawer
+          key={versionItem.id}
+          item={versionItem}
+          meta={`${versionItem.documentTypeName} · ${getScope(versionItem)}`}
+          businessId={null}
+          isMobile={isMobile}
+          onClose={() => setVersionItem(null)}
+          onRestored={() => {
+            setIndexing((current) => ({ ...current, [versionItem.id]: versionItem.title }))
             documents.reload()
           }}
         />

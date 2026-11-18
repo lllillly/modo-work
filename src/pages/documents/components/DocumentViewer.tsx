@@ -5,7 +5,8 @@ import { Link, useParams, useSearchParams } from 'react-router'
 
 import { getDocumentFileUrl } from '../../../api/documents'
 import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
-import { formatShortDate, getExternalHref, getViewerMeta } from '../documentData'
+import { formatShortDate, getDocumentScope, getExternalHref, getViewerMeta } from '../documentData'
+import DocumentVersionsDrawer from './DocumentVersionsDrawer'
 import useDocuments from '../useDocuments'
 
 type DocumentViewerProps = {
@@ -19,6 +20,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
   const [params, setParams] = useSearchParams()
   const page = Math.max(1, Number.parseInt(params.get('page') ?? '', 10) || 1)
   const frameBox = useRef<HTMLDivElement>(null)
+  const [showVersions, setShowVersions] = useState(false)
   const query = useDocuments(businessId)
   const item = query.data?.find((candidate) => candidate.id === documentId)
 
@@ -124,6 +126,20 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
       개정됨 {formatShortDate(item.updatedAt)}
     </Tag>
   )
+  const versionsButton = (
+    <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => setShowVersions(true)}>
+      버전 기록
+    </Button>
+  )
+  const versionsDrawer = showVersions && (
+    <DocumentVersionsDrawer
+      item={item}
+      meta={`${item.documentTypeName} · ${getDocumentScope(item, businessName)}`}
+      businessId={businessId}
+      isMobile={isMobile}
+      onClose={() => setShowVersions(false)}
+    />
+  )
 
   if (isMobile) {
     return (
@@ -134,6 +150,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
             <p className="m-0 flex items-center gap-xs text-caption text-(--ant-color-text-tertiary)">
               {getViewerMeta(item, businessName)}
               {revisedTag}
+              {versionsButton}
             </p>
           </div>
           <span className="flex shrink-0 items-center">
@@ -145,6 +162,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <div className="flex justify-center border-0 border-t border-solid border-(--ant-color-border-secondary) py-2.5">
           {pageControls}
         </div>
+        {versionsDrawer}
       </div>
     )
   }
@@ -158,6 +176,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <h2 className="m-0 text-card-title font-bold">{item.title}</h2>
         <span className="text-caption text-(--ant-color-text-tertiary)">{getViewerMeta(item, businessName)}</span>
         {revisedTag}
+        {versionsButton}
         <span className="ml-auto flex items-center gap-xs">
           {pageControls}
           {fullscreenButton}
@@ -179,6 +198,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <span className="font-medium">연결된 할 일</span>
         <span className="text-(--ant-color-text-tertiary)">준비 중이에요</span>
       </div>
+      {versionsDrawer}
     </div>
   )
 }

@@ -9,7 +9,7 @@ export function getDocumentTypes(documents: DocumentItem[]) {
     .map(([id, name]) => ({ id, name }))
 }
 
-function getDocumentScope(item: DocumentItem, businessName: string) {
+export function getDocumentScope(item: DocumentItem, businessName: string) {
   return item.businessScope === 'ALL' ? '공통' : businessName
 }
 

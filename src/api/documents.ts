@@ -4,6 +4,7 @@ import type {
   DeletionContext,
   DocumentItem,
   DocumentKind,
+  DocumentVersion,
   UploadDocumentMetadata,
 } from '../types/documents'
 import { getApi, requestApi, sendApi } from './client'
@@ -63,3 +64,27 @@ export async function deleteDocument(documentId: string, contentRevision: number
 export async function retryDocumentIndex(documentId: string) {
   await requestApi(`/admin/documents/${encodeURIComponent(documentId)}/retry-index`, { method: 'POST' })
 }
+
+export function getDocumentVersions(documentId: string, businessId: string | null, signal?: AbortSignal) {
+  const id = encodeURIComponent(documentId)
+  return getAllPages((page) => {
+    const query = new URLSearchParams({ page: String(page), size: '100' })
+    if (businessId) query.set('businessId', businessId)
+    const path = businessId ? `/documents/${id}/versions` : `/admin/documents/${id}/versions`
+    return getApi<PageResponse<DocumentVersion>>(`${path}?${query}`, signal)
+  })
+}
+
+export function getVersionFileUrl(documentId: string, contentRevision: number, businessId: string | null) {
+  const id = encodeURIComponent(documentId)
+  return businessId
+    ? `${import.meta.env.BASE_URL}api/documents/${id}/versions/${contentRevision}/file?${new URLSearchParams({ businessId })}`
+    : `${import.meta.env.BASE_URL}api/admin/documents/${id}/versions/${contentRevision}/file`
+}
+
+export const restoreDocumentVersion = (item: DocumentItem, targetRevision: number) =>
+  sendApi<{ contentRevision: number }>(
+    `/admin/documents/${encodeURIComponent(item.id)}/versions/${targetRevision}/restore`,
+    'POST',
+    { contentRevision: item.contentRevision },
+  )

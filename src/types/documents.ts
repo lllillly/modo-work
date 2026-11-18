@@ -41,3 +41,15 @@ export type DeletionContext = {
   referencingQaCount: number
 }
 
+export type DocumentVersion = {
+  contentRevision: number
+  current: boolean
+  sourceType: 'FILE' | 'LINK'
+  originalFilename: string | null
+  externalUrl: string | null
+  effectiveDate: string | null
+  fileSizeBytes: number | null
+  pageCount: number | null
+  createdBy: { id: string; name: string }
+  createdAt: string
+}
