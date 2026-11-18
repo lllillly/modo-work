@@ -8,6 +8,7 @@ import { uploadDocument } from '../../../../api/documents'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentKind } from '../../../../types/documents'
 import type { OptionItem } from '../../../../types/courseApi'
+import { formatFileSize } from '../../../documents/documentData'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALL_BUSINESSES = 'ALL'
@@ -26,10 +27,6 @@ type DocumentUploadDrawerProps = {
   isMobile: boolean
   onClose: () => void
   onUploaded: (id: string, title: string) => void
-}
-
-function formatFileSize(size: number) {
-  return size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(size / 1024))}KB`
 }
 
 function normalizeBusinesses(values: string[]) {
@@ -193,7 +190,7 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
             <DatePicker format="YYYY.MM.DD" className="w-full" />
           </Form.Item>
           <Form.Item label="버전">
-            <Input disabled placeholder="준비 중이에요" />
+            <Input disabled value="v1" />
           </Form.Item>
         </div>
         <Form.Item

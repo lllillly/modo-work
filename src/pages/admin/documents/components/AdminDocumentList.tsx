@@ -1,16 +1,22 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import { InboxOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
-import { App, Button, Card, Input, Select, Skeleton, Table, Tag } from 'antd'
+import { Alert, App, Button, Card, Input, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import { getBusinesses } from '../../../../api/courses'
-import { deleteDocument, getAdminDocuments, getDocumentKinds, retryDocumentIndex } from '../../../../api/documents'
+import {
+  deleteDocument,
+  getAdminDocuments,
+  getDeletionContext,
+  getDocumentKinds,
+  retryDocumentIndex,
+} from '../../../../api/documents'
 import NoticeCard, { ErrorTriangle } from '../../../../components/common/NoticeCard'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
-import { getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
+import { formatShortDate, getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
 import DocumentUploadDrawer from './DocumentUploadDrawer'
 
 const ALL_FILTER = 'all'
@@ -39,6 +45,11 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       (kindId === ALL_FILTER || item.documentTypeId === kindId) &&
       (businessId === ALL_FILTER || item.businessScope === 'ALL' || item.businessIds.includes(businessId)),
   )
+
+  const getScope = (item: DocumentItem) =>
+    item.businessScope === 'ALL'
+      ? '공통'
+      : item.businessIds.map((id) => businessNames[id] ?? `사업 ${id}`).join(', ')
 
   const reloadDocuments = useEffectEvent(() => documents.reload())
 
@@ -100,17 +111,36 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     }
   }
 
-  function confirmDelete(item: DocumentItem) {
+  async function confirmDelete(item: DocumentItem) {
+    let context
+    try {
+      context = await getDeletionContext(item.id)
+    } catch (error) {
+      showError(error)
+      documents.reload()
+      return
+    }
+
     modal.confirm({
       icon: <WarningOutlined className="text-(--ant-color-error)" />,
       title: `'${item.title}' 문서를 삭제할까요?`,
-      content: '삭제하면 문서 메뉴와 물어보기 검색에서 빠져요.',
+      content: (
+        <div className="flex flex-col gap-sm">
+          <span>삭제하면 문서 메뉴와 물어보기 검색에서 빠져요.</span>
+          {context.referencingQaCount > 0 && (
+            <Alert
+              type="warning"
+              title={`이 문서를 근거로 쓰는 Q&A가 ${context.referencingQaCount}개 있어요. 삭제하면 이 Q&A는 근거 없이 남아요.`}
+            />
+          )}
+        </div>
+      ),
       okText: '삭제',
       cancelText: '취소',
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await deleteDocument(item)
+          await deleteDocument(item.id, context.contentRevision)
           message.success('문서를 삭제했어요.')
           documents.reload()
         } catch (error) {
@@ -127,28 +157,22 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       render: (_, item) => (
         <span className="flex flex-col">
           <span className="text-body">{item.title}</span>
-          {item.effectiveDate && (
-            <span className="text-caption text-(--ant-color-text-tertiary)">
-              시행 {item.effectiveDate.replaceAll('-', '.')}
-            </span>
-          )}
+          <span className="text-caption text-(--ant-color-text-tertiary)">
+            v{item.contentRevision}
+            {item.effectiveDate && ` · 시행 ${item.effectiveDate.replaceAll('-', '.')}`}
+          </span>
         </span>
       ),
     },
     {
       title: '파일',
       key: 'file',
-      render: (_, item) => (item.sourceType === 'LINK' ? '외부 링크' : item.originalFilename),
+      render: (_, item) => getFileSummary(item),
     },
     {
       title: '종류 · 사업',
       key: 'scope',
-      render: (_, item) =>
-        `${item.documentTypeName} · ${
-          item.businessScope === 'ALL'
-            ? '공통'
-            : item.businessIds.map((id) => businessNames[id] ?? `사업 ${id}`).join(', ')
-        }`,
+      render: (_, item) => `${item.documentTypeName} · ${getScope(item)}`,
     },
     {
       title: '물어보기',
@@ -172,7 +196,11 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     {
       title: '수정일 · 등록자',
       key: 'updated',
-      render: () => <span className="text-(--ant-color-text-tertiary)">-</span>,
+      render: (_, item) => (
+        <span className="text-(--ant-color-text-tertiary)">
+          {formatShortDate(item.updatedAt)} · {item.createdBy.name}
+        </span>
+      ),
     },
     {
       title: '',
@@ -183,7 +211,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
           <Button type="link" size="small" className="h-auto p-0" disabled>
             새 파일로 교체
           </Button>
-          <Button type="link" size="small" danger className="h-auto p-0" onClick={() => confirmDelete(item)}>
+          <Button type="link" size="small" danger className="h-auto p-0" onClick={() => void confirmDelete(item)}>
             삭제
           </Button>
         </span>
@@ -297,10 +325,10 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                       <span className="flex min-w-0 flex-col">
                         <span className="text-body font-medium">{item.title}</span>
                         <span className="text-caption text-(--ant-color-text-tertiary)">
-                          {item.documentTypeName} ·{' '}
-                          {item.businessScope === 'ALL'
-                            ? '공통'
-                            : item.businessIds.map((id) => businessNames[id] ?? `사업 ${id}`).join(', ')}
+                          v{item.contentRevision} · {getFileSummary(item)}
+                        </span>
+                        <span className="text-caption text-(--ant-color-text-tertiary)">
+                          {item.documentTypeName} · {getScope(item)}
                         </span>
                       </span>
                       <Tag variant="outlined" color={status.color} className="m-0 shrink-0 text-caption">
@@ -311,7 +339,12 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                       <Button type="link" size="small" className="h-auto p-0" disabled>
                         새 파일로 교체
                       </Button>
-                      <Button type="link" size="small" className="h-auto p-0 text-(--ant-color-text-secondary)" onClick={() => confirmDelete(item)}>
+                      <Button
+                        type="link"
+                        size="small"
+                        className="h-auto p-0 text-(--ant-color-text-secondary)"
+                        onClick={() => void confirmDelete(item)}
+                      >
                         삭제
                       </Button>
                       {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (

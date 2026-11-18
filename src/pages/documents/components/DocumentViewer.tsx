@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
 import { ArrowLeftOutlined, FullscreenOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Card, Input, InputNumber, Skeleton } from 'antd'
+import { Button, Card, Input, InputNumber, Skeleton, Tag } from 'antd'
 import { Link, useParams, useSearchParams } from 'react-router'
 
 import { getDocumentFileUrl } from '../../../api/documents'
 import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
-import { getExternalHref, getViewerMeta } from '../documentData'
+import { formatShortDate, getExternalHref, getViewerMeta } from '../documentData'
 import useDocuments from '../useDocuments'
 
 type DocumentViewerProps = {
@@ -118,7 +118,12 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
       onClick={() => openFullscreen(fileUrl)}
     />
   )
-  const pageControls = <PageControls key={page} page={page} onMove={movePage} />
+  const pageControls = <PageControls key={page} page={page} total={item.pageCount} onMove={movePage} />
+  const revisedTag = item.contentRevision > 1 && (
+    <Tag variant="outlined" color="processing" className="m-0 text-caption">
+      개정됨 {formatShortDate(item.updatedAt)}
+    </Tag>
+  )
 
   if (isMobile) {
     return (
@@ -126,7 +131,10 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <div className="flex items-center justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-md py-sm">
           <div className="min-w-0">
             <h2 className="m-0 truncate text-body font-medium">{item.title}</h2>
-            <p className="m-0 text-caption text-(--ant-color-text-tertiary)">{getViewerMeta(item, businessName)}</p>
+            <p className="m-0 flex items-center gap-xs text-caption text-(--ant-color-text-tertiary)">
+              {getViewerMeta(item, businessName)}
+              {revisedTag}
+            </p>
           </div>
           <span className="flex shrink-0 items-center">
             <Button type="text" aria-label="문서 안에서 찾기" icon={<SearchOutlined />} disabled />
@@ -149,6 +157,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         </Link>
         <h2 className="m-0 text-card-title font-bold">{item.title}</h2>
         <span className="text-caption text-(--ant-color-text-tertiary)">{getViewerMeta(item, businessName)}</span>
+        {revisedTag}
         <span className="ml-auto flex items-center gap-xs">
           {pageControls}
           {fullscreenButton}
@@ -176,10 +185,11 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
 
 type PageControlsProps = {
   page: number
+  total: number | null
   onMove: (page: number | null) => void
 }
 
-function PageControls({ page, onMove }: PageControlsProps) {
+function PageControls({ page, total, onMove }: PageControlsProps) {
   const [draft, setDraft] = useState<number | null>(page)
 
   return (
@@ -196,6 +206,7 @@ function PageControls({ page, onMove }: PageControlsProps) {
         aria-label="쪽 번호"
         size="small"
         min={1}
+        max={total ?? undefined}
         controls={false}
         value={draft}
         onChange={setDraft}
@@ -203,8 +214,15 @@ function PageControls({ page, onMove }: PageControlsProps) {
         onBlur={() => onMove(draft)}
         className="w-14"
       />
-      <span className="text-body text-(--ant-color-text-secondary)">쪽</span>
-      <Button type="text" size="small" aria-label="다음 쪽" icon={<RightOutlined />} onClick={() => onMove(page + 1)} />
+      <span className="text-body text-(--ant-color-text-secondary)">{total ? `/ ${total}쪽` : '쪽'}</span>
+      <Button
+        type="text"
+        size="small"
+        aria-label="다음 쪽"
+        icon={<RightOutlined />}
+        disabled={total !== null && page >= total}
+        onClick={() => onMove(page + 1)}
+      />
     </span>
   )
 }

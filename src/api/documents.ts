@@ -1,5 +1,10 @@
 import type { PageResponse } from '../types/courseApi'
-import type { DocumentItem, DocumentKind, UploadDocumentMetadata } from '../types/documents'
+import type {
+  DeletionContext,
+  DocumentItem,
+  DocumentKind,
+  UploadDocumentMetadata,
+} from '../types/documents'
 import { getApi, requestApi } from './client'
 import { getAllPages } from './pagination'
 
@@ -34,9 +39,12 @@ export async function uploadDocument(metadata: UploadDocumentMetadata, file: Fil
   return result.id
 }
 
-export async function deleteDocument(item: DocumentItem) {
-  const query = new URLSearchParams({ contentRevision: String(item.contentRevision) })
-  await requestApi(`/admin/documents/${encodeURIComponent(item.id)}?${query}`, { method: 'DELETE' })
+export const getDeletionContext = (documentId: string, signal?: AbortSignal) =>
+  getApi<DeletionContext>(`/admin/documents/${encodeURIComponent(documentId)}/deletion-context`, signal)
+
+export async function deleteDocument(documentId: string, contentRevision: number) {
+  const query = new URLSearchParams({ contentRevision: String(contentRevision) })
+  await requestApi(`/admin/documents/${encodeURIComponent(documentId)}?${query}`, { method: 'DELETE' })
 }
 
 export async function retryDocumentIndex(documentId: string) {

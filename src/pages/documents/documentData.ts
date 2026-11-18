@@ -28,9 +28,26 @@ export function getDocumentMeta(item: DocumentItem, businessName: string) {
 }
 
 export function getViewerMeta(item: DocumentItem, businessName: string) {
-  const meta = [item.documentTypeName, getDocumentScope(item, businessName)]
+  const meta = [item.documentTypeName, getDocumentScope(item, businessName), `v${item.contentRevision}`]
   if (item.effectiveDate) meta.push(`시행 ${item.effectiveDate.replaceAll('-', '.')}`)
   return meta.join(' · ')
+}
+
+export function formatFileSize(size: number) {
+  return size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(size / 1024))}KB`
+}
+
+export function formatShortDate(value: string) {
+  const date = new Date(value)
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+}
+
+export function getFileSummary(item: DocumentItem) {
+  if (item.sourceType === 'LINK') return '외부 링크'
+  const summary = ['PDF']
+  if (item.fileSizeBytes !== null) summary.push(formatFileSize(item.fileSizeBytes))
+  if (item.pageCount !== null) summary.push(`${item.pageCount}쪽`)
+  return summary.join(' · ')
 }
 
 export function isIndexRetrying(item: DocumentItem) {
@@ -38,6 +55,7 @@ export function isIndexRetrying(item: DocumentItem) {
 }
 
 export function getIndexStatus(item: DocumentItem) {
+  if (item.sourceType === 'LINK') return { label: '대상 아님 · 외부 링크', color: 'default' }
   if (isIndexRetrying(item)) return { label: '읽는 중…', color: 'processing' }
   if (item.indexStatus === 'READY') return { label: '색인 완료', color: 'success' }
   if (item.indexStatus === 'FAILED') return { label: '읽기 실패', color: 'error' }

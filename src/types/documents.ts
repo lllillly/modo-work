@@ -13,6 +13,10 @@ export type UploadDocumentMetadata = {
 export type DocumentItem = {
   id: string
   title: string
+  pageCount: number | null
+  fileSizeBytes: number | null
+  updatedAt: string
+  createdBy: { id: string; name: string }
   documentTypeId: string
   documentTypeName: string
   effectiveDate: string | null
@@ -27,3 +31,11 @@ export type DocumentItem = {
   deletedAt: string | null
   cleanupPending: boolean
 }
+
+export type DeletionContext = {
+  id: string
+  title: string
+  contentRevision: number
+  referencingQaCount: number
+}
+
