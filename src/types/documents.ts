@@ -10,6 +10,8 @@ export type UploadDocumentMetadata = {
   effectiveDate: string | null
 }
 
+export type CreateLinkMetadata = UploadDocumentMetadata & { externalUrl: string }
+
 export type DocumentItem = {
   id: string
   title: string

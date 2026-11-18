@@ -17,6 +17,7 @@ import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
 import { formatShortDate, getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
+import DocumentReplaceModal from './DocumentReplaceModal'
 import DocumentUploadDrawer from './DocumentUploadDrawer'
 
 const ALL_FILTER = 'all'
@@ -30,6 +31,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
   const [kindId, setKindId] = useState(ALL_FILTER)
   const [businessId, setBusinessId] = useState(ALL_FILTER)
   const [showUpload, setShowUpload] = useState(false)
+  const [replaceItem, setReplaceItem] = useState<DocumentItem | null>(null)
   const [indexing, setIndexing] = useState<Record<string, string>>({})
   const documents = useApiQuery('admin-documents', getAdminDocuments)
   const kinds = useApiQuery('document-kinds', getDocumentKinds)
@@ -208,7 +210,13 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       width: 170,
       render: (_, item) => (
         <span className="flex items-center justify-end gap-sm">
-          <Button type="link" size="small" className="h-auto p-0" disabled>
+          <Button
+            type="link"
+            size="small"
+            className="h-auto p-0"
+            disabled={item.sourceType === 'LINK'}
+            onClick={() => setReplaceItem(item)}
+          >
             새 파일로 교체
           </Button>
           <Button type="link" size="small" danger className="h-auto p-0" onClick={() => void confirmDelete(item)}>
@@ -336,7 +344,13 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                       </Tag>
                     </div>
                     <span className="flex items-center gap-sm">
-                      <Button type="link" size="small" className="h-auto p-0" disabled>
+                      <Button
+                        type="link"
+                        size="small"
+                        className="h-auto p-0"
+                        disabled={item.sourceType === 'LINK'}
+                        onClick={() => setReplaceItem(item)}
+                      >
                         새 파일로 교체
                       </Button>
                       <Button
@@ -386,14 +400,27 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
         </>
       )}
 
+      {replaceItem && (
+        <DocumentReplaceModal
+          key={replaceItem.id}
+          item={replaceItem}
+          isMobile={isMobile}
+          onClose={() => setReplaceItem(null)}
+          onReplaced={() => {
+            setIndexing((current) => ({ ...current, [replaceItem.id]: replaceItem.title }))
+            documents.reload()
+          }}
+        />
+      )}
+
       {showUpload && (
         <DocumentUploadDrawer
           kinds={kindItems}
           businesses={businessItems}
           isMobile={isMobile}
           onClose={() => setShowUpload(false)}
-          onUploaded={(id, title) => {
-            setIndexing((current) => ({ ...current, [id]: title }))
+          onUploaded={(id, title, isLink) => {
+            if (!isLink) setIndexing((current) => ({ ...current, [id]: title }))
             documents.reload()
           }}
         />

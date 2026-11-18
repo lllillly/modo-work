@@ -1,11 +1,12 @@
 import type { PageResponse } from '../types/courseApi'
 import type {
+  CreateLinkMetadata,
   DeletionContext,
   DocumentItem,
   DocumentKind,
   UploadDocumentMetadata,
 } from '../types/documents'
-import { getApi, requestApi } from './client'
+import { getApi, requestApi, sendApi } from './client'
 import { getAllPages } from './pagination'
 
 export function getDocuments(businessId: string, signal?: AbortSignal) {
@@ -37,6 +38,18 @@ export async function uploadDocument(metadata: UploadDocumentMetadata, file: Fil
   const response = await requestApi('/admin/documents', { method: 'POST', body })
   const result: { id: string } = await response.json()
   return result.id
+}
+
+export async function createLinkDocument(metadata: CreateLinkMetadata) {
+  const result = await sendApi<{ id: string }>('/admin/documents/links', 'POST', metadata)
+  return result.id
+}
+
+export async function replaceDocumentFile(item: DocumentItem, file: File) {
+  const body = new FormData()
+  body.append('metadata', new Blob([JSON.stringify({ contentRevision: item.contentRevision })], { type: 'application/json' }))
+  body.append('file', file)
+  await requestApi(`/admin/documents/${encodeURIComponent(item.id)}/file`, { method: 'POST', body })
 }
 
 export const getDeletionContext = (documentId: string, signal?: AbortSignal) =>

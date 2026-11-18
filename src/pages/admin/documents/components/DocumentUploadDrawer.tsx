@@ -4,7 +4,7 @@ import { App, Button, DatePicker, Drawer, Form, Input, Segmented, Select, Upload
 import type { Dayjs } from 'dayjs'
 
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
-import { uploadDocument } from '../../../../api/documents'
+import { createLinkDocument, uploadDocument } from '../../../../api/documents'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentKind } from '../../../../types/documents'
 import type { OptionItem } from '../../../../types/courseApi'
@@ -12,9 +12,10 @@ import { formatFileSize } from '../../../documents/documentData'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALL_BUSINESSES = 'ALL'
-const fieldNames = ['title', 'documentTypeId', 'businessIds', 'effectiveDate'] as const
+const fieldNames = ['title', 'documentTypeId', 'businessIds', 'effectiveDate', 'externalUrl'] as const
 
 type FormValues = {
+  externalUrl?: string
   title: string
   documentTypeId: string
   businessIds: string[]
@@ -26,7 +27,7 @@ type DocumentUploadDrawerProps = {
   businesses: OptionItem[]
   isMobile: boolean
   onClose: () => void
-  onUploaded: (id: string, title: string) => void
+  onUploaded: (id: string, title: string, isLink: boolean) => void
 }
 
 function normalizeBusinesses(values: string[]) {
@@ -39,6 +40,7 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
   const { message } = App.useApp()
   const { refreshUser } = useAuth()
   const [form] = Form.useForm<FormValues>()
+  const [source, setSource] = useState<'file' | 'link'>('file')
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -59,28 +61,32 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
   }
 
   async function submit(values: FormValues) {
-    if (!file) {
+    if (source === 'file' && !file) {
       setFileError('PDF 파일을 골라 주세요.')
       return
     }
 
     const isAll = values.businessIds.includes(ALL_BUSINESSES)
+    const title = values.title.trim()
+    const metadata = {
+      title,
+      documentTypeId: values.documentTypeId,
+      businessScope: isAll ? ('ALL' as const) : ('SELECTED' as const),
+      businessIds: isAll ? [] : values.businessIds,
+      effectiveDate: values.effectiveDate?.format('YYYY-MM-DD') ?? null,
+    }
     setIsSaving(true)
     setSubmitError('')
     try {
-      const title = values.title.trim()
-      const id = await uploadDocument(
-        {
-          title,
-          documentTypeId: values.documentTypeId,
-          businessScope: isAll ? 'ALL' : 'SELECTED',
-          businessIds: isAll ? [] : values.businessIds,
-          effectiveDate: values.effectiveDate?.format('YYYY-MM-DD') ?? null,
-        },
-        file,
-      )
-      message.success('문서를 올렸어요. 물어보기가 읽는 데 잠깐 걸려요.')
-      onUploaded(id, title)
+      if (source === 'link') {
+        const id = await createLinkDocument({ ...metadata, externalUrl: values.externalUrl?.trim() ?? '' })
+        message.success('외부 링크를 등록했어요.')
+        onUploaded(id, title, true)
+      } else if (file) {
+        const id = await uploadDocument(metadata, file)
+        message.success('문서를 올렸어요. 물어보기가 읽는 데 잠깐 걸려요.')
+        onUploaded(id, title, false)
+      }
       onClose()
     } catch (error) {
       setSubmitError(getApiErrorMessage(error))
@@ -108,7 +114,9 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
       closable={!isSaving}
       footer={
         <div className="flex flex-col gap-xs min-[992px]:flex-row min-[992px]:items-center min-[992px]:justify-between">
-          <span className="text-caption text-(--ant-color-text-tertiary)">올리면 물어보기가 읽는 데 잠깐 걸려요</span>
+          <span className="text-caption text-(--ant-color-text-tertiary)">
+            {source === 'file' ? '올리면 물어보기가 읽는 데 잠깐 걸려요' : '외부 링크는 문서 메뉴에서 새 탭으로 열려요'}
+          </span>
           <span className="flex justify-end gap-xs">
             <Button disabled={isSaving} onClick={onClose}>
               취소
@@ -121,36 +129,60 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
       }
     >
       <Form form={form} layout="vertical" disabled={isSaving} onFinish={submit} requiredMark>
-        <Form.Item label="파일 또는 링크" required validateStatus={fileError ? 'error' : undefined} help={fileError || undefined}>
+        <Form.Item
+          label="파일 또는 링크"
+          required
+          validateStatus={source === 'file' && fileError ? 'error' : undefined}
+          help={source === 'file' ? fileError || undefined : undefined}
+          className={source === 'link' ? 'mb-xs' : undefined}
+        >
           <div className="flex flex-col gap-xs">
             <Segmented
-              value="file"
+              value={source}
+              onChange={(value) => setSource(value as 'file' | 'link')}
               options={[
                 { label: '파일', value: 'file' },
-                { label: '외부 링크', value: 'link', disabled: true },
+                { label: '외부 링크', value: 'link' },
               ]}
               className="self-start"
             />
-            <Upload.Dragger accept=".pdf,application/pdf" showUploadList={false} beforeUpload={pickFile}>
-              <div className="flex flex-col items-center gap-xxs p-md">
-                <InboxOutlined className="text-2xl text-(--ant-color-primary)" />
-                {file ? (
-                  <>
-                    <span className="text-body font-medium">{file.name}</span>
-                    <span className="text-caption text-(--ant-color-text-tertiary)">
-                      {formatFileSize(file.size)} · 다른 파일 고르기
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-body">{isMobile ? '눌러서 PDF 파일을 고르세요' : 'PDF 파일을 끌어 놓거나 눌러서 고르세요'}</span>
-                )}
-              </div>
-            </Upload.Dragger>
-            <span className="text-caption text-(--ant-color-text-tertiary)">
-              PDF는 사이트 안에서 보고 물어보기 검색에도 쓰여요. 파일은 10MB까지 올릴 수 있어요.
-            </span>
+            {source === 'file' && (
+              <>
+                <Upload.Dragger accept=".pdf,application/pdf" showUploadList={false} beforeUpload={pickFile}>
+                  <div className="flex flex-col items-center gap-xxs p-md">
+                    <InboxOutlined className="text-2xl text-(--ant-color-primary)" />
+                    {file ? (
+                      <>
+                        <span className="text-body font-medium">{file.name}</span>
+                        <span className="text-caption text-(--ant-color-text-tertiary)">
+                          {formatFileSize(file.size)} · 다른 파일 고르기
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-body">{isMobile ? '눌러서 PDF 파일을 고르세요' : 'PDF 파일을 끌어 놓거나 눌러서 고르세요'}</span>
+                    )}
+                  </div>
+                </Upload.Dragger>
+                <span className="text-caption text-(--ant-color-text-tertiary)">
+                  PDF는 사이트 안에서 보고 물어보기 검색에도 쓰여요. 파일은 10MB까지 올릴 수 있어요.
+                </span>
+              </>
+            )}
           </div>
         </Form.Item>
+        {source === 'link' && (
+          <Form.Item
+            name="externalUrl"
+            extra="외부 링크는 물어보기 검색에 쓰이지 않아요."
+            rules={[
+              { required: true, whitespace: true, message: '링크 주소를 입력해 주세요.' },
+              { pattern: /^https?:\/\/\S+$/i, message: 'http:// 또는 https://로 시작하는 주소를 입력해 주세요.' },
+              { max: 2048, message: '주소는 2048자까지 입력할 수 있어요.' },
+            ]}
+          >
+            <Input aria-label="링크 주소" placeholder="https://" />
+          </Form.Item>
+        )}
         <Form.Item
           name="title"
           label="제목"
