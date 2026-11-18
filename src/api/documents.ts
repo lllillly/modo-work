@@ -12,7 +12,7 @@ export function getDocuments(businessId: string, signal?: AbortSignal) {
 
 export function getDocumentFileUrl(documentId: string, businessId: string, page = 1) {
   const query = new URLSearchParams({ businessId })
-  return `/api/documents/${encodeURIComponent(documentId)}/file?${query}#page=${page}&navpanes=0`
+  return `${import.meta.env.BASE_URL}api/documents/${encodeURIComponent(documentId)}/file?${query}#page=${page}&navpanes=0`
 }
 
 export function getAdminDocuments(signal?: AbortSignal) {

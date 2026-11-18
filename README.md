@@ -16,6 +16,14 @@ npm run dev
 
 API 요청은 세션 쿠키와 동일 출처 상대 경로 `/api`를 사용합니다. 로컬에서는 Vite가 `http://localhost:8080`으로 전달하고 Docker에서는 Nginx 프록시를 사용합니다.
 
+하위 경로에 배포할 때는 빌드나 실행 전에 `BASE_PATH`를 지정합니다. 값이 없으면 `/`입니다.
+
+```bash
+BASE_PATH=/portal npm run build
+```
+
+화면 주소, 정적 파일, API 요청(`/portal/api`)과 문서 PDF 주소가 모두 이 경로 아래로 바뀝니다. 로컬에서 `BASE_PATH=/portal npm run dev`로 실행하면 Vite가 `/portal/api`를 백엔드의 `/api`로 전달합니다.
+
 ## 화면과 연동 상태
 
 | 화면 | 주소 | 현재 상태 |

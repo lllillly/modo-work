@@ -19,7 +19,7 @@ export class ApiError extends Error {
 export async function requestApi(path: string, options?: RequestInit) {
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   const signal = options?.signal ? AbortSignal.any([options.signal, timeout]) : timeout
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${import.meta.env.BASE_URL}api${path}`, {
     ...options,
     credentials: 'include',
     cache: 'no-store',
