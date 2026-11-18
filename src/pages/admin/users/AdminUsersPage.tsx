@@ -26,24 +26,33 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
     (signal: AbortSignal) => getAllPages((page) => getAdminUsers(page, { status: 'PENDING' }, signal, 100)),
     [],
   )
-  const loadActive = useCallback(
-    (signal: AbortSignal) => getAllPages((page) => getAdminUsers(page, { status: 'ACTIVE' }, signal, 100)),
-    [],
-  )
   const loadTotal = useCallback((signal: AbortSignal) => getAdminUsers(0, {}, signal, 1), [])
   const loadOptions = useCallback((signal: AbortSignal) => getCourseOptions(businessId, signal), [businessId])
   const pending = useApiQuery('pending-users', loadPending)
-  const active = useApiQuery('active-users', loadActive)
   const total = useApiQuery('total-users', loadTotal)
   const options = useApiQuery(businessId, loadOptions)
   const pendingUsers = pending.data ?? []
   const orgUnits = options.data?.orgUnits ?? []
 
+  const pendingNames = [...new Set(pendingUsers.map((user) => user.name))].join('\n')
+  const loadSameNames = useCallback(
+    async (signal: AbortSignal) => {
+      const names = pendingNames.split('\n')
+      const pages = await Promise.all(
+        names.map((name) => getAdminUsers(0, { q: name, status: 'ACTIVE' }, signal, 100)),
+      )
+      const users = pages.flatMap((page) => page.items).filter((user) => names.includes(user.name))
+      return [...new Map(users.map((user) => [user.id, user])).values()]
+    },
+    [pendingNames],
+  )
+  const sameNames = useApiQuery(pendingNames ? `same-names:${refreshKey}:${pendingNames}` : null, loadSameNames)
+  const activeUsers = sameNames.data ?? []
+
   function refresh() {
     setSelected(null)
     setRefreshKey((key) => key + 1)
     pending.reload()
-    active.reload()
     total.reload()
   }
 
@@ -63,7 +72,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
       <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />
     </Card>
   ) : (
-    <PendingUsers users={pendingUsers} activeUsers={active.data ?? []} onApprove={setSelected} />
+    <PendingUsers users={pendingUsers} activeUsers={activeUsers} onApprove={setSelected} />
   )
 
   return (
@@ -126,7 +135,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
           areas={options.data?.areas ?? []}
           optionsStatus={options.error ? 'error' : options.isLoading ? 'loading' : 'ready'}
           onRetryOptions={options.reload}
-          sameNameUsers={getSameNameUsers(selected, active.data ?? [])}
+          sameNameUsers={getSameNameUsers(selected, activeUsers)}
           isMobile={isMobile}
           onClose={() => setSelected(null)}
           onSaved={refresh}

@@ -67,6 +67,12 @@ export default function UserDrawer({
   const areaPlace = draft.assignee ? 'assignee' : viewerNeedsArea ? 'viewer' : draft.areaIds.length > 1 ? 'bottom' : null
   const hasOtherRole = draft.assignee || draft.leader || draft.admin
   const isReady = optionsStatus === 'ready'
+  const keptValues = [
+    !orgPlace && draft.orgUnitId ? `소속: ${orgUnitName}` : null,
+    !areaPlace && draft.areaIds.length === 1
+      ? `영역: ${areaOptions.find((area) => area.value === draft.areaIds[0])?.label ?? '-'}`
+      : null,
+  ].filter(Boolean)
 
   function change(values: Partial<UserDraft>) {
     setDraft((current) => ({ ...current, ...values }))
@@ -330,6 +336,13 @@ export default function UserDrawer({
         )}
 
         {isReady && areaPlace === 'bottom' && areaField}
+
+        {isReady && keptValues.length > 0 && (
+          <div className="flex flex-col gap-xxs rounded-lg bg-(--ant-color-fill-quaternary) px-md py-sm">
+            <span className="text-caption text-(--ant-color-text-secondary)">기존 값은 함께 저장돼요</span>
+            <span className="text-body">{keptValues.join(', ')}</span>
+          </div>
+        )}
       </div>
     </Drawer>
   )
