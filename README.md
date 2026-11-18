@@ -36,8 +36,8 @@ BASE_PATH=/portal npm run build
 | 과정 & 담당 배정 (S10) | `/admin/courses` | 실제 API 연결 |
 | CSV 가져오기 | `/admin/courses/import` | 미리보기, 적용, 취소 API 연결 |
 | 물어보기 (S16) | `/ask` | 질문 보내기, 되묻기 후보 선택, 근거 표시 API 연결 |
-| 문서 (S08) | `/documents` | 문서 목록, 종류 필터, 제목 검색, 앱 안 PDF 보기 API 연결. 본문 검색과 연결된 할 일은 API가 없어 비활성 |
-| 문서 업로드 (S13) | `/admin/documents` | 목록, PDF 올리기, 삭제, 읽기 다시 시도 API 연결. 파일 교체, 외부 링크 등록, 템플릿 연결은 API가 없어 비활성 |
+| 문서 (S08) | `/documents` | 문서 목록, 종류 필터, 제목 검색, 앱 안 PDF 보기, 버전 기록과 지난 판 열람 API 연결. 본문 검색과 연결된 할 일은 API가 없어 비활성 |
+| 문서 업로드 (S13) | `/admin/documents` | 목록, PDF와 외부 링크 등록, 파일 교체, 버전 복원, 삭제 확인, 읽기 다시 시도 API 연결. 템플릿 연결은 비활성 |
 | 사용자와 승인 (S11) | `/admin/users` | 승인 대기와 전체 사용자 목록, 가입 승인, 역할 수정, 활성 상태 변경 API 연결. 조직 단위 리더는 소속 조직으로 승인과 역할 추가 |
 
 홈과 기존 할 일 화면의 목업은 새로고침하면 초기화됩니다. 실제 API 화면과 목업 상태는 공유하지 않습니다. `source=api`는 프론트 화면 구분용이며 서버에는 보내지 않습니다.
@@ -132,12 +132,14 @@ CSV 파일은 `FormData`로 전송합니다. 서버에서 검사한 행별 변�
 | 파일 | 역할 |
 | --- | --- |
 | `DocumentList.tsx` | 종류 필터, 제목 검색, 문서 목록. 외부 링크 문서는 새 탭에서 열기 |
-| `DocumentViewer.tsx` | 앱 안 PDF 보기, 쪽 이동과 전체 화면. 쪽은 `?page=` 로 유지 |
+| `DocumentViewer.tsx` | 앱 안 PDF 보기, 쪽 이동과 전체 화면, 개정 표시와 버전 기록. 쪽은 `?page=` 로 유지 |
 | `documentData.ts` | 종류 목록, 안내 문구, 색인 상태 표시 |
-| `AdminDocumentList.tsx` | 관리자 문서 목록, 검색과 필터, 삭제, 읽기 다시 시도 |
-| `DocumentUploadDrawer.tsx` | PDF 올리기. 10MB 이하 PDF만 받고 제목은 파일명으로 채움 |
+| `AdminDocumentList.tsx` | 관리자 문서 목록, 검색과 필터, 교체, 버전, 삭제 확인, 읽기 다시 시도 |
+| `DocumentUploadDrawer.tsx` | PDF 또는 외부 링크 등록. 10MB 이하 PDF만 받고 제목은 파일명으로 채움 |
+| `DocumentReplaceModal.tsx` | 새 파일로 교체. 현재 판 번호를 함께 보냄 |
+| `DocumentVersionsDrawer.tsx` | 버전 기록. 지난 판 보기, 관리자는 복원 |
 
-PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 위쪽 쪽수는 바뀌지 않습니다. 추후 방안을 찾아 변경 예정입니다. 업로드는 `metadata`와 `file`을 `FormData`로 전송하고, 삭제는 목록에서 받은 `contentRevision`을 함께 보냅니다. 삭제한 문서의 제목은 다시 사용할 수 없습니다. 작성 규칙은 [문서 API](../../contracts/api/documents.md)를 따릅니다.
+PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 위쪽 쪽수는 바뀌지 않습니다. 추후 방안을 찾아 변경 예정입니다. 업로드는 `metadata`와 `file`을 `FormData`로 전송하고, 교체와 복원은 목록의 `contentRevision`을, 삭제는 삭제 확인 정보의 `contentRevision`을 함께 보냅니다. 삭제한 문서와 같은 제목으로 새 문서를 등록할 수 있습니다. 작성 규칙은 [문서 API](../../contracts/api/documents.md)를 따릅니다.
 
 ### 미연동 항목 (추후 연동 예정)
 
@@ -145,8 +147,7 @@ PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 �
 | --- | --- |
 | 문서 안 구절 검색 | 검색창은 제목만 검색, 구절 검색은 비활성 |
 | 문서 보기의 연결된 할 일 | 비활성 |
-| 새 파일로 교체, 버전, 연결할 템플릿 | 비활성 |
-| 외부 링크 등록 | 비활성 |
+| 연결할 템플릿 | 비활성 |
 
 ## 물어보기
 
