@@ -628,7 +628,7 @@ export default function CourseEditor({
               type="primary"
               onClick={() => {
                 if (!result) return
-                const query = new URLSearchParams({ courseId: result.courseId, source: 'api' })
+                const query = new URLSearchParams({ courseId: result.courseId })
                 navigate(`/tasks?${query}`)
               }}
             >

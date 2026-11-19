@@ -26,7 +26,7 @@ import TaskPhaseList from './components/TaskPhaseList'
 export default function TasksPage() {
   const { user } = useAuth()
   const [params] = useSearchParams()
-  if (user && params.get('source') === 'api') return <ApiCourseTasks user={user} />
+  if (user && params.get('source') !== 'mock') return <ApiCourseTasks user={user} />
   return user ? <CourseTasksContent key={user.id} user={user} /> : null
 }
 

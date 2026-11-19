@@ -73,6 +73,8 @@ export function toCourseTask(task: TaskResponse, actions: TaskAction[] = []): Co
     server: {
       version: task.version,
       isReadOnly: task.isReadOnly,
+      canReview: task.canReview,
+      canReviewInArea: task.canReviewInArea,
       completionActionLogId: task.completionActionLogId,
       reviewActionLogId: task.reviewActionLogId,
     },
@@ -112,10 +114,11 @@ export function getStoredMonthlyCycles(tasks: TaskResponse[]): MonthlyCycle[] {
     )
       continue
 
-    const id = `${task.periodStart}:${task.periodEnd}:${task.rawDueDate}:${task.dueDate}`
+    const id = `${task.periodStart}:${task.periodEnd}:${task.rawDueDate}:${task.dueDate}:${task.title}`
     if (cycles.has(id)) continue
     cycles.set(id, {
       id,
+      taskId: task.id,
       number: task.occurrenceNo,
       title: task.title,
       startDate: task.periodStart,

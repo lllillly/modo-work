@@ -8,6 +8,7 @@ type ApiCourseSelectProps = {
   businessId: string
   courseId: string
   courseName: string
+  courses?: { id: string; name: string }[]
   onChange: (id: string) => void
 }
 
@@ -15,6 +16,7 @@ export default function ApiCourseSelect({
   businessId,
   courseId,
   courseName,
+  courses,
   onChange,
 }: ApiCourseSelectProps) {
   const [open, setOpen] = useState(false)
@@ -23,8 +25,8 @@ export default function ApiCourseSelect({
     (signal: AbortSignal) => getCourses(businessId, page, {}, signal),
     [businessId, page],
   )
-  const query = useApiQuery(open ? `${businessId}:${page}` : null, load)
-  const options = query.data?.items.map((course) => ({ value: course.id, label: course.name })) ?? []
+  const query = useApiQuery(open && !courses ? `${businessId}:${page}` : null, load)
+  const options = (courses ?? query.data?.items ?? []).map((course) => ({ value: course.id, label: course.name }))
 
   return (
     <Select
@@ -48,7 +50,7 @@ export default function ApiCourseSelect({
           '과정이 없어요'
         )
       }
-      popupRender={(menu) => (
+      popupRender={courses ? undefined : (menu) => (
         <>
           {menu}
           <Divider className="my-xs" />

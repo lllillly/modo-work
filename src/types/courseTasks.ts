@@ -19,6 +19,8 @@ export type CourseTask = Task & {
   server?: {
     version: number
     isReadOnly: boolean
+    canReview: boolean
+    canReviewInArea: boolean
     completionActionLogId: string | null
     reviewActionLogId: string | null
   }
@@ -61,6 +63,7 @@ export type CourseTasksCourse = Course & {
 
 export type MonthlyCycle = {
   id?: string
+  taskId?: string
   title?: string
   number: number
   startDate: string

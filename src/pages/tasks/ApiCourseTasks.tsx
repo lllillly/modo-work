@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, App, Button, Card, Drawer, Result, Spin, Tag } from 'antd'
-import { Link, useOutletContext, useSearchParams } from 'react-router'
+import { useOutletContext, useSearchParams } from 'react-router'
 
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../api/client'
-import { getCourse, getCourseOptions, getScheduleContext, updateSchedule } from '../../api/courses'
+import { getCourse, getCourseOptions, getCourses, getScheduleContext, updateSchedule } from '../../api/courses'
+import { getHomeCourses } from '../../api/home'
 import {
   addTaskMemo,
   getCourseTasks,
@@ -16,6 +17,7 @@ import useApiQuery from '../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import { useAuth } from '../../providers/AuthContext'
 import type { AuthUser } from '../../types/auth'
+import type { CourseResponse } from '../../types/courseApi'
 import type { TaskActionType } from '../../types/courseTasks'
 import { getToday } from '../home/dateUtils'
 import ApiCourseSelect from './components/ApiCourseSelect'
@@ -35,36 +37,104 @@ import {
   toTaskCourse,
 } from './courseTasksApiData'
 
-// S10에서 저장한 실제 과정만 연결하며 기존 목업 확인 화면과 데이터를 섞지 않음
+const notFound = (message: string) =>
+  new ApiError(404, { code: 'NOT_FOUND', message, fieldErrors: [] })
+
+const isAdmin = (user: AuthUser) => user.roles.some((role) => role.role === 'ADMIN')
+
+function getVisibleCourses(user: AuthUser, businessId: string, signal: AbortSignal) {
+  const isLeader = user.roles.some((role) => role.role === 'LEADER')
+  const isAssignee = !isLeader || user.roles.some((role) => role.role === 'ASSIGNEE')
+  return getHomeCourses(businessId, getToday(), { leader: isLeader, assignee: isAssignee }, signal)
+}
+
+async function getFirstAdminCourse(businessId: string, signal: AbortSignal) {
+  const ongoing = await getCourses(businessId, 0, { progressStatus: 'ONGOING' }, signal)
+  if (ongoing.items.length > 0) return ongoing.items[0]
+  const all = await getCourses(businessId, 0, {}, signal)
+  return all.items[0] ?? null
+}
+
+function pickFirstCourse(courses: CourseResponse[]) {
+  const today = getToday()
+  return courses.find((course) => course.startDate <= today && course.endDate >= today) ?? courses[0] ?? null
+}
+
 export default function ApiCourseTasks({ user }: { user: AuthUser }) {
   const { selectedBusinessId, selectedBusiness, isMobile } = useOutletContext<AppLayoutContext>()
   const [params] = useSearchParams()
   const courseId = params.get('courseId')
+  const businessId = selectedBusinessId ?? ''
+  const admin = isAdmin(user)
+  const loadCourses = useCallback(
+    (signal: AbortSignal) => getVisibleCourses(user, businessId, signal),
+    [user, businessId],
+  )
+  const courses = useApiQuery(businessId && !admin ? `courses:${businessId}` : null, loadCourses)
 
-  if (!courseId || !selectedBusinessId) {
-    return <Result title="과정을 선택해 주세요" extra={<Link to="/admin/courses">과정 목록으로</Link>} />
+  if (!selectedBusinessId) return <Result title="선택할 수 있는 사업이 없어요" />
+  if (!admin && !courses.data) {
+    if (!courses.error) return <CourseTasksSkeleton />
+    return (
+      <Result
+        status="warning"
+        title="과정을 불러오지 못했어요"
+        subTitle={getApiErrorMessage(courses.error)}
+        extra={<Button onClick={courses.reload}>다시 시도</Button>}
+      />
+    )
   }
+  if (!courseId) return <FirstCourse key={selectedBusinessId} businessId={selectedBusinessId} courses={courses.data} />
   return (
     <CourseContent
       key={`${selectedBusinessId}:${courseId}`}
       businessId={selectedBusinessId}
       businessName={selectedBusiness}
       courseId={courseId}
+      courses={courses.data}
       isMobile={isMobile}
       user={user}
     />
   )
 }
 
+function FirstCourse({ businessId, courses }: { businessId: string; courses?: CourseResponse[] }) {
+  const [params, setParams] = useSearchParams()
+  const load = useCallback((signal: AbortSignal) => getFirstAdminCourse(businessId, signal), [businessId])
+  const query = useApiQuery(courses ? null : `first-course:${businessId}`, load)
+  const first = courses ? pickFirstCourse(courses) : query.data
+
+  useEffect(() => {
+    if (!first) return
+    const next = new URLSearchParams(params)
+    next.set('courseId', first.id)
+    setParams(next, { replace: true })
+  }, [first, params, setParams])
+
+  if (query.error) {
+    return (
+      <Result
+        status="warning"
+        title="과정을 불러오지 못했어요"
+        subTitle={getApiErrorMessage(query.error)}
+        extra={<Button onClick={query.reload}>다시 시도</Button>}
+      />
+    )
+  }
+  if (first === null) return <Result title="볼 수 있는 과정이 없어요" />
+  return <CourseTasksSkeleton />
+}
+
 type CourseContentProps = {
   businessId: string
   businessName: string
   courseId: string
+  courses?: CourseResponse[]
   isMobile: boolean
   user: AuthUser
 }
 
-function CourseContent({ businessId, businessName, courseId, isMobile, user }: CourseContentProps) {
+function CourseContent({ businessId, businessName, courseId, courses, isMobile, user }: CourseContentProps) {
   const { message } = App.useApp()
   const { refreshUser } = useAuth()
   const [params, setParams] = useSearchParams()
@@ -73,31 +143,30 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const saving = useRef(false)
+  const admin = isAdmin(user)
   const load = useCallback(
     async (signal: AbortSignal) => {
-      const [detail, options, schedule, tasks] = await Promise.all([
-        getCourse(courseId, signal),
-        getCourseOptions(businessId, signal),
-        getScheduleContext(courseId, signal),
+      const [course, adminOrgUnits, schedule, tasks] = await Promise.all([
+        admin ? getCourse(courseId, signal).then((detail) => detail.course) : null,
+        admin ? getCourseOptions(businessId, signal).then((items) => items.orgUnits) : undefined,
+        getScheduleContext(courseId, signal).catch((error: unknown) => {
+          if (error instanceof ApiError && error.status === 403) return null
+          throw error
+        }),
         getCourseTasks({ businessId, courseId }, signal),
       ])
-      if (detail.course.businessId !== businessId) {
-        throw new ApiError(404, {
-          code: 'NOT_FOUND',
-          message: '선택한 사업의 과정이 아니에요.',
-          fieldErrors: [],
-        })
-      }
-      if (detail.course.version !== schedule.course.version) {
+      if (course && course.businessId !== businessId) throw notFound('선택한 사업의 과정이 아니에요.')
+      if (course && schedule && course.version !== schedule.course.version) {
         throw new ApiError(409, {
           code: 'CONFLICT',
           message: '과정이 변경됐어요. 다시 불러와 주세요.',
           fieldErrors: [],
         })
       }
-      return { course: detail.course, options, schedule, tasks }
+      const orgUnits = adminOrgUnits ?? tasks.map((task) => ({ id: task.orgUnitId, name: task.orgUnitName }))
+      return { course, orgUnits, schedule, tasks }
     },
-    [businessId, courseId],
+    [admin, businessId, courseId],
   )
   const query = useApiQuery(`${businessId}:${courseId}`, load)
   const taskId = params.get('taskId')
@@ -106,13 +175,7 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
       if (!taskId) throw new Error('할 일을 먼저 선택해 주세요.')
 
       const { task } = await getTask(taskId, signal)
-      if (task.businessId !== businessId || task.courseId !== courseId) {
-        throw new ApiError(404, {
-          code: 'NOT_FOUND',
-          message: '이 과정의 할 일이 아니에요.',
-          fieldErrors: [],
-        })
-      }
+      if (task.businessId !== businessId || task.courseId !== courseId) throw notFound('이 과정의 할 일이 아니에요.')
       if (task.referenceType === 'ALWAYS') {
         const memos = await getTaskMemos(task.id, signal)
         return { task, actions: toMemoActions(memos) }
@@ -176,7 +239,7 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
   }
 
   async function saveSchedule(startDate: string, endDate: string) {
-    if (!query.data || saving.current || saveError) throw new Error('최신 내용을 먼저 확인해 주세요.')
+    if (!query.data?.schedule || saving.current || saveError) throw new Error('최신 내용을 먼저 확인해 주세요.')
     saving.current = true
     setIsSaving(true)
     try {
@@ -205,8 +268,13 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
     )
   }
 
-  const { course: response, tasks: responses, options, schedule } = query.data
-  const course = toTaskCourse(response, businessName, options.orgUnits, responses)
+  const { tasks: responses, orgUnits, schedule } = query.data
+  const listed = courses?.find((item) => item.id === courseId)
+  const response = query.data.course ?? (listed && schedule ? { ...listed, ...schedule.course } : listed)
+  if (!response || response.businessId !== businessId) {
+    return <Result status="warning" title="이 사업에서 볼 수 있는 과정이 아니에요" />
+  }
+  const course = toTaskCourse(response, businessName, orgUnits, responses)
   const today = getToday()
   const tasks = responses.map((task) => toApiTaskView(toCourseTask(task), course.name, today))
   const alwaysTasks = tasks.filter((task) => task.referenceType === 'ALWAYS')
@@ -239,6 +307,7 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
         businessId={businessId}
         courseId={courseId}
         courseName={course.name}
+        courses={courses}
         onChange={(id) => {
           const next = new URLSearchParams(params)
           next.set('courseId', id)
@@ -260,7 +329,7 @@ function CourseContent({ businessId, businessName, courseId, isMobile, user }: C
       course={course}
       isMobile={isMobile}
       remote
-      canEdit={schedule.permissions.canEditSchedule}
+      canEdit={!!schedule?.permissions.canEditSchedule}
       onSave={saveSchedule}
     />
   )

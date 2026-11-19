@@ -189,7 +189,9 @@ export function getTaskPermissions(user: AuthUser, course: CourseTasksCourse, ta
   const isMyArea = task.assignees.some((assignee) => assignee.id === user.id)
 
   const canView = !!task.server || canViewTaskArea(user, course, task.areaId)
-  const canManage = canView && (isAdmin || (isLeader && scope.canReview(course.orgUnit, task.areaId)))
+  const canManage = task.server
+    ? task.server.canReviewInArea
+    : canView && (isAdmin || (isLeader && scope.canReview(course.orgUnit, task.areaId)))
 
   const completion = getCurrentAction(task, 'COMPLETE')
   if (task.server) {
@@ -206,7 +208,7 @@ export function getTaskPermissions(user: AuthUser, course: CourseTasksCourse, ta
       isMyArea: task.isMyArea,
       showCheckbox: canProcess && task.referenceType !== 'ALWAYS',
       canComplete: canProcess && !task.isCompleted && task.referenceType !== 'ALWAYS',
-      canReview: writable && canManage && task.requiresReview && task.reviewStatus === 'pending',
+      canReview: writable && task.server.canReview && task.requiresReview && task.reviewStatus === 'pending',
       canCancelCompletion,
       canCancelReview: writable && isAdmin && !!task.server.reviewActionLogId,
       canEditMemo: false,
