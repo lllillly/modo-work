@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowRightOutlined, CloseOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Drawer, Input, Tag, Timeline } from 'antd'
+import { Link } from 'react-router'
 
 import type { AuthUser } from '../../../types/auth'
 import type { CourseTasksCourse, CourseTaskView, TaskActionType } from '../../../types/courseTasks'
@@ -279,10 +280,16 @@ export default function TaskDetailDrawer({
         </p>
       </section>
 
-      {!isMobile && task.documents.length > 0 && (
+      {task.documents.length > 0 && (
         <section>
           <h3 className="m-0 mb-xs text-body leading-5 font-bold">연결 문서</h3>
-          <div className="flex flex-wrap gap-xs">{task.documents.map((document) => <Button key={document.id} size="small" className="h-[30px]" disabled title="문서를 열 수 없어요">{document.title}</Button>)}</div>
+          <div className="flex flex-wrap gap-xs">
+            {task.documents.map((document) => (
+              <Link key={document.id} to={`/documents/${document.id}`}>
+                <Button size="small" className="h-[30px]">{document.title}</Button>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
     </Drawer>
