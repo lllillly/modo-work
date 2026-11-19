@@ -117,7 +117,14 @@ export function recalculateCourseTasks(course: CourseTasksCourse, tasks: CourseT
 
       return {
         ...task,
-        mismatch: { oldDueDate: task.dueDate ?? deadline.dueDate, newDueDate: deadline.dueDate, reason: '일정 변경', resolved: false },
+        mismatch: {
+          reason: '과정 일정 수정',
+          changes: [{
+            label: '마감',
+            before: formatTaskDate(task.dueDate ?? deadline.dueDate),
+            after: formatTaskDate(deadline.dueDate),
+          }],
+        },
       }
     }
 

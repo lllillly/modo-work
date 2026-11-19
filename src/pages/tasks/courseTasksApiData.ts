@@ -1,4 +1,5 @@
 import { getDeadline } from '../home/assigneeHomeData'
+import { formatTaskDate } from './courseTasksData'
 
 import type { CourseResponse, OptionItem } from '../../types/courseApi'
 import type {
@@ -9,8 +10,57 @@ import type {
   TaskAction,
 } from '../../types/courseTasks'
 import type { TaskActionResponse, TaskMemoResponse, TaskResponse } from '../../types/taskApi'
+import type { TaskIssueDetail, TaskIssueSnapshot } from '../../types/taskIssue'
 
 const shiftLabels = { WEEKEND: '주말', HOLIDAY: '공휴일' }
+const issueReasons = { SCHEDULE_MISMATCH: '과정 일정 수정', TEMPLATE_MISMATCH: '템플릿 수정' }
+
+const formatDueDate = (value: string | null) => (value ? formatTaskDate(value) : '없음')
+const formatTags = (snapshot: TaskIssueSnapshot) => Object.values(snapshot.tags).sort().join(', ') || '없음'
+
+function getIssueChanges(before: TaskIssueSnapshot, after: TaskIssueSnapshot | undefined) {
+  const changes: NonNullable<CourseTask['mismatch']>['changes'] = []
+
+  if (!after) {
+    changes.push({ label: '할 일', before: before.title, after: '새 기준에 없음' })
+  } else {
+    if (before.dueDate !== after.dueDate) {
+      changes.push({ label: '마감', before: formatDueDate(before.dueDate), after: formatDueDate(after.dueDate) })
+    }
+    if (before.title !== after.title) changes.push({ label: '제목', before: before.title, after: after.title })
+    if (before.phase !== after.phase) {
+      changes.push({ label: '단계', before: before.phase ?? '없음', after: after.phase ?? '없음' })
+    }
+    if (before.requiresReview !== after.requiresReview) {
+      const reviewText = (value: boolean) => (value ? '필요' : '필요 없음')
+      changes.push({
+        label: '리더 확인',
+        before: reviewText(before.requiresReview),
+        after: reviewText(after.requiresReview),
+      })
+    }
+    if (before.documentIds.join() !== after.documentIds.join()) {
+      changes.push({ label: '연결 문서', before: `${before.documentIds.length}개`, after: `${after.documentIds.length}개` })
+    }
+    if (formatTags(before) !== formatTags(after)) {
+      changes.push({ label: '태그', before: formatTags(before), after: formatTags(after) })
+    }
+  }
+
+  return changes
+}
+
+export function toTaskMismatch(issues: TaskIssueDetail[]): CourseTask['mismatch'] {
+  const ordered = [...issues].sort((a, b) => a.issue.createdAt.localeCompare(b.issue.createdAt))
+  const reasons = [...new Set(ordered.map(({ issue }) => issueReasons[issue.issueType]))]
+  const { before } = ordered[0].details
+  const latest = ordered[ordered.length - 1].details.expected[0]
+  return {
+    issueIds: ordered.map(({ issue }) => issue.id),
+    reason: reasons.join('과 '),
+    changes: getIssueChanges(before, latest),
+  }
+}
 
 export function toTaskCourse(
   course: CourseResponse,

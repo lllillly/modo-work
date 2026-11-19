@@ -5,6 +5,7 @@ import { useOutletContext, useSearchParams } from 'react-router'
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../api/client'
 import { getCourse, getCourseOptions, getCourses, getScheduleContext, updateSchedule } from '../../api/courses'
 import { getHomeCourses } from '../../api/home'
+import { getOpenTaskIssues, getTaskIssue, resolveTaskIssue } from '../../api/taskIssues'
 import {
   addTaskMemo,
   getCourseTasks,
@@ -33,6 +34,7 @@ import {
   toCourseTask,
   toApiTaskView,
   toMemoActions,
+  toTaskMismatch,
   toTaskActions,
   toTaskCourse,
 } from './courseTasksApiData'
@@ -53,6 +55,13 @@ async function getFirstAdminCourse(businessId: string, signal: AbortSignal) {
   if (ongoing.items.length > 0) return ongoing.items[0]
   const all = await getCourses(businessId, 0, {}, signal)
   return all.items[0] ?? null
+}
+
+async function getTaskMismatch(businessId: string, courseId: string, taskId: string, signal: AbortSignal) {
+  const issues = await getOpenTaskIssues(businessId, courseId, signal)
+  const taskIssues = issues.filter((issue) => issue.taskId === taskId)
+  if (taskIssues.length === 0) return undefined
+  return toTaskMismatch(await Promise.all(taskIssues.map((issue) => getTaskIssue(issue.id, signal))))
 }
 
 function pickFirstCourse(courses: CourseResponse[]) {
@@ -180,8 +189,11 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
         const memos = await getTaskMemos(task.id, signal)
         return { task, actions: toMemoActions(memos) }
       }
-      const actions = await getTaskActions(task.id, signal)
-      return { task, actions: toTaskActions(actions) }
+      const [actions, mismatch] = await Promise.all([
+        getTaskActions(task.id, signal),
+        task.canReviewInArea ? getTaskMismatch(businessId, courseId, task.id, signal) : undefined,
+      ])
+      return { task, actions: toTaskActions(actions), mismatch }
     },
     [taskId, businessId, courseId],
   )
@@ -230,6 +242,23 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
       reload()
     } catch (error) {
       setSaveError(getApiErrorMessage(error))
+      if (isAuthStateError(error)) void refreshUser()
+      throw error
+    } finally {
+      saving.current = false
+      setIsSaving(false)
+    }
+  }
+
+  async function resolveMismatch(issueIds: string[]) {
+    if (saving.current || saveError) return
+    saving.current = true
+    setIsSaving(true)
+    try {
+      for (const id of issueIds) await resolveTaskIssue(id)
+      message.success('변경 사항을 확인했어요.')
+      detail.reload()
+    } catch (error) {
       if (isAuthStateError(error)) void refreshUser()
       throw error
     } finally {
@@ -299,7 +328,12 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
     />
   )
   const selectedTask =
-    detail.data && toApiTaskView(toCourseTask(detail.data.task, detail.data.actions), course.name, today)
+    detail.data && toApiTaskView(
+      { ...toCourseTask(detail.data.task, detail.data.actions), mismatch: detail.data.mismatch },
+      course.name,
+      today,
+    )
+  const mismatchIds = selectedTask?.mismatch?.issueIds
 
   const courseSelector = (
     <div className="flex flex-wrap items-center gap-xs">
@@ -476,6 +510,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
           onClose={() => selectTask(null)}
           onReload={reload}
           onAction={(type, memo) => performAction(selectedTask.id, type, memo)}
+          onResolveMismatch={mismatchIds ? () => resolveMismatch(mismatchIds) : undefined}
         />
       )}
     </div>

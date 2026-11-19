@@ -3,7 +3,7 @@ import type { CourseTask, CourseTasksCourse, TaskAction, TaskAssignee } from '..
 import { courses as homeCourses } from '../home/assigneeHomeMockData'
 import { getToday } from '../home/dateUtils'
 import { createLeaderHomeMockData } from '../home/leaderHomeMockData'
-import { recalculateCourseTasks } from './courseTasksData'
+import { formatTaskDate, recalculateCourseTasks } from './courseTasksData'
 
 export function createCourseTasksMockData(user: AuthUser) {
   const leaderMockData = createLeaderHomeMockData(user, getToday())
@@ -83,7 +83,10 @@ export function createCourseTasksMockData(user: AuthUser) {
           action('COMPLETE', { ...secondAssignee, role: 'ASSIGNEE' }, '2026-10-30T15:40:00+09:00', '명단 확인함'),
           action('REVIEW', { id: 'mock-leader-b', name: '리더 B', role: 'LEADER' }, '2026-10-30T17:02:00+09:00'),
         ],
-        mismatch: { oldDueDate: '2026-10-30', newDueDate: '2026-11-02', reason: '템플릿 변경', resolved: false },
+        mismatch: {
+          reason: '템플릿 수정',
+          changes: [{ label: '마감', before: formatTaskDate('2026-10-30'), after: formatTaskDate('2026-11-02') }],
+        },
       }),
       task('F', 1, 23, { tag: '태그 2', areaId: areas[1].id, areaName: areas[1].name, assignees: [otherAssignee], isMyArea: false, requiresReview: false, ...completed(otherAssignee, '2026-10-28T09:00:00+09:00') }),
       task('G', 2, 38),

@@ -22,6 +22,7 @@ type TaskDetailDrawerProps = {
   onAction: (type: TaskActionType, memo: string) => void | Promise<void>
   isProcessing?: boolean
   onReload?: () => void
+  onResolveMismatch?: () => Promise<void>
 }
 
 const actionLabels: Record<TaskActionType, string> = {
@@ -40,6 +41,7 @@ export default function TaskDetailDrawer({
   onAction,
   isProcessing = false,
   onReload,
+  onResolveMismatch,
 }: TaskDetailDrawerProps) {
   const { modal } = App.useApp()
   const [actionError, setActionError] = useState('')
@@ -49,7 +51,7 @@ export default function TaskDetailDrawer({
   const isAdmin = user.roles.some((role) => role.role === 'ADMIN')
   const processingTitle = isAdmin ? '관리자 처리' : permissions.canManage ? '리더 처리' : '내 처리'
   const isAlways = task.referenceType === 'ALWAYS'
-  const showMismatch = task.mismatch && !task.mismatch.resolved && permissions.canManage
+  const showMismatch = task.mismatch && permissions.canManage
   const canWriteMemo = permissions.canComplete || permissions.canEditMemo || permissions.canAddMemo
 
   const phaseName = course.phases.find((phase) => phase.id === task.phaseId)?.name
@@ -106,6 +108,16 @@ export default function TaskDetailDrawer({
       ),
     }
   })
+
+  async function resolveMismatch() {
+    if (!onResolveMismatch || isProcessing) return
+    setActionError('')
+    try {
+      await onResolveMismatch()
+    } catch (error) {
+      setActionError(getApiErrorMessage(error))
+    }
+  }
 
   async function recordAction(type: TaskActionType, content: string) {
     setActionError('')
@@ -210,8 +222,34 @@ export default function TaskDetailDrawer({
         action={onReload && <Button onClick={onReload}>최신 내용 불러오기</Button>} />}
       {showMismatch && task.mismatch && (
         <div className="mb-md border-0 border-b border-solid border-(--ant-color-border-secondary) pb-sm">
-          <Alert type="warning" title="완료 뒤에 할 일 기준이 바뀌었어요" className="p-2.5" classNames={{ title: 'mb-xxs text-caption leading-[18px] font-medium', description: 'text-caption leading-[18px]' }}
-            description={<>{task.mismatch.reason}으로 마감이 {formatTaskDate(task.mismatch.oldDueDate).split('(')[0]} <ArrowRightOutlined aria-label="에서" /> {formatTaskDate(task.mismatch.newDueDate).split('(')[0]}로 바뀌었어요. 완료 기록은 그대로 두었어요. 필요하면 다시 확인해 주세요.</>} />
+          <Alert type="warning" className="p-2.5"
+            title={
+              <span className="flex items-center justify-between gap-xs">
+                완료 뒤에 할 일 기준이 바뀌었어요
+                {onResolveMismatch && (
+                  <Button size="small" disabled={isProcessing} onClick={() => void resolveMismatch()}
+                    className="shrink-0 px-xs text-caption shadow-none">
+                    확인 완료
+                  </Button>
+                )}
+              </span>
+            } classNames={{ title: 'mb-xxs text-caption leading-[18px] font-medium', description: 'text-caption leading-[18px]' }}
+            description={
+              <>
+                {task.mismatch.changes.length > 0 && (
+                  <ul className="m-0 mb-xxs list-none p-0">
+                    {task.mismatch.changes.map((change, index) => (
+                      <li key={`${change.label}:${index}`}>
+                        {change.label}: {change.before} <ArrowRightOutlined aria-label="에서" /> {change.after}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="m-0">
+                  {task.mismatch.reason}으로 변경되었어요. 완료 기록은 그대로예요. 변경 사항을 확인했다면 확인 완료를 눌러 주세요.
+                </p>
+              </>
+            } />
         </div>
       )}
 

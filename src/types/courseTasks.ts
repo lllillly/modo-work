@@ -37,7 +37,11 @@ export type CourseTask = Task & {
   displayText: string
   actions: TaskAction[]
   documents: { id: string; title: string }[]
-  mismatch?: { oldDueDate: string; newDueDate: string; reason: string; resolved: boolean }
+  mismatch?: {
+    issueIds?: string[]
+    reason: string
+    changes: { label: string; before: string; after: string }[]
+  }
 }
 
 export type CourseTaskView = CourseTask & HomeTask
