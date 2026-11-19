@@ -106,7 +106,7 @@ export default function CourseChangesModal({ courseId, courseName, orgUnits, onC
                 </p>
               </div>
             ))}
-            <p className="m-0 text-caption">{entry.reason || '사유 없음 (일반 변경)'}</p>
+            {entry.reason && <p className="m-0 text-caption">사유: {entry.reason}</p>}
             <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
               <time dateTime={entry.createdAt}>{formatActionTime(entry.createdAt, true)}</time> ·{' '}
               {entry.actor?.name ?? '시스템'}

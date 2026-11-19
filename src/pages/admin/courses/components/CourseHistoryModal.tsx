@@ -58,7 +58,7 @@ export default function CourseHistoryModal({ courseId, courseName, onClose }: Co
               {entry.before.startDate} ~ {entry.before.endDate} <ArrowRightOutlined aria-label="에서" />{' '}
               {entry.after.startDate} ~ {entry.after.endDate}
             </p>
-            <p className="m-0 text-caption">{entry.reason || '사유 없음 (일반 일정 수정)'}</p>
+            {entry.reason && <p className="m-0 text-caption">사유: {entry.reason}</p>}
             <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
               {formatActionTime(entry.createdAt, true)} · {entry.actor.name}
             </p>
