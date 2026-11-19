@@ -1,10 +1,8 @@
 import type { AuthUser } from '../../types/auth'
-import type { LeaderArea, LeaderCourse, LeaderHomeCourse, LeaderHomeTask, LeaderTask } from '../../types/leaderHome'
-import { getDeadline } from './assigneeHomeData'
-
-function compareTaskDeadline(a: LeaderHomeTask, b: LeaderHomeTask) {
-  return (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || a.id.localeCompare(b.id)
-}
+import type { LeaderHomeResponse } from '../../types/homeApi'
+import type { LeaderArea, LeaderCourse, LeaderHomeCourse, LeaderHomeTask } from '../../types/leaderHome'
+import type { TaskResponse } from '../../types/taskApi'
+import { getDeadline, getReviewStatus } from './assigneeHomeData'
 
 export function getLeaderReviewScope(user: AuthUser) {
   const leaderRoles = user.roles.filter((role) => role.role === 'LEADER')
@@ -45,86 +43,78 @@ export function getLeaderReviewScope(user: AuthUser) {
   }
 }
 
-type LeaderHomeDataOptions = {
-  user: AuthUser
-  businessName: string
-  areas: LeaderArea[]
-  courses: LeaderCourse[]
-  tasks: LeaderTask[]
-  today: string
+function toLeaderHomeTask(task: TaskResponse, today: string, alertIds: Set<string>): LeaderHomeTask {
+  return {
+    id: task.id,
+    courseId: task.courseId,
+    courseName: task.courseName,
+    title: task.title,
+    areaId: task.areaId,
+    areaName: task.areaName,
+    assigneeNames: task.assignees.map((assignee) => assignee.name),
+    isMyArea: task.isMyArea,
+    dueDate: task.dueDate,
+    isCompleted: task.status !== 'TODO',
+    completedBy: task.completedBy?.name,
+    completedAt: task.completedAt ?? undefined,
+    reviewedBy: task.reviewedBy?.name,
+    reviewedAt: task.reviewedAt ?? undefined,
+    requiresReview: task.requiresReview,
+    reviewStatus: getReviewStatus(task),
+    canReview: task.canReview,
+    orgUnit: { id: task.orgUnitId, name: task.orgUnitName, isClosed: task.orgUnitClosed },
+    isReadOnly: !task.canReviewInArea,
+    ...getDeadline(task.dueDate, today, task.status === 'TODO' && alertIds.has(task.id)),
+  }
 }
 
-export function getLeaderHomeData({ user, businessName, areas, courses, tasks, today }: LeaderHomeDataOptions) {
-  const reviewScope = getLeaderReviewScope(user)
-  const visibleCourses = courses.filter((course) => course.businessName === businessName
-    && course.areas.some(({ area }) => reviewScope.canView(course.orgUnit, area.id)))
-  const courseById = new Map(visibleCourses.map((course) => [course.id, course]))
-  const tasksByCourse = new Map<string, LeaderHomeTask[]>()
-  const visibleTasks: LeaderHomeTask[] = []
+export function getLeaderHomeData(response: LeaderHomeResponse) {
+  const { today } = response
+  const alertIds = new Set(response.alerts.items.map((task) => task.id))
+  const toTask = (task: TaskResponse) => toLeaderHomeTask(task, today, alertIds)
+  const areasById = new Map<string, LeaderArea>()
 
-  for (const task of tasks) {
-    const course = courseById.get(task.courseId)
-    if (!course || !reviewScope.canView(course.orgUnit, task.areaId)) continue
-
-    const homeTask: LeaderHomeTask = {
-      ...task, courseName: course.name, orgUnit: course.orgUnit,
-      isReadOnly: !reviewScope.canReview(course.orgUnit, task.areaId),
-      ...getDeadline(task.dueDate, today),
-    }
-    visibleTasks.push(homeTask)
-    const courseTasks = tasksByCourse.get(course.id) ?? []
-    courseTasks.push(homeTask)
-    tasksByCourse.set(course.id, courseTasks)
-  }
-
-  const alerts = visibleTasks.filter((task) => !task.isCompleted
-    && (task.deadlineStatus === 'overdue' || task.deadlineStatus === 'dueSoon'))
-    .sort(compareTaskDeadline)
-  const records = visibleTasks.filter((task) => task.isCompleted)
-    .sort((a, b) => {
-      const aTime = a.completedAt
-      const bTime = b.completedAt
-      return (bTime ? Date.parse(bTime) : 0) - (aTime ? Date.parse(aTime) : 0) || a.id.localeCompare(b.id)
-    })
-  const pendingReviews = records.filter((task) => task.requiresReview && task.reviewStatus === 'pending' && !task.isReadOnly)
-
-  const homeCourses: LeaderHomeCourse[] = visibleCourses.map((course) => {
-    const courseTasks = tasksByCourse.get(course.id) ?? []
-    let nextTask: LeaderHomeTask | null = null
-    let overdueCount = 0
-
-    for (const task of courseTasks) {
-      if (task.isCompleted) continue
-      if (task.deadlineStatus === 'overdue') overdueCount += 1
-      if (!task.dueDate || task.dueDate < today) continue
-
-      if (!nextTask || compareTaskDeadline(task, nextTask) < 0) {
-        nextTask = task
+  const courses: LeaderHomeCourse[] = response.courses.items.map(({ course, orgUnitClosed, areas, overdueCount, nextTask }) => {
+    const courseAreas = areas.map((area) => {
+      areasById.set(area.areaId, { id: area.areaId, name: area.areaName })
+      const assignment = course.assignees.find((item) => item.areaId === area.areaId)
+      return {
+        area: { id: area.areaId, name: area.areaName },
+        assigneeNames: assignment?.users.map((user) => user.name) ?? [],
+        completedCount: area.completedCount,
+        totalCount: area.totalCount,
+        canView: true,
+        canReview: area.canReview,
       }
-    }
-
-    const courseAreas = course.areas.map((assignment) => ({
-      ...assignment,
-      canView: reviewScope.canView(course.orgUnit, assignment.area.id),
-      canReview: reviewScope.canReview(course.orgUnit, assignment.area.id),
-    }))
+    })
 
     return {
-      ...course, areas: courseAreas,
-      assigneeNames: [...new Set(courseAreas.filter((area) => area.canView).flatMap((area) => area.assigneeNames))],
+      id: course.id,
+      name: course.name,
+      startDate: course.startDate,
+      endDate: course.endDate,
+      orgUnit: { id: course.orgUnitId, name: course.orgUnitName ?? '', isClosed: orgUnitClosed },
+      areas: courseAreas,
+      assigneeNames: [...new Set(courseAreas.flatMap((area) => area.assigneeNames))],
       overdueCount,
-      nextTask,
+      nextTask: nextTask && toTask(nextTask),
     }
   })
 
+  const records = response.records.items.map((record) => ({
+    ...toTask(record.task),
+    canReview: record.canReview,
+    completionMemo: record.completionMemo ?? undefined,
+  }))
+
   return {
-    reviewScope, alerts, records, pendingReviews, courses: homeCourses,
-    activeCourseCount: visibleCourses.filter((course) => course.startDate <= today && course.endDate >= today).length,
-    overdueCount: alerts.filter((task) => task.deadlineStatus === 'overdue').length,
-    dueSoonCount: alerts.filter((task) => task.deadlineStatus === 'dueSoon').length,
-    overdueByArea: areas.map((area) => ({
-      ...area,
-      count: alerts.filter((task) => task.areaId === area.id && task.deadlineStatus === 'overdue').length,
-    })),
+    today,
+    summary: response.summary,
+    activeCourseCount: response.activeCourseCount,
+    alerts: response.alerts.items.map(toTask),
+    pendingReviews: response.pendingReviews.items,
+    records,
+    courses,
+    areas: [...areasById.values()].sort((a, b) => Number(a.id) - Number(b.id)),
   }
 }

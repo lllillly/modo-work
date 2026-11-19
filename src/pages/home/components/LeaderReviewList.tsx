@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Button, Card, Empty } from 'antd'
+import { Link } from 'react-router'
 
 import type { LeaderHomeTask } from '../../../types/leaderHome'
+import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
 
 type LeaderReviewListProps = {
@@ -26,7 +28,8 @@ function formatActionTime(value?: string) {
 
 export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrgUnitId, onReview, onReviewAll }: LeaderReviewListProps) {
   const [showAll, setShowAll] = useState(false)
-  const visibleTasks = showAll ? tasks : tasks.slice(0, isMobile ? 3 : 5)
+  const limit = isMobile ? 3 : 5
+  const visibleTasks = showAll ? tasks : tasks.slice(0, limit)
 
   return (
     <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
@@ -46,9 +49,11 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
       ) : (
         <ul className="m-0 list-none p-0">
           {visibleTasks.map((task) => (
-            <li key={task.id} className="flex min-h-14 items-center gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md">
+            <li key={task.id} className={`flex min-h-14 items-center gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md ${tasks.length > limit ? 'last:border-b-0' : ''}`}>
               <div className="min-w-0 flex-1">
-                <p className="m-0 text-body">{task.title}</p>
+                <Link to={getCourseTasksPath(task.courseId, task.id)} className="m-0 block text-body text-(--ant-color-text)">
+                  {task.title}
+                </Link>
                 <p className="m-0 text-caption leading-[18px] text-(--ant-color-text-tertiary)">
                   {[
                     !isMobile && task.courseName,
@@ -60,7 +65,7 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
                   ].filter(Boolean).join(' - ')}
                 </p>
               </div>
-              {task.requiresReview && task.reviewStatus === 'pending' && !task.isReadOnly ? (
+              {task.canReview && task.reviewStatus === 'pending' ? (
                 <Button size="small" aria-label={`${task.title} 확인`} onClick={() => onReview(task.id)}>확인</Button>
               ) : (
                 <span className="flex shrink-0 flex-col items-end gap-xxs">
@@ -73,8 +78,8 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
         </ul>
       )}
 
-      {visibleTasks.length < tasks.length && (
-        <Button type="link" block onClick={() => setShowAll(true)}>기록 더 보기</Button>
+      {tasks.length > limit && (
+        <Button type="link" block onClick={() => setShowAll(!showAll)}>{showAll ? '접기' : '기록 더 보기'}</Button>
       )}
     </Card>
   )

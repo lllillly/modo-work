@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { MinusOutlined } from '@ant-design/icons'
-import { Button, Card, Progress, Table, Tag } from 'antd'
+import { Button, Card, Progress, Table, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate } from 'react-router'
 
 import type { LeaderArea, LeaderHomeCourse } from '../../../types/leaderHome'
+import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
 
 type LeaderCourseListProps = {
@@ -14,8 +15,15 @@ type LeaderCourseListProps = {
   ownOrgUnitId?: string
 }
 
-function getCourseUrl(courseId: string) {
-  return `/tasks?courseId=${encodeURIComponent(courseId)}`
+function AssigneeNames({ names }: { names: string[] }) {
+  if (names.length === 0) return <span className="text-(--ant-color-text-tertiary)">-</span>
+  const shown = names.slice(0, 2).join(' / ')
+  if (names.length <= 2) return <span className="whitespace-nowrap">{shown}</span>
+  return (
+    <Tooltip title={names.join(' / ')}>
+      <span className="whitespace-nowrap">{shown} 외 {names.length - 2}명</span>
+    </Tooltip>
+  )
 }
 
 function AreaProgress({ course, areaId }: { course: LeaderHomeCourse; areaId: string }) {
@@ -45,25 +53,25 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
     {
       title: '과정', dataIndex: 'name', width: '20%',
       render: (name: string, course) => (
-        <Link to={getCourseUrl(course.id)} className="text-(--ant-color-text)">{name}</Link>
+        <Link to={getCourseTasksPath(course.id)} className="text-(--ant-color-text)">{name}</Link>
       ),
     },
     {
       title: '조직 단위', key: 'orgUnit',
       render: (_, course) => (
-        <span className="flex flex-wrap items-center gap-xxs">
+        <span className="flex items-center gap-xxs whitespace-nowrap">
           {course.orgUnit.name}
           {course.orgUnit.isClosed && <Tag className="m-0">폐쇄</Tag>}
         </span>
       ),
     },
-    { title: '담당', key: 'assignees', render: (_, course) => course.assigneeNames.join(' / ') },
+    { title: '담당', key: 'assignees', render: (_, course) => <AssigneeNames names={course.assigneeNames} /> },
     ...areas.map((area) => ({
-      title: area.name, key: area.id, width: '17%',
+      title: area.name, key: area.id, width: 150,
       render: (_: unknown, course: LeaderHomeCourse) => <AreaProgress course={course} areaId={area.id} />,
     })),
     {
-      title: '기한 지남', key: 'overdue',
+      title: '기한 지남', key: 'overdue', className: 'whitespace-nowrap',
       render: (_, course) => (
         <span className={course.overdueCount > 0 ? 'font-medium text-status-overdue-text' : 'text-(--ant-color-text-tertiary)'}>
           {course.overdueCount}
@@ -71,7 +79,7 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
       ),
     },
     {
-      title: '다음 마감', key: 'deadline',
+      title: '다음 마감', key: 'deadline', className: 'whitespace-nowrap',
       render: (_, course) => course.nextTask
         ? <DeadlineTag task={course.nextTask} />
         : <span className="text-caption text-(--ant-color-text-tertiary)">없음</span>,
@@ -92,10 +100,10 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
           {visibleCourses.map((course) => (
             <li key={course.id} className="border-0 border-t border-solid border-(--ant-color-border-secondary) py-md">
               <div className="flex items-start justify-between gap-xs">
-                <Link to={getCourseUrl(course.id)} className="min-w-0 text-body font-medium text-(--ant-color-text)">{course.name}</Link>
+                <Link to={getCourseTasksPath(course.id)} className="min-w-0 text-body font-medium text-(--ant-color-text)">{course.name}</Link>
                 {course.nextTask && <DeadlineTag task={course.nextTask} />}
               </div>
-              <p className={`mt-xxs mb-xs text-caption ${course.overdueCount > 0 ? 'text-status-overdue-text' : 'text-(--ant-color-text-secondary)'}`}>
+              <p className={`mt-xxs mb-xs text-caption break-keep ${course.overdueCount > 0 ? 'text-status-overdue-text' : 'text-(--ant-color-text-secondary)'}`}>
                 {course.orgUnit.id !== ownOrgUnitId && `${course.orgUnit.name} - `}
                 {course.orgUnit.isClosed && '폐쇄 - '}
                 {course.assigneeNames.join(' / ')}
@@ -111,8 +119,12 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
               </div>
             </li>
           ))}
-          {visibleCourses.length < courses.length && (
-            <li><Button type="link" block onClick={() => setShowAll(true)}>과정 {courses.length - visibleCourses.length}개 더 보기</Button></li>
+          {courses.length > 4 && (
+            <li>
+              <Button type="link" block onClick={() => setShowAll(!showAll)}>
+                {showAll ? '접기' : `과정 ${courses.length - visibleCourses.length}개 더 보기`}
+              </Button>
+            </li>
           )}
         </ul>
       ) : (
@@ -121,7 +133,7 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
           onRow={(course) => ({
             onClick: (event) => {
               if (event.target instanceof Element && event.target.closest('a')) return
-              void navigate(getCourseUrl(course.id))
+              void navigate(getCourseTasksPath(course.id))
             },
           })}
           rowClassName="cursor-pointer"

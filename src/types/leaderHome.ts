@@ -25,9 +25,10 @@ export type LeaderTask = Task & {
 export type LeaderHomeTask = LeaderTask & HomeTask & {
   orgUnit: LeaderCourse['orgUnit']
   isReadOnly: boolean
+  canReview: boolean
 }
 
-export type LeaderHomeCourse = Omit<LeaderCourse, 'areas'> & {
+export type LeaderHomeCourse = Omit<LeaderCourse, 'areas' | 'businessName'> & {
   areas: (LeaderCourse['areas'][number] & { canView: boolean; canReview: boolean })[]
   assigneeNames: string[]
   overdueCount: number
