@@ -2,20 +2,21 @@ import { useState } from 'react'
 import { Button } from 'antd'
 import { CaretDownOutlined, CaretUpOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
 
-import type { HomeTask } from '../../../types/home'
+import type { CalendarDay } from '../../../types/homeApi'
 import { formatDate, parseDate } from '../dateUtils'
 
 type HomeCalendarProps = {
   selectedDate: string
   onSelectDate: (date: string) => void
-  tasks: HomeTask[]
+  onMonthChange: (month: string) => void
+  calendar: CalendarDay[]
   isMobile: boolean
   today: string
 }
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토']
 
-export default function HomeCalendar({ selectedDate, onSelectDate, tasks, isMobile, today }: HomeCalendarProps) {
+export default function HomeCalendar({ selectedDate, onSelectDate, onMonthChange, calendar, isMobile, today }: HomeCalendarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [displayDate, setDisplayDate] = useState(selectedDate)
   const showMonth = !isMobile || isExpanded
@@ -26,25 +27,24 @@ export default function HomeCalendar({ selectedDate, onSelectDate, tasks, isMobi
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const cellCount = showMonth ? Math.ceil((firstWeekday + daysInMonth) / 7) * 7 : 7
   const weekStart = date.getDate() - date.getDay()
-  const taskDates = new Map<string, boolean>()
+  const taskDates = new Map(calendar.map((day) => [day.date, day.overdueCount > 0]))
 
-  for (const task of tasks) {
-    if (!task.isCompleted && task.dueDate) {
-      taskDates.set(task.dueDate, taskDates.get(task.dueDate) || task.deadlineStatus === 'overdue')
-    }
+  function showDate(value: string) {
+    setDisplayDate(value)
+    onMonthChange(value.slice(0, 7))
   }
 
   function changeMonth(offset: number) {
-    setDisplayDate(formatDate(new Date(year, month + offset, 1)))
+    showDate(formatDate(new Date(year, month + offset, 1)))
   }
 
   function selectDate(value: string) {
-    setDisplayDate(value)
+    showDate(value)
     onSelectDate(value)
   }
 
   function toggleMonth() {
-    if (!isExpanded) setDisplayDate(selectedDate)
+    if (!isExpanded) showDate(selectedDate)
     setIsExpanded(!isExpanded)
   }
 

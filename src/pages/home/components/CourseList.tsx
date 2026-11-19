@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Button, Card, Progress, Select, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { Link } from 'react-router'
 
-import type { HomeCourse, HomeTask } from '../../../types/home'
+import type { HomeCourse } from '../../../types/home'
 
+import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
 
 type CourseListProps = {
   courses: HomeCourse[]
-  tasks: HomeTask[]
   isMobile: boolean
 }
 
@@ -33,27 +34,19 @@ function CourseProgress({ course }: { course: HomeCourse }) {
   )
 }
 
-export default function CourseList({ courses, tasks, isMobile }: CourseListProps) {
+export default function CourseList({ courses, isMobile }: CourseListProps) {
   const [selectedCourseId, setSelectedCourseId] = useState('all')
   const [sortBy, setSortBy] = useState('deadline')
   const [showAll, setShowAll] = useState(false)
-
-  const nextTasks = new Map<string, HomeTask>()
-
-  for (const task of tasks) {
-    if (!task.isMyArea || task.isCompleted || !task.dueDate) continue
-
-    const nextTask = nextTasks.get(task.courseId)
-    if (!nextTask?.dueDate || task.dueDate < nextTask.dueDate) {
-      nextTasks.set(task.courseId, task)
-    }
-  }
 
   const filteredCourses = courses
     .filter((course) => isMobile || selectedCourseId === 'all' || course.id === selectedCourseId)
     .sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name, 'ko')
-      return (nextTasks.get(a.id)?.dueDate ?? '9999').localeCompare(nextTasks.get(b.id)?.dueDate ?? '9999')
+      const aDueDate = a.nextTask?.dueDate
+      const bDueDate = b.nextTask?.dueDate
+      if (!aDueDate || !bDueDate) return Number(!aDueDate) - Number(!bDueDate)
+      return aDueDate.localeCompare(bDueDate)
     })
   const visibleCourses = isMobile && !showAll ? filteredCourses.slice(0, 3) : filteredCourses
   const remainingCount = filteredCourses.length - visibleCourses.length
@@ -63,7 +56,14 @@ export default function CourseList({ courses, tasks, isMobile }: CourseListProps
   }
 
   const columns: TableColumnsType<HomeCourse> = [
-    { title: '과정명', dataIndex: 'name', width: '30%' },
+    {
+      title: '과정명',
+      dataIndex: 'name',
+      width: '30%',
+      render: (name: string, course) => (
+        <Link to={getCourseTasksPath(course.id)} className="text-(--ant-color-text)">{name}</Link>
+      ),
+    },
     {
       title: '기간',
       key: 'period',
@@ -84,7 +84,7 @@ export default function CourseList({ courses, tasks, isMobile }: CourseListProps
       title: '다음 할 일',
       key: 'nextTask',
       render: (_, course) => {
-        const task = nextTasks.get(course.id)
+        const task = course.nextTask
         return task ? (
           <div className="flex flex-wrap items-center gap-xs">
             <span>{task.title}</span>
@@ -131,10 +131,12 @@ export default function CourseList({ courses, tasks, isMobile }: CourseListProps
         <>
           <ul className="m-0 list-none p-0">
             {visibleCourses.map((course) => {
-              const nextTask = nextTasks.get(course.id)
+              const { nextTask } = course
               return (
                 <li key={course.id} className="border-0 border-t border-solid border-(--ant-color-border-secondary) py-md">
-                  <h3 className="m-0 text-body font-medium">{course.name}</h3>
+                  <h3 className="m-0 text-body font-medium">
+                    <Link to={getCourseTasksPath(course.id)} className="text-(--ant-color-text)">{course.name}</Link>
+                  </h3>
                   <p className="mt-xxs mb-xs text-caption text-(--ant-color-text-secondary)">{renderPeriod(course)}</p>
                   <CourseProgress course={course} />
                   <div className="mt-xs flex flex-wrap items-center gap-xs text-caption">
@@ -145,8 +147,10 @@ export default function CourseList({ courses, tasks, isMobile }: CourseListProps
               )
             })}
           </ul>
-          {remainingCount > 0 && (
-            <Button type="link" block onClick={() => setShowAll(true)}>과정 {remainingCount}개 더 보기</Button>
+          {(remainingCount > 0 || showAll) && filteredCourses.length > 3 && (
+            <Button type="link" block onClick={() => setShowAll(!showAll)}>
+              {showAll ? '접기' : `과정 ${remainingCount}개 더 보기`}
+            </Button>
           )}
         </>
       ) : (

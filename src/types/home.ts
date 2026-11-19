@@ -14,6 +14,7 @@ export type Task = {
   title: string
   areaName: string
   isMyArea: boolean
+  canComplete?: boolean
   dueDate: string | null
   isCompleted: boolean
   completedBy?: string
@@ -26,7 +27,8 @@ export type HomeTask = Task & {
   deadlineStatus: 'overdue' | 'dueSoon' | 'upcoming' | 'scheduled' | 'none'
 }
 
-export type HomeCourse = Course & {
+export type HomeCourse = Omit<Course, 'businessName'> & {
   completedCount: number
   totalCount: number
+  nextTask: HomeTask | null
 }

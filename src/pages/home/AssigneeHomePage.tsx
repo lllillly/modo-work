@@ -1,11 +1,17 @@
-import { useState } from 'react'
-import { Button, Card, Segmented, Tag } from 'antd'
-import { useOutletContext, useSearchParams } from 'react-router'
+import { useCallback, useRef, useState } from 'react'
+import { Alert, App, Button, Card, Segmented, Skeleton, Tag } from 'antd'
+import { useOutletContext } from 'react-router'
 
+import { getApiErrorMessage, isAuthStateError } from '../../api/client'
+import { getAssigneeHome } from '../../api/home'
+import { getTasksDueOn, processTask } from '../../api/tasks'
+import useApiQuery from '../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
+import { useAuth } from '../../providers/AuthContext'
 import type { ViewScope } from '../../types/home'
+import type { AssigneeHomeResponse } from '../../types/homeApi'
+import type { TaskResponse } from '../../types/taskApi'
 import { formatSelectedDate, getToday } from './dateUtils'
-import { courses, tasks as mockTasks } from './assigneeHomeMockData'
 import { getAssigneeHomeData } from './assigneeHomeData'
 
 import AssigneeHomeSkeleton from './components/AssigneeHomeSkeleton'
@@ -17,52 +23,111 @@ import TaskList from './components/TaskList'
 const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
 
 export default function AssigneeHomePage() {
-  const { isMobile, selectedBusiness, userName } = useOutletContext<AppLayoutContext>()
-  const [searchParams, setSearchParams] = useSearchParams()
-
+  const { isMobile, selectedBusiness, selectedBusinessId, userName } = useOutletContext<AppLayoutContext>()
+  const { user, refreshUser } = useAuth()
+  const { message } = App.useApp()
   const today = getToday()
 
-  const [tasks, setTasks] = useState(mockTasks)
   const [selectedDate, setSelectedDate] = useState(today)
+  const [month, setMonth] = useState(today.slice(0, 7))
   const [viewScope, setViewScope] = useState<ViewScope>('mine')
   const [showAllAlerts, setShowAllAlerts] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [shown, setShown] = useState<{
+    businessId: string
+    home?: AssigneeHomeResponse
+    day?: { key: string; tasks: TaskResponse[] }
+  }>()
+  const saving = useRef(false)
 
-  const preview = searchParams.get('preview')
-  const homeData = getAssigneeHomeData({
-    businessName: selectedBusiness,
-    courses,
-    tasks,
-    viewScope,
-    selectedDate,
-    today,
-  })
+  const canViewAll = user?.areas.length === 1 && user.areas[0].allowCrossAreaView
+  const scope = canViewAll ? viewScope : 'mine'
+  const businessId = selectedBusinessId ?? ''
 
-  const isEmpty = preview === 'empty' || homeData.courses.length === 0
-  const isLoading = preview === 'loading'
-  const isError = preview === 'error'
-  const hideAlerts = preview === 'no-alerts'
-  const alerts = hideAlerts ? [] : homeData.alerts
-  const visibleAlerts = isMobile && !showAllAlerts ? alerts.slice(0, 3) : alerts
+  const loadHome = useCallback(
+    (signal: AbortSignal) => getAssigneeHome({ businessId, scope, selectedDate, month }, signal),
+    [businessId, scope, selectedDate, month],
+  )
+  const loadDayTasks = useCallback(
+    (signal: AbortSignal) => getTasksDueOn(businessId, scope, selectedDate, signal),
+    [businessId, scope, selectedDate],
+  )
+  const home = useApiQuery(
+    businessId ? `assignee-home:${businessId}:${scope}:${selectedDate}:${month}:${refreshKey}` : null,
+    loadHome,
+  )
+  const dayTasks = useApiQuery(
+    businessId ? `day-tasks:${businessId}:${scope}:${selectedDate}:${refreshKey}` : null,
+    loadDayTasks,
+  )
 
-  function completeTask(taskId: string) {
-    const task = homeData.myTasks.find((item) => item.id === taskId)
-    if (!task || task.isCompleted) return
+  const dayKey = `${scope}:${selectedDate}`
+  const current = shown?.businessId === businessId ? shown : undefined
+  const shownHome = current?.home
+  const shownDay = current?.day?.key === dayKey ? current.day : undefined
+  const shownDayTasks = shownDay?.tasks ?? []
+  if (home.data && home.data !== shownHome) setShown({ businessId, home: home.data, day: current?.day })
+  if (dayTasks.data && dayTasks.data !== shownDay?.tasks) {
+    setShown({ businessId, home: shownHome, day: { key: dayKey, tasks: dayTasks.data } })
+  }
 
-    setTasks((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId ? { ...task, isCompleted: true, completedBy: userName } : task
-    )))
+  function canComplete(task: TaskResponse) {
+    return (
+      user?.status === 'ACTIVE' &&
+      task.isMyArea &&
+      !task.isReadOnly &&
+      user.roles.some((role) => role.role === 'ASSIGNEE' && role.orgUnit?.id === task.orgUnitId)
+    )
+  }
+
+  async function completeTask(taskId: string) {
+    const task = shownDayTasks.find((item) => item.id === taskId)
+    if (!task || task.status !== 'TODO' || saving.current) return
+
+    saving.current = true
+    try {
+      await processTask(task.id, 'COMPLETE', { version: task.version, requestId: crypto.randomUUID() })
+      message.success(`'${task.title}' 완료했어요.`)
+    } catch (error) {
+      message.error(getApiErrorMessage(error))
+      if (isAuthStateError(error)) void refreshUser()
+    } finally {
+      saving.current = false
+      setRefreshKey((key) => key + 1)
+    }
   }
 
   function retry() {
-    const nextParams = new URLSearchParams(searchParams)
-    nextParams.delete('preview')
-    setSearchParams(nextParams, { replace: true })
+    home.reload()
+    dayTasks.reload()
   }
 
-  const overdueSummary = hideAlerts || homeData.overdueCount === 0 ? '없음' : `${homeData.overdueCount}건`
-  let summary = `오늘 마감 ${homeData.todayCount}건 - 기한 지남 ${overdueSummary}`
+  if (!selectedBusinessId) {
+    return (
+      <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
+        <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
+          <h3 className="m-0 text-card-title">선택할 수 있는 사업이 없어요</h3>
+          <p className="m-0 text-body text-(--ant-color-text-secondary)">관리자가 사업을 등록하면 할 일과 마감을 확인할 수 있어요.</p>
+        </div>
+      </Card>
+    )
+  }
+
+  const isLoading = !shownHome
+  const isError = !shownHome && !!home.error
+  const refreshError = !!shownHome && (!!home.error || (!!shownDay && !!dayTasks.error))
+  const homeData = shownHome && getAssigneeHomeData(shownHome, shownDayTasks, canComplete)
+  const isEmpty = homeData?.courses.length === 0
+  const alerts = homeData?.alerts ?? []
+  const alertLimit = 3
+  const visibleAlerts = isMobile && !showAllAlerts ? alerts.slice(0, alertLimit) : alerts
+
+  let summary = '할 일을 불러오는 중이에요'
+  if (homeData) {
+    const { todayCount, overdueCount } = homeData.summary
+    summary = `오늘 마감 ${todayCount}건 - 기한 지남 ${overdueCount > 0 ? `${overdueCount}건` : '없음'}`
+  }
   if (isEmpty) summary = '아직 배정된 과정이 없어요'
-  if (isLoading) summary = '할 일을 불러오는 중이에요'
 
   return (
     <div className="flex flex-col gap-sm min-[992px]:gap-md">
@@ -71,23 +136,34 @@ export default function AssigneeHomePage() {
           <h2 className="m-0 text-section-title">{userName}님, 안녕하세요</h2>
           {!isError && <p className="m-0 text-caption text-(--ant-color-text-secondary)">{summary}</p>}
         </div>
-        <Segmented
-          aria-label="영역 보기 범위"
-          className="bg-(--ant-color-fill-secondary)"
-          block={isMobile}
-          value={viewScope}
-          onChange={setViewScope}
-          options={[
-            { label: '내 영역', value: 'mine' },
-            { label: '전체', value: 'all' },
-          ]}
-        />
+        {canViewAll && (
+          <Segmented
+            aria-label="영역 보기 범위"
+            className="bg-(--ant-color-fill-secondary)"
+            block={isMobile}
+            value={viewScope}
+            onChange={setViewScope}
+            options={[
+              { label: '내 영역', value: 'mine' },
+              { label: '전체', value: 'all' },
+            ]}
+          />
+        )}
       </div>
 
-      {isLoading ? (
-        <AssigneeHomeSkeleton />
-      ) : isError ? (
+      {refreshError && (
+        <Alert
+          type="warning"
+          showIcon
+          title="최신 내용을 불러오지 못했어요. 화면이 이전 상태일 수 있어요."
+          action={<Button size="small" onClick={retry}>다시 시도</Button>}
+        />
+      )}
+
+      {isError ? (
         <AssigneeHomeError onRetry={retry} />
+      ) : isLoading || !homeData ? (
+        <AssigneeHomeSkeleton />
       ) : isEmpty ? (
         <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
           <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
@@ -101,12 +177,14 @@ export default function AssigneeHomePage() {
             <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
               <div className="mb-xs flex flex-wrap items-center gap-xs">
                 <h2 className="m-0 text-card-title">내 알림</h2>
-                {homeData.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.overdueCount}</Tag>}
-                {homeData.dueSoonCount > 0 && <Tag color="warning" variant="outlined" className="m-0">임박 {homeData.dueSoonCount}</Tag>}
+                {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
+                {homeData.summary.dueSoonCount > 0 && <Tag color="warning" variant="outlined" className="m-0">임박 {homeData.summary.dueSoonCount}</Tag>}
               </div>
-              <TaskList tasks={visibleAlerts} />
-              {visibleAlerts.length < alerts.length && (
-                <Button type="link" block onClick={() => setShowAllAlerts(true)}>알림 {alerts.length - visibleAlerts.length}건 더 보기</Button>
+              <TaskList tasks={visibleAlerts} hasMore={isMobile && alerts.length > alertLimit} />
+              {isMobile && alerts.length > alertLimit && (
+                <Button type="link" block onClick={() => setShowAllAlerts(!showAllAlerts)}>
+                  {showAllAlerts ? '접기' : `알림 ${alerts.length - visibleAlerts.length}건 더 보기`}
+                </Button>
               )}
             </Card>
           )}
@@ -117,8 +195,9 @@ export default function AssigneeHomePage() {
                 <HomeCalendar
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}
-                  tasks={homeData.calendarTasks}
-                  today={today}
+                  onMonthChange={setMonth}
+                  calendar={homeData.calendar}
+                  today={homeData.today}
                   isMobile={false}
                 />
               </Card>
@@ -126,21 +205,33 @@ export default function AssigneeHomePage() {
             <Card variant="borderless" className="min-w-0 shadow-none" classNames={cardClassNames}>
               <h2 className="m-0 mb-xs flex flex-wrap items-center gap-xs text-card-title min-[992px]:mb-sm">
                 {formatSelectedDate(selectedDate)} 할 일
-                <span className="text-caption font-regular text-(--ant-color-text-secondary)">{homeData.dayTasks.length}건</span>
+                {shownDay && <span className="text-caption font-regular text-(--ant-color-text-secondary)">{homeData.dayTasks.length}건</span>}
               </h2>
               {isMobile && (
                 <div className="mb-xs">
                   <HomeCalendar
                     selectedDate={selectedDate}
                     onSelectDate={setSelectedDate}
-                    tasks={homeData.calendarTasks}
-                    today={today}
+                    onMonthChange={setMonth}
+                    calendar={homeData.calendar}
+                    today={homeData.today}
                     isMobile
                   />
                 </div>
               )}
-              <TaskList tasks={homeData.dayTasks} showCheckbox onComplete={completeTask} />
-              {homeData.otherTasks.length > 0 && (
+              {!shownDay ? (
+                dayTasks.error ? (
+                  <div className="flex flex-col items-center gap-xs py-lg text-center">
+                    <p className="m-0 text-body text-(--ant-color-text-secondary)">이날의 할 일을 불러오지 못했어요</p>
+                    <Button size="small" onClick={dayTasks.reload}>다시 시도</Button>
+                  </div>
+                ) : (
+                  <Skeleton active title={false} paragraph={{ rows: 3 }} className="py-sm" />
+                )
+              ) : (
+                <TaskList tasks={homeData.dayTasks} showCheckbox onComplete={(taskId) => void completeTask(taskId)} />
+              )}
+              {shownDay && homeData.otherTasks.length > 0 && (
                 <div className="mt-md">
                   <div className="mb-xs flex items-center gap-xs">
                     <h3 className="m-0 text-body font-medium">다른 영역</h3>
@@ -152,12 +243,7 @@ export default function AssigneeHomePage() {
             </Card>
           </div>
 
-          <CourseList
-            key={selectedBusiness}
-            courses={homeData.courses}
-            tasks={homeData.myTasks}
-            isMobile={isMobile}
-          />
+          <CourseList key={selectedBusiness} courses={homeData.courses} isMobile={isMobile} />
         </>
       )}
     </div>
