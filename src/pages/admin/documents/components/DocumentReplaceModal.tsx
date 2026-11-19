@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { InboxOutlined, WarningOutlined } from '@ant-design/icons'
 import { App, Button, Modal, Upload } from 'antd'
 
-import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import { replaceDocumentFile } from '../../../../api/documents'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
@@ -15,9 +15,10 @@ type DocumentReplaceModalProps = {
   isMobile: boolean
   onClose: () => void
   onReplaced: () => void
+  onStale: () => void
 }
 
-export default function DocumentReplaceModal({ item, isMobile, onClose, onReplaced }: DocumentReplaceModalProps) {
+export default function DocumentReplaceModal({ item, isMobile, onClose, onReplaced, onStale }: DocumentReplaceModalProps) {
   const { message } = App.useApp()
   const { refreshUser } = useAuth()
   const [file, setFile] = useState<File | null>(null)
@@ -50,6 +51,12 @@ export default function DocumentReplaceModal({ item, isMobile, onClose, onReplac
       onReplaced()
       onClose()
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        message.warning('다른 관리자가 먼저 문서를 변경했어요. 다시 시도해 주세요.')
+        onStale()
+        onClose()
+        return
+      }
       setFileError(getApiErrorMessage(error))
       if (isAuthStateError(error)) void refreshUser()
     } finally {
@@ -83,7 +90,7 @@ export default function DocumentReplaceModal({ item, isMobile, onClose, onReplac
     >
       <div className="flex flex-col gap-sm">
         <p className="m-0 text-body text-(--ant-color-text-secondary)">
-          제목, 종류, 사업, 시행일은 그대로 두고 파일만 바꿔요. 물어보기는 새 파일을 다시 읽는 동안 이전 내용으로 답해요.
+          제목, 종류, 사업, 시행일은 그대로 두고 파일만 바꿔요. 새 파일을 읽는 동안 이 문서는 물어보기 검색에서 잠시 제외돼요.
         </p>
         <Upload.Dragger accept=".pdf,application/pdf" showUploadList={false} beforeUpload={pickFile} disabled={isSaving}>
           <div className="flex flex-col items-center gap-xxs p-sm">

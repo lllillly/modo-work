@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
 import { App, Button, Drawer, Skeleton, Tag } from 'antd'
 
-import { getApiErrorMessage, isAuthStateError } from '../../../api/client'
+import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../api/client'
 import { getDocumentVersions, getVersionFileUrl, restoreDocumentVersion } from '../../../api/documents'
 import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
 import useApiQuery from '../../../hooks/useApiQuery'
@@ -17,6 +17,7 @@ type DocumentVersionsDrawerProps = {
   isMobile: boolean
   onClose: () => void
   onRestored?: () => void
+  onStale?: () => void
 }
 
 function getVersionFile(version: DocumentVersion) {
@@ -40,6 +41,7 @@ export default function DocumentVersionsDrawer({
   isMobile,
   onClose,
   onRestored,
+  onStale,
 }: DocumentVersionsDrawerProps) {
   const { message, modal } = App.useApp()
   const { refreshUser } = useAuth()
@@ -70,6 +72,12 @@ export default function DocumentVersionsDrawer({
           onRestored?.()
           onClose()
         } catch (error) {
+          if (error instanceof ApiError && error.status === 409) {
+            message.warning('다른 관리자가 먼저 문서를 변경했어요. 다시 시도해 주세요.')
+            onStale?.()
+            onClose()
+            return
+          }
           message.error(getApiErrorMessage(error))
           if (isAuthStateError(error)) void refreshUser()
           versions.reload()

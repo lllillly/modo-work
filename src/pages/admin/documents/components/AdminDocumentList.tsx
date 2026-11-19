@@ -418,6 +418,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             setIndexing((current) => ({ ...current, [replaceItem.id]: replaceItem.title }))
             documents.reload()
           }}
+          onStale={documents.reload}
         />
       )}
 
@@ -433,6 +434,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             setIndexing((current) => ({ ...current, [versionItem.id]: versionItem.title }))
             documents.reload()
           }}
+          onStale={documents.reload}
         />
       )}
 
