@@ -40,6 +40,20 @@ function summarizeCourseTasks(tasks: TaskResponse[]): CourseTaskSummary {
   return { areaNames, pendingByArea }
 }
 
+export function getTasksDueOn(businessId: string, scope: 'mine' | 'all', date: string, signal?: AbortSignal) {
+  return getAllPages((page) => {
+    const query = new URLSearchParams({
+      businessId,
+      scope,
+      dueDateFrom: date,
+      dueDateTo: date,
+      page: String(page),
+      size: '100',
+    })
+    return getApi<PageResponse<TaskResponse>>(`/tasks?${query}`, signal)
+  })
+}
+
 export const getTask = (id: string, signal?: AbortSignal) =>
   getApi<{ task: TaskResponse }>(`/tasks/${encodeURIComponent(id)}`, signal)
 
@@ -84,6 +98,17 @@ export function processTask(
     'POST',
     request,
   )
+}
+
+export async function reviewTasks(tasks: TaskResponse[], onReviewed: (count: number) => void) {
+  for (let start = 0; start < tasks.length; start += 100) {
+    await sendApi<{ items: TaskResponse[] }>('/tasks/bulk-review', 'POST', {
+      items: tasks.slice(start, start + 100).map((task) => ({
+        taskId: task.id, version: task.version, requestId: crypto.randomUUID(), memo: null,
+      })),
+    })
+    onReviewed(Math.min(100, tasks.length - start))
+  }
 }
 
 export const addTaskMemo = (id: string, requestId: string, content: string) =>

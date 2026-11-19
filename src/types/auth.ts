@@ -12,7 +12,7 @@ export type AuthUser = {
   name: string
   status: 'ACTIVE' | 'PENDING'
   orgUnit: { id: string; name: string } | null
-  areas: { id: string; name: string }[]
+  areas: { id: string; name: string; allowCrossAreaView: boolean }[]
   roles: {
     role: UserRole
     scopeType: 'ALL' | 'ORG_UNIT'

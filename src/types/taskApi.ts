@@ -11,6 +11,9 @@ export type TaskResponse = {
   businessId: string
   courseId: string
   courseName: string
+  orgUnitId: string
+  orgUnitName: string
+  orgUnitClosed: boolean
   areaId: string
   areaName: string
   assignees: AssignedUser[]
@@ -21,6 +24,8 @@ export type TaskResponse = {
   phase: string | null
   referenceType: 'COURSE_START' | 'COURSE_END' | 'MONTH_END' | 'ALWAYS'
   requiresReview: boolean
+  canReviewInArea: boolean
+  canReview: boolean
   occurrenceNo: number
   periodStart: string | null
   periodEnd: string | null
