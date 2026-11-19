@@ -105,9 +105,9 @@ export default function CourseSchedule({
           ) : (
             <>
               <label htmlFor="course-start-date" className="text-caption text-(--ant-color-text-secondary)">시작일</label>
-              <Input id="course-start-date" value={course.startDate} readOnly disabled={isReadOnly} className="w-[140px]" />
+              <Input id="course-start-date" value={course.startDate} readOnly tabIndex={-1} className="pointer-events-none w-[140px]" />
               <label htmlFor="course-end-date" className="text-caption text-(--ant-color-text-secondary)">종료일</label>
-              <Input id="course-end-date" value={course.endDate} readOnly disabled={isReadOnly} className="w-[140px]" />
+              <Input id="course-end-date" value={course.endDate} readOnly tabIndex={-1} className="pointer-events-none w-[140px]" />
             </>
           )}
           {canEdit && <Button type="link" className="ml-auto px-0 text-caption" onClick={() => setIsEditing(true)}>일정 수정</Button>}
