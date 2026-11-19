@@ -29,10 +29,10 @@ BASE_PATH=/portal npm run build
 | 화면 | 주소 | 현재 상태 |
 | --- | --- | --- |
 | 로그인 | `/login` | 시험 로그인, 내 정보 조회, 로그아웃 API 연결 |
-| 담당자 홈 (S03) | `/` | 목업 |
-| 리더 홈 (S04) | `/` | 리더와 관리자에게 표시, 목업 |
-| 과정별 할 일과 상세 (S05, S06) | `/tasks` | 기본 경로는 목업 |
-| S10에서 연결한 할 일과 상세 | `/tasks?courseId=실제ID&source=api` | 관리자용 실제 API 연결 |
+| 담당자 홈 (S03) | `/` | 알림, 달력, 날짜별 할 일 완료, 과정 진행률 API 연결 |
+| 리더 홈 (S04) | `/` | 리더와 관리자에게 표시. 요약, 알림, 처리 기록과 확인, 과정별 진행률 API 연결 |
+| 과정별 할 일과 상세 (S05, S06) | `/tasks` | API 연결 |
+| 목업 할 일 화면 | `/tasks?source=mock` | 디자인 확인과 시연 영상 촬영용. 배포 전에 삭제 |
 | 과정 & 담당 배정 (S10) | `/admin/courses` | 실제 API 연결 |
 | CSV 가져오기 | `/admin/courses/import` | 미리보기, 적용, 취소 API 연결 |
 | 물어보기 (S16) | `/ask` | 질문 보내기, 되묻기 후보 선택, 근거 표시 API 연결 |
@@ -40,7 +40,11 @@ BASE_PATH=/portal npm run build
 | 문서 업로드 (S13) | `/admin/documents` | 목록, PDF와 외부 링크 등록, 파일 교체, 버전 복원, 삭제 확인, 읽기 다시 시도 API 연결. 템플릿 연결은 비활성 |
 | 사용자와 승인 (S11) | `/admin/users` | 승인 대기와 전체 사용자 목록, 가입 승인, 역할 수정, 활성 상태 변경 API 연결. 조직 단위 리더는 소속 조직으로 승인과 역할 추가 |
 
-홈과 기존 할 일 화면의 목업은 새로고침하면 초기화됩니다. 실제 API 화면과 목업 상태는 공유하지 않습니다. `source=api`는 프론트 화면 구분용이며 서버에는 보내지 않습니다.
+`courseId`가 없으면 진행 중인 첫 과정을 엽니다. 관리자는 관리자 과정 API로, 리더와 담당자는 홈 API의 과정 목록으로 과정을 고릅니다. 일정 수정 권한이 없으면 일정 조회가 403이라 수정 버튼 없이 보여줍니다.
+
+목업 화면은 새로고침하면 초기화되고 실제 API 화면과 상태를 공유하지 않습니다. `source=mock`은 프론트 화면 구분용이며 서버에는 보내지 않습니다.
+
+목업은 빈 과정, 불러오는 중, 오류, 종료된 과정처럼 실제 데이터로 만들기 어려운 상태를 시연 영상 촬영에 활용하기 위해서 남겨 두었습니다. 시연 영상 촬영이 끝나면 배포 전에 목업 화면과 목업 데이터 파일(`*MockData.ts`)을 모두 지울 예정입니다.
 
 ## 공통 구조
 
@@ -76,16 +80,18 @@ Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치�
 
 - `AssigneeHomePage.tsx`: 알림, 달력, 날짜별 할 일과 과정 진행률
 - `LeaderHomePage.tsx`: 요약, 확인 범위, 알림, 처리 기록과 과정별 진행률
-- `assigneeHomeData.ts`, `leaderHomeData.ts`: 보기 범위와 권한, 알림과 진행률 계산
-- `assigneeHomeMockData.ts`, `leaderHomeMockData.ts`: 화면 확인용 데이터
+- `assigneeHomeData.ts`, `leaderHomeData.ts`: 홈 API 응답을 화면용 할 일과 과정으로 변환
+- `assigneeHomeMockData.ts`, `leaderHomeMockData.ts`: 목업 할 일 화면이 쓰는 데이터
 
-두 홈은 `TaskList`를 재사용합니다. `T extends HomeTask`로 화면별 추가 필드의 타입을 유지하고 설명은 `renderDescription`으로 전달합니다. 리더 홈의 다음 마감과 기한 지난 건수는 목록을 한 번 순회해 계산합니다.
+두 홈은 `TaskList`를 재사용합니다. `T extends HomeTask`로 화면별 추가 필드의 타입을 유지하고 설명은 `renderDescription`으로 전달합니다. 건수와 진행률, 다음 할 일은 서버 집계를 그대로 사용합니다.
 
-리더 범위는 `roles[].orgUnit`과 `roles[].area`를 사용합니다. 마감 배지는 한국 날짜로 계산합니다. 홈 목업의 임박 범위는 D-day~D-2이며 API 연결 후 서버의 `dueSoonBusinessDays` 기준으로 변경할 예정입니다.
+담당자 홈의 날짜별 할 일은 할 일 API에 선택한 날짜를 마감 범위로 넘겨 조회하고, 달을 넘기면 그 달의 달력 집계를 다시 받습니다. 내 영역과 전체 보기 전환은 담당 영역에 다른 영역 열람이 허용된 경우에만 보입니다. 다시 불러오는 동안에는 이전 화면을 유지합니다.
+
+리더 홈의 확인은 한 건은 확인 API, 모두 확인은 일괄 확인 API를 사용합니다. 확인 버튼은 서버의 `canReview`로 표시하고 확인 범위 밖 업무는 보기만 가능으로 표시합니다. 리더 범위 표시는 `roles[].orgUnit`과 `roles[].area`를 사용합니다. 마감 배지는 한국 날짜로 계산하고 임박은 서버 알림에 포함된 업무만 표시합니다.
 
 ## 과정별 할 일과 상세
 
-`TasksPage.tsx`에서 과정 선택과 태그 필터를 관리합니다. `source=api` 경로는 `ApiCourseTasks.tsx`에서 서버 데이터를 조회하고 `courseTasksApiData.ts`에서 기존 컴포넌트에 맞게 변환합니다.
+`TasksPage.tsx`에서 과정 선택과 태그 필터를 관리합니다. 기본 경로는 `ApiCourseTasks.tsx`에서 서버 데이터를 조회하고 `courseTasksApiData.ts`에서 기존 컴포넌트에 맞게 변환합니다.
 
 | 컴포넌트 | 역할 |
 | --- | --- |
@@ -189,9 +195,7 @@ PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 �
 
 | 화면 | 파라미터 |
 | --- | --- |
-| 담당자 홈 `/` | `?preview=empty`, `no-alerts`, `loading`, `error` |
-| 리더 홈 `/` | `?preview=empty`, `no-reviews`, `closed-org`, `loading`, `error` |
-| 목업 할 일 `/tasks` | `?preview=ended`, `empty`, `loading`, `error` |
+| 목업 할 일 `/tasks?source=mock` | `?preview=ended`, `empty`, `loading`, `error` |
 | 과정 관리 목록 `/admin/courses` | `?preview=empty`, `loading`, `error` |
 
 각 값은 `?preview=loading`처럼 사용합니다. 이미 `courseId`가 붙은 주소에는 `&preview=loading`처럼 이어 붙입니다. 할 일 상세는 `taskId`로 지정할 수 있습니다.
