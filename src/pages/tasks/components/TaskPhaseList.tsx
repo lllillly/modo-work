@@ -10,6 +10,8 @@ import { formatTaskDate, getCurrentAction, getTaskPermissions } from '../courseT
 
 import DeadlineChange from './DeadlineChange'
 
+const taskLimit = 3
+
 type TaskPhaseListProps = {
   course: CourseTasksCourse
   tasks: CourseTaskView[]
@@ -30,14 +32,10 @@ export default function TaskPhaseList({
   disabled = false,
 }: TaskPhaseListProps) {
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({})
-  const [expandedCompleted, setExpandedCompleted] = useState<Record<string, boolean>>({})
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({})
 
   function togglePhase(phaseId: string, isOpen: boolean) {
     setOpenPhases((current) => ({ ...current, [phaseId]: !isOpen }))
-  }
-
-  function toggleCompleted(phaseId: string, isCompletedOpen: boolean) {
-    setExpandedCompleted((current) => ({ ...current, [phaseId]: !isCompletedOpen }))
   }
 
   return (
@@ -57,18 +55,19 @@ export default function TaskPhaseList({
         const defaultOpen = hasPendingReview || (!isAllCompleted && isInitiallyOpen)
 
         const isOpen = openPhases[phase.id] ?? defaultOpen
-        const isCompletedOpen = expandedCompleted[phase.id] ?? hasPendingReview
-
-        const visibleCompleted = isCompletedOpen ? completedTasks : []
-        const visibleTasks = [...pendingTasks, ...visibleCompleted]
+        const isTasksOpen = expandedTasks[phase.id] ?? false
+        const orderedTasks = [...pendingTasks, ...completedTasks]
+        const hasMore = orderedTasks.length > taskLimit
+        const visibleTasks = isTasksOpen ? orderedTasks : orderedTasks.slice(0, taskLimit)
+        const hasCheckbox = visibleTasks.some((task) => getTaskPermissions(user, course, task).showCheckbox)
         const progressPercent = totalCount > 0
           ? Math.round(completedCount / totalCount * 100)
           : 0
 
         return (
-          <Card key={phase.id} variant="borderless" className={`shadow-none min-[992px]:rounded-none min-[992px]:border-0 min-[992px]:border-solid min-[992px]:border-(--ant-color-border-secondary) min-[992px]:last:border-b-0 ${isOpen && completedCount === 0 ? 'min-[992px]:border-b' : ''}`}
-            classNames={{ body: `p-md min-[992px]:p-0 ${isOpen && completedCount === 0 && phaseIndex < course.phases.length - 1 ? 'min-[992px]:pb-xs' : ''}` }}>
-            <div className="flex min-w-0 items-center gap-xs">
+          <Card key={phase.id} variant="borderless" className={`shadow-none min-[992px]:rounded-none min-[992px]:border-0 min-[992px]:border-solid min-[992px]:border-(--ant-color-border-secondary) min-[992px]:last:border-b-0 ${isOpen && !hasMore ? 'min-[992px]:border-b' : ''}`}
+            classNames={{ body: `p-md min-[992px]:p-0 ${isOpen && !hasMore && phaseIndex < course.phases.length - 1 ? 'min-[992px]:pb-xs' : ''}` }}>
+            <div className="flex min-w-0 items-center gap-xs min-[992px]:px-md">
               <button
                 type="button" aria-label={phase.name}
                 aria-expanded={isOpen} aria-controls={`${course.id}-${phase.id}`} onClick={() => togglePhase(phase.id, isOpen)}
@@ -97,12 +96,12 @@ export default function TaskPhaseList({
                     const review = getCurrentAction(task, 'REVIEW')
 
                     return (
-                      <li key={task.id} className="flex min-h-14 items-center gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md">
-                        {permissions.showCheckbox && (
+                      <li key={task.id} className={`flex min-h-14 items-center gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md ${hasMore ? 'last:border-b-0' : ''}`}>
+                        {permissions.showCheckbox ? (
                           <Checkbox aria-label={`${task.title} 완료`} checked={task.isCompleted} disabled={disabled || !permissions.canComplete}
                             onChange={() => onComplete(task.id)} className="shrink-0"
                             classNames={{ icon: task.isCompleted ? 'border-(--ant-color-primary)! bg-(--ant-color-primary)! after:border-(--ant-color-white)!' : '' }} />
-                        )}
+                        ) : hasCheckbox && <span aria-hidden className="w-4 shrink-0" />}
                         <div className="flex min-w-0 flex-1 flex-col gap-xxs">
                           <button type="button" onClick={() => onOpenTask(task.id)} className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-body leading-5 text-(--ant-color-text) hover:text-(--ant-color-primary)">
                             {task.title}
@@ -123,13 +122,11 @@ export default function TaskPhaseList({
                     )
                   })}
                 </ul>
-                {completedCount > 0 && (
-                  <div className="border-0 border-b border-solid border-(--ant-color-border-secondary)">
-                    <Button type="link" block aria-expanded={isCompletedOpen} aria-label={`${phase.name} 완료 ${completedCount}건 ${isCompletedOpen ? '접기' : '보기'}`}
-                      className={`h-11 items-center px-md py-xs text-caption leading-5 ${isMobile ? '' : 'justify-start'}`} onClick={() => toggleCompleted(phase.id, isCompletedOpen)}>
-                      <span className="inline-flex items-center gap-xs">완료 {completedCount}건 {isCompletedOpen ? '접기' : '보기'}{isCompletedOpen ? <CaretUpOutlined /> : <CaretDownOutlined />}</span>
-                    </Button>
-                  </div>
+                {hasMore && (
+                  <Button type="link" block aria-expanded={isTasksOpen} aria-label={`${phase.name} 할 일 ${isTasksOpen ? '접기' : `${orderedTasks.length - taskLimit}건 더 보기`}`}
+                    className={`h-11 items-center px-md py-xs text-caption leading-5 ${isMobile ? '' : 'justify-start'}`} onClick={() => setExpandedTasks((current) => ({ ...current, [phase.id]: !isTasksOpen }))}>
+                    <span className="inline-flex items-center gap-xs">{isTasksOpen ? '접기' : `${orderedTasks.length - taskLimit}건 더 보기`}{isTasksOpen ? <CaretUpOutlined /> : <CaretDownOutlined />}</span>
+                  </Button>
                 )}
                 {totalCount === 0 && <p className="m-0 py-sm text-caption text-(--ant-color-text-tertiary)">해당하는 할 일이 없어요.</p>}
               </div>
