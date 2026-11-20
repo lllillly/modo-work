@@ -26,6 +26,17 @@ const listKinds: { key: ListKind; label: string; note: string }[] = [
 
 const toRows = (items: ListItem[]): ListRow[] => items.map((item) => ({ ...item, key: item.id }))
 
+function keepUnsaved(items: ListItem[], unsaved: ListRow[]): ListRow[] {
+  const edited = new Map(unsaved.filter((row) => !row.isNew).map((row) => [row.id, row]))
+  const rows = toRows(items).map((row) => {
+    const mine = edited.get(row.id)
+    if (!mine) return row
+    const { name, sortOrder, isActive, allowCrossAreaView } = mine
+    return { ...row, name, sortOrder, isActive, allowCrossAreaView }
+  })
+  return [...rows.sort((a, b) => a.sortOrder - b.sortOrder), ...unsaved.filter((row) => row.isNew)]
+}
+
 function getUsage(row: ListRow) {
   if (row.isNew) return '새 항목'
   const counts = [
@@ -60,6 +71,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
   const [dragKey, setDragKey] = useState<string | null>(null)
   const [newCount, setNewCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
+  const [unsaved, setUnsaved] = useState<{ kind: ListKind; rows: ListRow[] } | null>(null)
   const saving = useRef(false)
 
   const loadLists = useCallback(async (signal: AbortSignal) => {
@@ -68,7 +80,11 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
   }, [])
   const query = useApiQuery(`list-management:${refreshKey}`, loadLists)
   const source = query.data?.[kind]
-  if (source && source !== draft.source) setDraft({ source, rows: toRows(source), reordered: false })
+  if (source && source !== draft.source) {
+    const kept = unsaved?.kind === kind ? unsaved.rows : []
+    setDraft({ source, rows: kept.length ? keepUnsaved(source, kept) : toRows(source), reordered: false })
+    if (unsaved) setUnsaved(null)
+  }
 
   const current = listKinds.find((item) => item.key === kind) ?? listKinds[0]
   const rows = draft.rows
@@ -138,8 +154,8 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     if (kind === 'businesses') reloadBusinesses()
   }
 
-  function handleError(error: unknown, prefix = '') {
-    message.error(`${prefix}${getApiErrorMessage(error)}`)
+  function handleError(error: unknown) {
+    message.error(getApiErrorMessage(error))
     if (isAuthStateError(error)) void refreshUser()
   }
 
@@ -151,11 +167,10 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     }
     saving.current = true
     setIsSaving(true)
+    const changedRows = savedRows.filter((row) => isChanged(row, originals.get(row.id)))
     let saved = 0
     try {
-      for (const row of savedRows) {
-        const original = originals.get(row.id)
-        if (!isChanged(row, original)) continue
+      for (const row of changedRows) {
         const input: ListItemInput = { name: row.name.trim(), sortOrder: row.sortOrder, isActive: row.isActive }
         if (kind === 'areas') input.allowCrossAreaView = row.allowCrossAreaView ?? false
         if (row.isNew) await addListItem(kind, input)
@@ -164,7 +179,11 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
       }
       message.success(`${current.label} 목록을 저장했어요.`)
     } catch (error) {
-      handleError(error, saved > 0 ? `${saved}건은 저장했고 나머지는 저장하지 못했어요. ` : '')
+      setUnsaved({ kind, rows: changedRows.slice(saved) })
+      message.error(
+        `${getApiErrorMessage(error)} ${saved > 0 ? `${saved}건은 저장했어요. ` : ''}저장하지 못한 입력은 그대로 남아있어요. 확인하고 다시 저장해 주세요.`,
+      )
+      if (isAuthStateError(error)) void refreshUser()
     } finally {
       saving.current = false
       setIsSaving(false)
