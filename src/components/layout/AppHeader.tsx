@@ -25,6 +25,7 @@ const pageTitles: Record<string, string> = {
   '/tasks': '과정별 할 일',
   '/ask': '물어보기',
   '/admin/courses': '과정·담당 배정',
+  '/admin/task-templates': '할 일 템플릿',
   '/admin/courses/import': '과정 가져오기',
   '/admin/users': '사용자와 승인',
 }
@@ -44,6 +45,7 @@ export default function AppHeader({
   const { pathname } = useLocation()
   const pageTitle = pageTitles[pathname]
     ?? (pathname.startsWith('/admin/courses/') ? '과정·담당 배정' : null)
+    ?? (pathname.startsWith('/admin/task-templates/') ? '할 일 템플릿' : null)
     ?? (pathname.startsWith('/documents/') ? '문서' : null)
     ?? '페이지를 찾을 수 없습니다'
   const userMenuItems: MenuProps['items'] = [
