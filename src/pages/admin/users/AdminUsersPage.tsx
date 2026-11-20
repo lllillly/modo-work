@@ -10,6 +10,7 @@ import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
 import type { ManagedUser } from '../../../types/adminUsers'
 import AllUsers from './components/AllUsers'
+import ListManagement from './components/ListManagement'
 import PendingUsers from './components/PendingUsers'
 import UsersTabs from './components/UsersTabs'
 import UserDrawer from './components/UserDrawer'
@@ -129,7 +130,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
               />
             ),
           },
-          { key: 'lists', label: '목록 관리', disabled: true },
+          { key: 'lists', label: '목록 관리', children: <ListManagement isMobile={isMobile} /> },
         ]}
       />
       {selected && (

@@ -10,6 +10,7 @@ import { getApiErrorMessage } from '../api/client'
 import useApiQuery from '../hooks/useApiQuery'
 
 import { useAuth } from '../providers/AuthContext'
+import type { OptionItem } from '../types/courseApi'
 import { userRoleLabels } from '../types/user'
 
 import AppHeader from '../components/layout/AppHeader'
@@ -25,6 +26,7 @@ export type AppLayoutContext = {
   selectedBusiness: string
   selectedBusinessId?: string
   userName: string
+  reloadBusinesses: () => void
 }
 
 export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
@@ -38,7 +40,9 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const [businessSelection, setBusinessSelection] = useState('')
   const loadBusinesses = useCallback((signal: AbortSignal) => getBusinesses(signal), [])
   const businesses = useApiQuery(user ? `businesses:${user.id}` : null, loadBusinesses)
-  const businessOptions = (businesses.data?.items ?? []).map((item) => ({ value: item.id, label: item.name }))
+  const [shownBusinesses, setShownBusinesses] = useState<OptionItem[]>()
+  if (businesses.data && businesses.data.items !== shownBusinesses) setShownBusinesses(businesses.data.items)
+  const businessOptions = (shownBusinesses ?? []).map((item) => ({ value: item.id, label: item.name }))
   const selectedOption =
     businessOptions.find((item) => item.value === businessSelection) ?? businessOptions[0]
   const selectedBusiness = selectedOption?.label ?? ''
@@ -76,8 +80,8 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   }
 
   if (!user) return null
-  if (businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
-  if (businesses.error) {
+  if (!shownBusinesses && businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
+  if (!shownBusinesses && businesses.error) {
     return (
       <Result
         status="warning"
@@ -132,6 +136,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
                     selectedBusiness,
                     selectedBusinessId,
                     userName: user.name,
+                    reloadBusinesses: businesses.reload,
                   } satisfies AppLayoutContext
                 }
               />
