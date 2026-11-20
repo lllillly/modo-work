@@ -3,6 +3,7 @@ export type TaskIssueSnapshot = {
   title: string
   phase: string | null
   requiresReview: boolean
+  referenceType: 'COURSE_START' | 'COURSE_END' | 'MONTH_END' | 'ALWAYS'
   rawDueDate: string | null
   dueDate: string | null
   documentIds: string[]

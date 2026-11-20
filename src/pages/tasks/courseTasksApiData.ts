@@ -14,6 +14,7 @@ import type { TaskIssueDetail, TaskIssueSnapshot } from '../../types/taskIssue'
 
 const shiftLabels = { WEEKEND: '주말', HOLIDAY: '공휴일' }
 const issueReasons = { SCHEDULE_MISMATCH: '과정 일정 수정', TEMPLATE_MISMATCH: '템플릿 수정' }
+const referenceLabels = { COURSE_START: '과정 시작일', COURSE_END: '과정 종료일', MONTH_END: '주기 종료일', ALWAYS: '상시' }
 
 const formatDueDate = (value: string | null) => (value ? formatTaskDate(value) : '없음')
 const formatTags = (snapshot: TaskIssueSnapshot) => Object.values(snapshot.tags).sort().join(', ') || '없음'
@@ -24,6 +25,13 @@ function getIssueChanges(before: TaskIssueSnapshot, after: TaskIssueSnapshot | u
   if (!after) {
     changes.push({ label: '할 일', before: before.title, after: '새 기준에 없음' })
   } else {
+    if (before.referenceType !== after.referenceType) {
+      changes.push({
+        label: '기준',
+        before: referenceLabels[before.referenceType],
+        after: referenceLabels[after.referenceType],
+      })
+    }
     if (before.dueDate !== after.dueDate) {
       changes.push({ label: '마감', before: formatDueDate(before.dueDate), after: formatDueDate(after.dueDate) })
     }
