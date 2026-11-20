@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Skeleton, Tabs, Tag } from 'antd'
+import { Button, Card, Skeleton, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import { getAllPages } from '../../../api/pagination'
@@ -13,6 +13,7 @@ import AllUsers from './components/AllUsers'
 import LeaderApprovalDrawer from './components/LeaderApprovalDrawer'
 import LeaderRoleDrawer from './components/LeaderRoleDrawer'
 import PendingUsers from './components/PendingUsers'
+import UsersTabs from './components/UsersTabs'
 import { getSameNameUsers } from './usersData'
 
 type UsersTab = 'pending' | 'all'
@@ -81,23 +82,18 @@ export default function LeaderUsersPage({ user, orgUnit }: LeaderUsersPageProps)
       getBlockReason={(item) =>
         item.orgUnit && item.orgUnit.id !== orgUnit.id ? `다른 조직 소속(${item.orgUnit.name})이라 승인할 수 없어요` : null
       }
+      isMobile={isMobile}
       onApprove={(item) => setSelected({ user: item, mode: 'approve' })}
     />
   )
 
   return (
     <div className="flex flex-col gap-md">
-      <div>
-        <h2 className="m-0 text-section-title">사용자와 승인</h2>
-        {!isMobile && (
-          <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-            승인 대기자를 {orgUnit.name} 소속으로 승인하고, 소속 사용자에게 역할을 추가해요.
-          </p>
-        )}
-      </div>
-      <Tabs
+      <h2 className="m-0 text-section-title">사용자와 승인</h2>
+      <UsersTabs
+        isMobile={isMobile}
         activeKey={tab}
-        onChange={(key) => setTab(key as UsersTab)}
+        onChange={setTab}
         items={[
           {
             key: 'pending',
@@ -123,6 +119,7 @@ export default function LeaderUsersPage({ user, orgUnit }: LeaderUsersPageProps)
                 loadUsers={getManagedUsers}
                 editLabel="역할 추가"
                 canEdit={(item) => item.status === 'ACTIVE' && item.id !== user.id}
+                isMobile={isMobile}
                 onEdit={(item) => setSelected({ user: item, mode: 'role' })}
               />
             ),

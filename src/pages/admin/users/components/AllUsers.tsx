@@ -31,10 +31,11 @@ type AllUsersProps = {
   loadUsers: typeof getAdminUsers
   editLabel: string
   canEdit: (user: ManagedUser) => boolean
+  isMobile: boolean
   onEdit: (user: ManagedUser) => void
 }
 
-export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, canEdit, onEdit }: AllUsersProps) {
+export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, canEdit, isMobile, onEdit }: AllUsersProps) {
   const [page, setPage] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [search, setSearch] = useState('')
@@ -66,56 +67,73 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
     return () => clearTimeout(timer)
   }, [searchText])
 
+  const getAreaNames = (user: ManagedUser) =>
+    user.areas.length ? user.areas.map((area) => area.name).join(', ') : '영역 없음'
+
+  const renderRoles = (user: ManagedUser) => (
+    <span className="flex flex-wrap gap-xxs">
+      {user.roles.length
+        ? getRoleLabels(user).map((item) => (
+            <Tag key={item.key} variant="outlined" color={item.color} className="m-0 text-caption">
+              {item.label}
+            </Tag>
+          ))
+        : '-'}
+    </span>
+  )
+
+  const renderStatus = (value: UserStatus) => (
+    <Tag variant="outlined" color={statusLabels[value].color} className="m-0 text-caption">
+      {statusLabels[value].label}
+    </Tag>
+  )
+
+  const renderEdit = (user: ManagedUser) =>
+    canEdit(user) ? (
+      <Button type="link" size="small" className="h-auto p-0" onClick={() => onEdit(user)}>
+        {editLabel}
+      </Button>
+    ) : null
+
   const columns = [
-    { title: '이름', dataIndex: 'name', width: 104 },
-    { title: '이메일', dataIndex: 'email', width: 200 },
     {
-      title: '조직 단위',
-      key: 'orgUnit',
-      width: 104,
-      render: (_, user) => user.orgUnit?.name ?? '-',
-    },
-    {
-      title: '영역',
-      key: 'areas',
-      width: 120,
-      render: (_, user) => (user.areas.length ? user.areas.map((area) => area.name).join(', ') : '-'),
-    },
-    {
-      title: '역할',
-      key: 'roles',
+      title: '사용자',
+      key: 'user',
       render: (_, user) => (
-        <span className="flex flex-wrap gap-xxs">
-          {user.roles.length
-            ? getRoleLabels(user).map((item) => (
-                <Tag key={item.key} variant="outlined" color={item.color} className="m-0 text-caption">
-                  {item.label}
-                </Tag>
-              ))
-            : '-'}
+        <span className="flex flex-col">
+          <span className="font-medium">{user.name}</span>
+          <span className="break-all text-(--ant-color-text-secondary)">{user.email}</span>
         </span>
       ),
     },
     {
+      title: '소속',
+      key: 'belong',
+      className: 'whitespace-nowrap',
+      render: (_, user) => (
+        <span className="flex flex-col">
+          <span>{user.orgUnit?.name ?? '조직 없음'}</span>
+          <span className="text-(--ant-color-text-secondary)">{getAreaNames(user)}</span>
+        </span>
+      ),
+    },
+    {
+      title: '역할',
+      key: 'roles',
+      className: 'min-w-44',
+      render: (_, user) => renderRoles(user),
+    },
+    {
       title: '상태',
       dataIndex: 'status',
-      width: 80,
-      render: (value: UserStatus) => (
-        <Tag variant="outlined" color={statusLabels[value].color} className="m-0 text-caption">
-          {statusLabels[value].label}
-        </Tag>
-      ),
+      className: 'whitespace-nowrap',
+      render: (value: UserStatus) => renderStatus(value),
     },
     {
       title: '',
       key: 'actions',
-      width: 72,
-      render: (_, user) =>
-        canEdit(user) ? (
-          <Button type="link" size="small" className="h-auto p-0" onClick={() => onEdit(user)}>
-            {editLabel}
-          </Button>
-        ) : null,
+      className: 'whitespace-nowrap',
+      render: (_, user) => renderEdit(user),
     },
   ] satisfies TableColumnsType<ManagedUser>
 
@@ -133,7 +151,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
 
   return (
     <div className="flex flex-col gap-md">
-      <div className="flex flex-wrap items-center gap-xs rounded-lg bg-(--ant-color-bg-container) px-lg py-md">
+      <div className="grid grid-cols-2 items-center gap-xs rounded-lg bg-(--ant-color-bg-container) p-md min-[992px]:flex min-[992px]:flex-wrap min-[992px]:px-lg">
         <Input
           aria-label="이름·이메일 검색"
           prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
@@ -141,11 +159,12 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
           value={searchText}
           allowClear
           onChange={(event) => setSearchText(event.target.value)}
-          className="w-full min-[992px]:w-[240px]"
+          className="col-span-2 w-full min-[992px]:w-[240px]"
         />
         {orgUnits.length > 0 && (
           <Select
             aria-label="조직 단위 필터"
+            className="w-full min-[992px]:w-auto"
             popupMatchSelectWidth={false}
             value={orgUnitId}
             onChange={(value) => {
@@ -160,6 +179,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
         )}
         <Select
           aria-label="역할 필터"
+          className="w-full min-[992px]:w-auto"
           popupMatchSelectWidth={false}
           value={role}
           onChange={(value) => {
@@ -170,6 +190,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
         />
         <Select
           aria-label="상태 필터"
+          className="w-full min-[992px]:w-auto"
           popupMatchSelectWidth={false}
           value={status}
           onChange={(value) => {
@@ -183,7 +204,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
             { value: 'PENDING', label: '승인 대기' },
           ]}
         />
-        <span className="text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto">
+        <span className="text-center text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto">
           사용자 {query.isLoading || query.error ? '-' : (query.data?.totalElements ?? 0)}명
         </span>
       </div>
@@ -204,21 +225,51 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
           <Skeleton active title={false} paragraph={{ rows: 6, width: '100%' }} />
         </Card>
       ) : (
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-lg' }}>
-          <Table<ManagedUser>
-            rowKey="id"
-            columns={columns}
-            dataSource={query.data?.items ?? []}
-            pagination={false}
-            size="small"
-            scroll={{ x: 860 }}
-            locale={{ emptyText: empty }}
-            rowClassName={(user) => (user.status === 'INACTIVE' ? 'text-(--ant-color-text-tertiary)' : '')}
-            classNames={{
-              header: { cell: 'text-caption font-medium' },
-              body: { cell: 'px-sm py-xs text-caption' },
-            }}
-          />
+        <Card variant="borderless" className="shadow-none" classNames={{ body: isMobile ? 'px-md py-xs' : 'p-lg' }}>
+          {isMobile ? (
+            query.data?.items.length ? (
+              <ul className="m-0 list-none p-0">
+                {query.data.items.map((user) => (
+                  <li
+                    key={user.id}
+                    className={`flex flex-col gap-xxs border-0 border-b border-solid border-(--ant-color-border-secondary) py-sm text-caption last:border-b-0 ${
+                      user.status === 'INACTIVE' ? 'text-(--ant-color-text-tertiary)' : ''
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-xs">
+                      <span className="flex items-center gap-xs">
+                        <span className="text-body font-medium">{user.name}</span>
+                        {renderStatus(user.status)}
+                      </span>
+                      {renderEdit(user)}
+                    </span>
+                    <span className="break-all text-(--ant-color-text-secondary)">{user.email}</span>
+                    <span className="text-(--ant-color-text-secondary)">
+                      {user.orgUnit?.name ?? '조직 없음'}, {getAreaNames(user)}
+                    </span>
+                    {renderRoles(user)}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              empty
+            )
+          ) : (
+            <Table<ManagedUser>
+              rowKey="id"
+              columns={columns}
+              dataSource={query.data?.items ?? []}
+              pagination={false}
+              size="small"
+              scroll={{ x: 640 }}
+              locale={{ emptyText: empty }}
+              rowClassName={(user) => (user.status === 'INACTIVE' ? 'text-(--ant-color-text-tertiary)' : '')}
+              classNames={{
+                header: { cell: 'text-caption font-medium' },
+                body: { cell: 'px-sm py-xs text-caption' },
+              }}
+            />
+          )}
         </Card>
       )}
       {!query.isLoading && !query.error && (

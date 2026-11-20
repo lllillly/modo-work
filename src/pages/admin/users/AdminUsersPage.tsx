@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Skeleton, Tabs, Tag } from 'antd'
+import { Button, Card, Skeleton, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import { getOrgUnits } from '../../../api/courses'
@@ -11,10 +11,11 @@ import type { AppLayoutContext } from '../../../layouts/AppLayout'
 import type { ManagedUser } from '../../../types/adminUsers'
 import AllUsers from './components/AllUsers'
 import PendingUsers from './components/PendingUsers'
+import UsersTabs from './components/UsersTabs'
 import UserDrawer from './components/UserDrawer'
 import { getSameNameUsers } from './usersData'
 
-type UsersTab = 'pending' | 'all'
+type UsersTab = 'pending' | 'all' | 'lists'
 
 type UsersContentProps = { businessId?: string; isMobile: boolean }
 
@@ -81,22 +82,16 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
       <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />
     </Card>
   ) : (
-    <PendingUsers users={pendingUsers} activeUsers={activeUsers} onApprove={setSelected} />
+    <PendingUsers users={pendingUsers} activeUsers={activeUsers} isMobile={isMobile} onApprove={setSelected} />
   )
 
   return (
     <div className="flex flex-col gap-md">
-      <div>
-        <h2 className="m-0 text-section-title">사용자와 승인</h2>
-        {!isMobile && (
-          <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-            처음 로그인한 사람을 승인하고, 조직 단위·영역·역할을 정해요.
-          </p>
-        )}
-      </div>
-      <Tabs
+      <h2 className="m-0 text-section-title">사용자와 승인</h2>
+      <UsersTabs
+        isMobile={isMobile}
         activeKey={tab}
-        onChange={(key) => setTab(key as UsersTab)}
+        onChange={setTab}
         items={[
           {
             key: 'pending',
@@ -129,6 +124,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
                 loadUsers={getAdminUsers}
                 editLabel="수정"
                 canEdit={(user) => user.status !== 'PENDING'}
+                isMobile={isMobile}
                 onEdit={setSelected}
               />
             ),
