@@ -20,6 +20,7 @@ import { useAuth } from '../../providers/AuthContext'
 import type { AuthUser } from '../../types/auth'
 import type { CourseResponse } from '../../types/courseApi'
 import type { TaskActionType } from '../../types/courseTasks'
+import type { TaskResponse } from '../../types/taskApi'
 import { getToday } from '../home/dateUtils'
 import ApiCourseSelect from './components/ApiCourseSelect'
 import CourseTasksEmpty from './components/CourseTasksEmpty'
@@ -222,6 +223,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
     setIsSaving(true)
     try {
       const requestId = crypto.randomUUID()
+      let updated: TaskResponse | undefined
       if (type === 'MEMO') {
         await addTaskMemo(id, requestId, memo.trim())
       } else {
@@ -231,14 +233,23 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
             : type === 'CANCEL_REVIEW'
               ? task.reviewActionLogId
               : null
-        await processTask(id, type, {
+        const response = await processTask(id, type, {
           version: task.version,
           requestId,
           memo: memo.trim(),
           ...(targetActionLogId ? { targetActionLogId } : {}),
         })
+        updated = response.task
       }
-      message.success('처리 내용을 저장했어요.')
+      if (updated?.supersededByTaskId) {
+        message.success('완료를 취소했어요. 바뀐 기준의 할 일을 열었어요.')
+        selectTask(updated.supersededByTaskId)
+      } else if (updated?.isReadOnly) {
+        message.success('완료를 취소했어요. 바뀐 기준의 할 일은 목록에서 확인해 주세요.')
+        selectTask(null)
+      } else {
+        message.success('처리 내용을 저장했어요.')
+      }
       reload()
     } catch (error) {
       setSaveError(getApiErrorMessage(error))
