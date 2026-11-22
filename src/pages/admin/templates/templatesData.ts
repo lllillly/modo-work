@@ -28,13 +28,20 @@ function describeOffset(type: ReferenceType, days: number) {
   return `${type === 'COURSE_START' ? '시작' : '종료'} ${describeDays(days)}`
 }
 
+export function getConditionalOffsets(template: Pick<TaskTemplate, 'defaultOffsetDays' | 'longOffsetDays' | 'shortOffsetDays'>) {
+  const { defaultOffsetDays, longOffsetDays, shortOffsetDays } = template
+  if (longOffsetDays === null && shortOffsetDays === null) return null
+  return { long: longOffsetDays ?? defaultOffsetDays, short: shortOffsetDays ?? defaultOffsetDays }
+}
+
 export function describeDeadline(template: Pick<TaskTemplate, 'referenceType' | 'defaultOffsetDays' | 'longOffsetDays' | 'shortOffsetDays'>) {
-  const { referenceType, defaultOffsetDays, longOffsetDays, shortOffsetDays } = template
+  const { referenceType, defaultOffsetDays } = template
   if (referenceType === 'ALWAYS') return '상시 · 마감 없음'
   const parts: string[] = []
   if (defaultOffsetDays !== null) parts.push(describeOffset(referenceType, defaultOffsetDays))
-  if (longOffsetDays !== null && shortOffsetDays !== null) {
-    parts.push(`장기 ${describeDays(longOffsetDays)} / 단기 ${describeDays(shortOffsetDays)}`)
+  const conditional = getConditionalOffsets(template)
+  if (conditional && conditional.long !== null && conditional.short !== null) {
+    parts.push(`장기 ${describeDays(conditional.long)} / 단기 ${describeDays(conditional.short)}`)
   }
   return parts.join(' · ') || '-'
 }
@@ -45,14 +52,19 @@ export function getPhaseName(template: Pick<TaskTemplate, 'referenceType' | 'pha
 }
 
 export function groupByPhase(templates: TaskTemplate[]) {
-  const groups = new Map<string, TaskTemplate[]>()
+  const phases = new Map<string, TaskTemplate[]>()
+  const always: TaskTemplate[] = []
   for (const template of templates) {
+    if (template.referenceType === 'ALWAYS') {
+      always.push(template)
+      continue
+    }
     const phase = getPhaseName(template)
-    groups.set(phase, [...(groups.get(phase) ?? []), template])
+    phases.set(phase, [...(phases.get(phase) ?? []), template])
   }
-  const always = groups.get(ALWAYS_PHASE)
-  groups.delete(ALWAYS_PHASE)
-  return [...groups.entries(), ...(always ? [[ALWAYS_PHASE, always] as const] : [])]
+  const groups = [...phases].map(([name, items]) => ({ key: `phase:${name}`, name, isAlways: false, items }))
+  if (always.length) groups.push({ key: 'always', name: ALWAYS_PHASE, isAlways: true, items: always })
+  return groups
 }
 
 const weekdayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']

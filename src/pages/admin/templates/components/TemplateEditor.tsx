@@ -32,7 +32,7 @@ import type {
   TemplateTag,
 } from '../../../../types/taskTemplate'
 import { formatTaskDate } from '../../../tasks/courseTasksData'
-import { previewDeadline, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
+import { getConditionalOffsets, previewDeadline, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
 
 type FormValues = TemplateInput & { templateKey: string; isActive: boolean }
 
@@ -296,12 +296,17 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
 
   const exampleLabel =
     referenceType === 'COURSE_END' ? '예시 종료일' : referenceType === 'MONTH_END' ? '예시 주기 종료일' : '예시 시작일'
+  const conditional = getConditionalOffsets({
+    defaultOffsetDays: defaultOffset ?? null,
+    longOffsetDays: longOffset ?? null,
+    shortOffsetDays: shortOffset ?? null,
+  })
   const previewRows: [string, number][] = []
-  if (longOffset !== null && longOffset !== undefined && shortOffset !== null && shortOffset !== undefined) {
-    previewRows.push(['장기 과정', longOffset], ['단기 과정', shortOffset])
-  }
-  if (defaultOffset !== null && defaultOffset !== undefined) {
-    previewRows.push([previewRows.length ? '기본 (장기와 단기를 비웠을 때)' : '마감', defaultOffset])
+  if (conditional) {
+    if (conditional.long !== null) previewRows.push([longOffset == null ? '장기 과정 (기본 일수)' : '장기 과정', conditional.long])
+    if (conditional.short !== null) previewRows.push([shortOffset == null ? '단기 과정 (기본 일수)' : '단기 과정', conditional.short])
+  } else if (defaultOffset !== null && defaultOffset !== undefined) {
+    previewRows.push(['마감', defaultOffset])
   }
 
   return (
@@ -405,7 +410,7 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
             <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
               {isAlways
                 ? '상시 할 일은 마감 없이 과정마다 하나씩 만들어지고, 마감, 진행률, 알림에 포함되지 않아요.'
-                : '장기와 단기를 비우면 기본 일수를 써요. 장기는 시작일과 종료일을 포함해 180일 이상인 과정이에요.'}
+                : '장기나 단기를 비우면 그 과정에는 기본 일수를 써요. 장기는 시작일과 종료일을 포함해 180일 이상인 과정이에요.'}
             </p>
           </Card>
 

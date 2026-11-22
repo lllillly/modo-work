@@ -10,11 +10,11 @@ import { getTaskTemplates, updateTaskTemplate } from '../../../../api/taskTempla
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { ReferenceType, TaskTemplate } from '../../../../types/taskTemplate'
-import { ALWAYS_PHASE, describeDeadline, groupByPhase, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
+import { describeDeadline, groupByPhase, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
 import TagManager from './TagManager'
 
 type TemplateRow =
-  | { kind: 'group'; key: string; phase: string; count: number }
+  | { kind: 'group'; key: string; phase: string; isAlways: boolean; count: number }
   | (TaskTemplate & { kind: 'item'; key: string })
 
 type StateFilter = 'active' | 'inactive' | 'all'
@@ -139,8 +139,8 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
     </Link>
   )
 
-  const rows: TemplateRow[] = groups.flatMap(([phase, items]) => [
-    { kind: 'group' as const, key: `group:${phase}`, phase, count: items.length },
+  const rows: TemplateRow[] = groups.flatMap(({ key, name, isAlways, items }) => [
+    { kind: 'group' as const, key: `group:${key}`, phase: name, isAlways, count: items.length },
     ...items.map((template) => ({ ...template, kind: 'item' as const, key: template.id })),
   ])
   const columnCount = 7
@@ -157,7 +157,7 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
           <span className="flex items-center gap-xs pt-xs">
             <span className="text-body font-bold">{row.phase}</span>
             <span className="text-caption text-(--ant-color-text-tertiary)">{row.count}개</span>
-            {row.phase === ALWAYS_PHASE && (
+            {row.isAlways && (
               <span className="text-caption text-(--ant-color-text-tertiary)">마감, 진행률, 알림에 포함되지 않아요</span>
             )}
           </span>
@@ -297,10 +297,10 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
             templates.length === 0 ? (
               empty
             ) : (
-              groups.map(([phase, items]) => (
-                <section key={phase} className="py-xs">
+              groups.map(({ key, name, items }) => (
+                <section key={key} className="py-xs">
                   <h3 className="m-0 flex flex-wrap items-center gap-xs py-xs text-body font-bold">
-                    {phase}
+                    {name}
                     <span className="text-caption font-regular text-(--ant-color-text-tertiary)">{items.length}개</span>
                   </h3>
                   <ul className="m-0 list-none p-0">
