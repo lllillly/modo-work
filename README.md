@@ -52,11 +52,12 @@ BASE_PATH=/portal npm run build
 | 경로 | 역할 |
 | --- | --- |
 | `src/router.tsx`, `src/layouts/` | 화면 연결, 접근 검사, 공통 레이아웃 |
-| `src/components/layout/` | 헤더와 사이드바 |
+| `src/components/layout/` | 헤더, 사이드바(데스크탑에서 접기), 화면 제목을 헤더에 표시하는 `PageHeader`, `PageTitle` |
 | `src/providers/AppProvider.tsx`, `src/styles/` | Ant Design 테마, 디자인 토큰, 폰트와 공통 스타일 |
 | `src/providers/AuthProvider.tsx`, `AuthContext.ts` | 로그인 상태 관리 |
 | `src/api/`, `src/types/` | API 요청과 데이터 타입 |
 | `src/hooks/useApiQuery.ts` | 조회 상태, 요청 취소, 재조회 |
+| `src/hooks/useMediaQuery.ts` | 화면 폭 조건 확인 |
 | `src/pages/auth/` | 로그인과 인증 상태별 화면 |
 | `src/pages/home/` | 담당자와 리더 홈 |
 | `src/pages/tasks/` | 과정별 할 일, 상세, 일정과 월 주기 |
@@ -64,10 +65,13 @@ BASE_PATH=/portal npm run build
 | `src/pages/ask/` | 물어보기 |
 | `src/pages/documents/`, `src/pages/admin/documents/` | 문서 보기와 문서 업로드 |
 | `src/components/common/NoticeCard.tsx` | 오류, 권한, 빈 상태 안내 카드 |
+| `src/components/common/` | 아이콘 버튼, 필터칩, 검색창, 안내 툴팁, 줄 전체 클릭 |
 | `src/pages/admin/users/` | 사용자와 승인 |
 
 Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치지 않도록 Tailwind Preflight는 제외했습니다.
 992px 이상은 데스크탑, 그 미만은 모바일입니다. 본문과 사이드바는 각각 스크롤하며 모바일에서는 메뉴 버튼으로 사이드바를 엽니다. 모바일 스크롤바는 숨기되 스크롤은 유지합니다.
+데스크탑 사이드바는 접을 수 있고 접은 상태는 브라우저에 저장합니다. 화면 제목은 헤더에 표시합니다.
+아이콘은 Ant Design 아이콘을 쓰고, 없는 것만 lucide-react에서 가져옵니다.
 
 ## 로그인
 
