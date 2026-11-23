@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import AppProvider from './providers/AppProvider'
 import AuthProvider from './providers/AuthProvider'
 import AppRouter from './router'
@@ -14,7 +14,17 @@ function App() {
   })
   const currentTheme = isDark ? darkTheme : lightTheme
 
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = isDark ? 'dark' : 'light'
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => root.classList.remove('theme-switching'))
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isDark])
+
   function changeTheme(isDark: boolean) {
+    document.documentElement.classList.add('theme-switching')
     setIsDark(isDark)
     try {
       localStorage.setItem('portal-theme', isDark ? 'dark' : 'light')

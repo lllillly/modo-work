@@ -10,6 +10,30 @@
 
 /* 마우스 커서가 요소마다 계속 바뀌는 점이 눈에 띄어서 기본 마우스로 통일할 수 있는 부분은 통일시켰습니다. */
 @layer base {
+  html {
+    color-scheme: light;
+    background-color: #f3f4f6;
+    --row-hover: var(--ant-color-fill-alter);
+    --nav-selected-bg: #fff3eb;
+    --nav-selected-text: #bf4c00;
+    --card-hover-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.08);
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
+    background-color: #141414;
+    --row-hover: rgb(255 255 255 / 0.06);
+    --nav-selected-bg: #43291a;
+    --nav-selected-text: #ffa066;
+    --card-hover-shadow: 0 0 0 1px rgb(255 255 255 / 0.2);
+  }
+
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
+  }
+
   body {
     cursor: default;
   }
@@ -39,6 +63,36 @@
 
   :read-write {
     cursor: text;
+  }
+}
+
+@layer components {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ant-table-tbody > tr.ant-table-row:hover > td:first-child {
+    border-start-start-radius: 8px;
+    border-end-start-radius: 8px;
+  }
+
+  .ant-table-tbody > tr.ant-table-row:hover > td:last-child {
+    border-start-end-radius: 8px;
+    border-end-end-radius: 8px;
+  }
+
+  .hit-area {
+    position: relative;
+  }
+
+  .hit-area::after {
+    content: '';
+    position: absolute;
+    inset: -6px -4px;
   }
 }
 

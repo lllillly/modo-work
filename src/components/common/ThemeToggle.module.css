@@ -5,13 +5,13 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   overflow: hidden;
   border: 0;
-  border-radius: var(--ant-border-radius-lg);
-  background: var(--ant-color-bg-container);
+  border-radius: var(--ant-border-radius);
+  background: transparent;
   color: var(--ant-color-text);
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -19,7 +19,6 @@
 
 .button:hover {
   background: var(--ant-color-fill-tertiary);
-  color: var(--ant-color-warning);
 }
 
 .button:focus-visible {
@@ -29,13 +28,13 @@
 
 .icon {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 7px;
+  left: 7px;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
   line-height: 1;
   pointer-events: none;
   transform-origin: 50% 200%;

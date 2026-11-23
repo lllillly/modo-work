@@ -10,7 +10,7 @@ type NoticeCardProps = {
 }
 
 export function ErrorTriangle() {
-  return <WarningOutlined aria-hidden className="text-4xl text-(--ant-color-error)" />
+  return <WarningOutlined aria-hidden className="text-4xl text-(--ant-color-error-text)" />
 }
 
 export default function NoticeCard({ icon, title, description, action }: NoticeCardProps) {
