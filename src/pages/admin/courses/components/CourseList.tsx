@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  InboxOutlined,
-  MoreOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  UploadOutlined,
-  WarningOutlined,
-} from '@ant-design/icons'
-import { Alert, Button, Card, Checkbox, Dropdown, Input, Pagination, Select, Skeleton, Table, theme } from 'antd'
+import { InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
+import { Alert, Button, Card, Checkbox, Dropdown, Grid, Pagination, Select, Skeleton, Table, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -16,8 +9,14 @@ import type { CourseProgressStatus } from '../../../../types/courseApi'
 import { getOrgUnitName, toManagedCourse } from '../courseManagementData'
 import { getAssignmentAreas, getCourses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
+import useMediaQuery from '../../../../hooks/useMediaQuery'
 import { useAuth } from '../../../../providers/AuthContext'
+import PageHeader from '../../../../components/layout/PageHeader'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
+import SearchInput from '../../../../components/common/SearchInput'
+import IconAction from '../../../../components/common/IconAction'
+import FilterChip from '../../../../components/common/FilterChip'
+import { clickableRowProps } from '../../../../components/common/clickableRow'
 
 const ALL_FILTER = 'all'
 const SEARCH_DELAY = 300
@@ -45,6 +44,9 @@ type CourseListProps = {
 
 export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const navigate = useNavigate()
+  const screens = Grid.useBreakpoint()
+  const isWide = screens.xl ?? true
+  const isWidest = useMediaQuery('(min-width: 1366px)')
   const { token } = theme.useToken()
   const selectFont = `${token.fontSize}px ${token.fontFamily}`
   const { user } = useAuth()
@@ -101,84 +103,79 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   }, [searchText])
 
   const columns = [
-    { title: '외부 키', dataIndex: 'externalKey', width: 112 },
-    { title: '과정명', dataIndex: 'name', width: 144 },
+    ...(isWide ? [{ title: '외부 키', dataIndex: 'externalKey', width: 112 }] : []),
+    { title: '과정명', dataIndex: 'name', width: isWide ? 144 : 160 },
     {
       title: '조직 단위',
       dataIndex: 'orgUnitId',
       width: 94,
+      className: 'whitespace-nowrap',
+      responsive: ['xl'],
       render: (_, course) => course.orgUnitName ?? getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-',
     },
     {
       title: '기간',
       key: 'period',
-      width: 184,
-      render: (_, course) =>
-        `${course.startDate.replaceAll('-', '.')} ~ ${course.endDate.replaceAll('-', '.')}`,
+      width: 180,
+      render: (_, course) => (
+        <span className="whitespace-nowrap">
+          {course.startDate.replaceAll('-', '.')} ~ {course.endDate.replaceAll('-', '.')}
+        </span>
+      ),
     },
-    { title: '구분', key: 'length', width: 64, render: (_, course) => <CourseLengthTag {...course} /> },
-    { title: '정원', dataIndex: 'capacity', width: 52, render: (capacity: number | null) => capacity ?? '-' },
+    ...(isWidest
+      ? [
+          { title: '구분', key: 'length', width: 64, render: (_: unknown, course: ManagedCourse) => <CourseLengthTag {...course} /> },
+          {
+            title: '정원',
+            dataIndex: 'capacity',
+            width: 52,
+            render: (capacity: number | null) => capacity ?? '-',
+          },
+        ]
+      : []),
     {
       title: '담당 배정',
       key: 'assignees',
-      width: 190,
+      width: 150,
       render: (_, course) => (
         <AssignmentStatus course={course} requiredAreaIds={orgs.data?.requiredAreaIds} />
       ),
     },
-    { title: '상태', key: 'state', width: 82, render: (_, course) => <CourseStateTag course={course} /> },
+    { title: '상태', key: 'state', width: 76, render: (_, course) => <CourseStateTag course={course} /> },
     {
       title: '',
       key: 'actions',
-      width: 90,
-      render: (_, course) => (
-        <span className="flex items-center gap-xs" onClick={(event) => event.stopPropagation()}>
-          {course.isReadOnly ? (
-            <Link to={course.id}>보기</Link>
-          ) : (
-            <>
-              <Link to={course.id} state={{ edit: true }}>수정</Link>
-              <Button
-                type="text"
-                size="small"
-                className="h-auto p-0 text-caption text-(--ant-color-text-secondary)"
-                disabled
-              >
-                보관
-              </Button>
-            </>
-          )}
-        </span>
-      ),
+      width: 48,
+      render: (_, course) =>
+        course.isReadOnly ? <span className="block h-8" /> : (
+          <span className="flex items-center" onClick={(event) => event.stopPropagation()}>
+            <IconAction label="보관" ariaLabel={`${course.name} 보관`} icon={<InboxOutlined />} disabled />
+          </span>
+        ),
     },
   ] satisfies TableColumnsType<ManagedCourse>
 
-  const actions = (
-    <div className="flex gap-xs">
-      <Button
-        icon={<InboxOutlined aria-hidden />}
-        onClick={() => navigate('archived')}
-        className={isMobile ? 'order-3' : ''}
-        disabled
-      >
-        {isMobile ? '보관' : '보관 목록'}
-      </Button>
-      <Button
-        icon={<UploadOutlined aria-hidden />}
-        onClick={() => navigate('import')}
-        className={isMobile ? 'order-2' : ''}
-      >
-        {isMobile ? 'CSV' : 'CSV로 가져오기'}
-      </Button>
-      <Button
-        type="primary"
-        icon={<PlusOutlined aria-hidden />}
-        onClick={() => navigate('new')}
-        className={isMobile ? 'order-1 flex-1' : ''}
-      >
+  const actions = isMobile ? (
+    <>
+      <Button icon={<InboxOutlined aria-hidden />} aria-label="보관 목록" onClick={() => navigate('archived')} disabled />
+      <Button icon={<UploadOutlined aria-hidden />} aria-label="CSV로 가져오기" onClick={() => navigate('import')} />
+      <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
         과정 추가
       </Button>
-    </div>
+    </>
+  ) : (
+    <>
+      <Button icon={<InboxOutlined aria-hidden />} onClick={() => navigate('archived')} disabled>
+        보관 목록
+      </Button>
+      <Button icon={<UploadOutlined aria-hidden />} onClick={() => navigate('import')}>
+        CSV로 가져오기
+      </Button>
+      <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
+        과정 추가
+      </Button>
+    </>
   )
 
   const empty = hasFilter ? (
@@ -215,31 +212,19 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
 
   return (
     <div className="flex flex-col gap-md">
-      <div
-        className="flex flex-col gap-sm min-[992px]:flex-row min-[992px]:items-center
-        min-[992px]:justify-between"
-      >
-        <div>
-          <h2 className="m-0 text-section-title">과정·담당 배정</h2>
-          {!isMobile && (
-            <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-              과정을 등록하고 영역별 담당자를 배정해요. 일정을 바꾸면 미완료 할 일을 다시 계산해요.
-            </p>
-          )}
-        </div>
-        {actions}
-      </div>
+      <PageHeader
+        title="과정·담당 배정"
+        description="과정을 등록하고 영역별 담당자를 배정해요. 일정을 바꾸면 미완료 할 일을 다시 계산해요."
+        actions={actions}
+      />
       <div
         className={`flex flex-wrap items-center gap-xs ${
           isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container) px-lg py-md'
         }`}
       >
-        <Input
-          aria-label="과정명·외부 키 검색"
-          prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-          placeholder="과정명·외부 키 검색"
+        <SearchInput
+          label="과정명·외부 키 검색"
           value={searchText}
-          allowClear
           onChange={(event) => setSearchText(event.target.value)}
           className="w-full min-[992px]:w-[280px]"
         />
@@ -252,7 +237,6 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             setOrgUnitId(value)
             setPage(0)
           }}
-          size={isMobile ? 'small' : 'middle'}
           options={orgOptions}
         />
         <Select
@@ -264,23 +248,18 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             setProgressStatus(value)
             setPage(0)
           }}
-          size={isMobile ? 'small' : 'middle'}
           options={statusOptions}
         />
         {isMobile ? (
-          <Button
-            size="small"
-            shape="round"
-            color={needsAssignment ? 'primary' : 'default'}
-            variant="outlined"
-            aria-pressed={needsAssignment}
+          <FilterChip
+            selected={needsAssignment}
             onClick={() => {
               setNeedsAssignment(!needsAssignment)
               setPage(0)
             }}
           >
             확인 필요
-          </Button>
+          </FilterChip>
         ) : (
           <Checkbox
             checked={needsAssignment}
@@ -292,7 +271,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             배정 확인 필요한 것만 보기
           </Checkbox>
         )}
-        <span className="text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto">
+        <span className="hidden text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto min-[992px]:inline">
           과정 {isLoading || isError ? '-' : (query.data?.totalElements ?? 0)}개
         </span>
       </div>
@@ -315,7 +294,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             role="alert"
             className="flex flex-col items-center gap-sm text-center"
           >
-            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error)" />
+            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
             <h3 className="m-0 text-card-title font-medium leading-[normal]">
               과정 목록을 불러오지 못했어요
             </h3>
@@ -362,7 +341,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
               pagination={false}
               size="small"
               rowHoverable={false}
-              scroll={{ x: 1030 }}
+              scroll={{ x: isWidest ? 1030 : isWide ? 840 : 640 }}
               classNames={{
                 header: { cell: 'text-caption font-medium' },
                 body: { cell: 'px-sm py-xs text-caption' },
@@ -384,10 +363,9 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
                       text-(--ant-color-text) hover:bg-(--ant-color-fill-quaternary)"
                   >
                     <span
-                      className={`flex w-full items-center justify-between gap-xs ${isEnded ? '' : 'pr-xl'}`}
+                      className="flex w-full items-center justify-between gap-xs pr-xl"
                     >
                       <span className="min-w-0 text-body font-medium">{course.name}</span>
-                      <CourseStateTag course={course} />
                     </span>
                     <span className="text-caption text-(--ant-color-text-secondary)">
                       {course.externalKey} ·{' '}
@@ -401,7 +379,10 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
                       {course.startDate.replaceAll('-', '.')} ~ {course.endDate.replaceAll('-', '.')}
                       <CourseLengthTag {...course} />
                     </span>
-                    <AssignmentStatus course={course} requiredAreaIds={orgs.data?.requiredAreaIds} />
+                    <span className="flex w-full items-center justify-between gap-xs">
+                      <AssignmentStatus course={course} requiredAreaIds={orgs.data?.requiredAreaIds} />
+                      <CourseStateTag course={course} />
+                    </span>
                   </Link>
                   {!isEnded && (
                     <Dropdown
@@ -438,16 +419,9 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             dataSource={visibleCourses}
             pagination={false}
             size="small"
-            scroll={{ x: 1030 }}
+            scroll={{ x: isWidest ? 1030 : isWide ? 840 : 640 }}
             locale={{ emptyText: empty }}
-            onRow={(course) => ({
-              onClick: () => navigate(course.id),
-              onKeyDown: (event) => {
-                if (event.key === 'Enter' && event.target === event.currentTarget) navigate(course.id)
-              },
-              tabIndex: 0,
-              className: 'cursor-pointer',
-            })}
+            onRow={(course) => ({ ...clickableRowProps(() => navigate(course.id)), className: 'cursor-pointer' })}
             classNames={{
               header: { cell: 'text-caption font-medium' },
               body: { cell: 'px-sm py-xs text-caption' },

@@ -21,8 +21,10 @@ export default function CourseHistoryModal({ courseId, courseName, onClose }: Co
     <Modal
       open
       title={`일정 변경 이력 · ${courseName}`}
+      width={560}
       centered
       footer={null}
+      className="max-w-[calc(100vw-32px)]"
       onCancel={onClose}
       mask={{ blur: false }}
       classNames={{ body: 'max-h-[calc(100svh-200px)] overflow-y-auto' }}
@@ -54,7 +56,7 @@ export default function CourseHistoryModal({ courseId, courseName, onClose }: Co
                   ? 'CSV 일정 변경'
                   : '일정 변경'}
             </p>
-            <p className="m-0 break-words text-body text-(--ant-color-primary)">
+            <p className="m-0 break-words text-body text-(--ant-color-primary-text)">
               {entry.before.startDate} ~ {entry.before.endDate} <ArrowRightOutlined aria-label="에서" />{' '}
               {entry.after.startDate} ~ {entry.after.endDate}
             </p>

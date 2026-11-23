@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
-import { PlusOutlined, RightOutlined, SearchOutlined, TagsOutlined, WarningOutlined } from '@ant-design/icons'
-import { App, Button, Card, Input, Select, Skeleton, Switch, Table, Tag } from 'antd'
+import { PlusOutlined, RightOutlined, TagsOutlined, WarningOutlined } from '@ant-design/icons'
+import { App, Button, Card, Grid, Select, Skeleton, Switch, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -10,8 +10,11 @@ import { getTaskTemplates, updateTaskTemplate } from '../../../../api/taskTempla
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { ReferenceType, TaskTemplate } from '../../../../types/taskTemplate'
+import PageHeader from '../../../../components/layout/PageHeader'
 import { describeDeadline, groupByPhase, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
 import TagManager from './TagManager'
+import SearchInput from '../../../../components/common/SearchInput'
+import { clickableRowProps } from '../../../../components/common/clickableRow'
 
 type TemplateRow =
   | { kind: 'group'; key: string; phase: string; isAlways: boolean; count: number }
@@ -27,6 +30,7 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
   const { message, modal } = App.useApp()
   const { refreshUser } = useAuth()
   const navigate = useNavigate()
+  const isWide = Grid.useBreakpoint().xl ?? true
   const [params, setParams] = useSearchParams()
   const search = params.get('q') ?? ''
   const areaId = params.get('area') ?? ALL
@@ -143,7 +147,7 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
     { kind: 'group' as const, key: `group:${key}`, phase: name, isAlways, count: items.length },
     ...items.map((template) => ({ ...template, kind: 'item' as const, key: template.id })),
   ])
-  const columnCount = 7
+  const columnCount = isWide ? 7 : 6
   const groupCell = (row: TemplateRow) => (row.kind === 'group' ? { colSpan: 0 } : {})
 
   const columns: TableColumnsType<TemplateRow> = [
@@ -179,13 +183,17 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
       onCell: groupCell,
       render: (_, row) => (row.kind === 'item' ? describeDeadline(row) : null),
     },
-    {
-      title: '리더 확인',
-      key: 'review',
-      className: 'whitespace-nowrap',
-      onCell: groupCell,
-      render: (_, row) => (row.kind === 'item' ? renderReview(row) : null),
-    },
+    ...(isWide
+      ? [
+          {
+            title: '리더 확인',
+            key: 'review',
+            className: 'whitespace-nowrap',
+            onCell: groupCell,
+            render: (_: unknown, row: TemplateRow) => (row.kind === 'item' ? renderReview(row) : null),
+          },
+        ]
+      : []),
     {
       title: '사용',
       key: 'active',
@@ -202,12 +210,31 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
     },
   ]
 
+  const header = (
+    <PageHeader
+      title="할 일 템플릿"
+      actions={
+        <>
+          <Button icon={<TagsOutlined />} onClick={() => setShowTags(true)}>
+            태그 관리
+          </Button>
+          <Link to="/admin/task-templates/new" state={listState}>
+            <Button type="primary" icon={<PlusOutlined />}>
+              템플릿 추가
+            </Button>
+          </Link>
+        </>
+      }
+    />
+  )
+
   if (query.error) {
     return (
       <div className="flex flex-col gap-md break-keep">
+        {header}
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
           <div role="alert" className="flex flex-col items-center gap-sm text-center">
-            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error)" />
+            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
             <h3 className="m-0 text-card-title font-medium">템플릿을 불러오지 못했어요</h3>
             <p className="m-0 text-caption text-(--ant-color-text-secondary)">{getApiErrorMessage(query.error)}</p>
             <Button className="h-7" onClick={query.reload}>
@@ -232,58 +259,48 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
 
   return (
     <div className="flex flex-col gap-md break-keep">
-      <div className="grid grid-cols-2 items-center gap-xs rounded-lg bg-(--ant-color-bg-container) p-md min-[992px]:flex min-[992px]:flex-wrap min-[992px]:px-lg">
-        <Input
-          aria-label="제목, 템플릿 키 검색"
-          prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-          placeholder="제목, 템플릿 키 검색"
-          allowClear
+      {header}
+      <div className="flex flex-wrap items-center gap-xs rounded-lg bg-(--ant-color-bg-container) p-md min-[992px]:px-lg">
+        <SearchInput
+          label="제목, 템플릿 키 검색"
           value={search}
           onChange={(event) => setFilter('q', event.target.value, '')}
-          className="col-span-2 w-full min-[992px]:w-[240px]"
+          className="w-full min-[992px]:w-[240px]"
         />
         <Select
           aria-label="영역 필터"
-          className="w-full min-[992px]:w-auto"
+          className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
           popupMatchSelectWidth={false}
           value={areaId}
           onChange={(value) => setFilter('area', value, ALL)}
-          options={[{ value: ALL, label: '영역: 전체' }, ...(data?.areas ?? []).map((area) => ({ value: area.id, label: area.name }))]}
+          options={[{ value: ALL, label: isMobile ? '영역' : '영역: 전체' }, ...(data?.areas ?? []).map((area) => ({ value: area.id, label: area.name }))]}
         />
         <Select
           aria-label="기준 필터"
-          className="w-full min-[992px]:w-auto"
+          className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
           popupMatchSelectWidth={false}
           value={reference}
           onChange={(value) => setFilter('reference', value, ALL)}
           options={[
-            { value: ALL, label: '기준: 전체' },
+            { value: ALL, label: isMobile ? '기준' : '기준: 전체' },
             ...(Object.keys(referenceLabels) as ReferenceType[]).map((type) => ({ value: type, label: referenceLabels[type] })),
           ]}
         />
         <Select
           aria-label="상태 필터"
-          className="w-full min-[992px]:w-auto"
+          className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
           popupMatchSelectWidth={false}
           value={state}
           onChange={(value) => setFilter('state', value, 'active')}
           options={[
-            { value: 'all', label: '상태: 전체' },
-            { value: 'active', label: '상태: 사용 중' },
-            { value: 'inactive', label: '상태: 꺼짐' },
+            { value: 'all', label: isMobile ? '상태' : '상태: 전체' },
+            { value: 'active', label: isMobile ? '사용 중' : '상태: 사용 중' },
+            { value: 'inactive', label: isMobile ? '꺼짐' : '상태: 꺼짐' },
           ]}
         />
-        <span className="pr-xs text-right text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto min-[992px]:pr-0">
+        <span className="hidden text-caption text-(--ant-color-text-secondary) min-[992px]:ml-auto min-[992px]:inline">
           템플릿 {data ? templates.length : '-'}개
         </span>
-        <Button icon={<TagsOutlined />} className="w-full min-[992px]:ml-sm min-[992px]:w-auto" onClick={() => setShowTags(true)}>
-          태그 관리
-        </Button>
-        <Link to="/admin/task-templates/new" state={listState}>
-          <Button type="primary" icon={<PlusOutlined />} className="w-full min-[992px]:w-auto">
-            템플릿 추가
-          </Button>
-        </Link>
       </div>
       {showTags && <TagManager businessId={businessId} onClose={() => setShowTags(false)} />}
 
@@ -345,12 +362,12 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
               dataSource={rows}
               pagination={false}
               size="small"
-              scroll={{ x: 760 }}
+              scroll={{ x: isWide ? 760 : 640 }}
               locale={{ emptyText: empty }}
               rowClassName={(row) =>
                 row.kind === 'item' ? `cursor-pointer ${row.isActive ? '' : '[&>td]:text-(--ant-color-text-tertiary)'}` : '[&>td]:bg-transparent!'
               }
-              onRow={(row) => (row.kind === 'item' ? { onClick: () => navigate(editPath(row), { state: listState }) } : {})}
+              onRow={(row) => (row.kind === 'item' ? clickableRowProps(() => navigate(editPath(row), { state: listState })) : {})}
               classNames={{
                 header: { cell: 'text-caption font-medium' },
                 body: { cell: 'px-sm py-xs text-caption' },

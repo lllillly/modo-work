@@ -8,12 +8,27 @@ type UsersTabsProps<T extends string> = {
   onChange: (key: T) => void
 }
 
+export function TabCount({ value, highlight = false }: { value: number; highlight?: boolean }) {
+  return (
+    <span
+      className={`ml-xs inline-flex min-w-5 justify-center rounded-full px-1.5 text-caption ${
+        highlight
+          ? 'bg-(--ant-color-warning-bg) font-medium text-(--ant-color-warning-text)'
+          : 'bg-(--ant-color-fill-tertiary) text-(--ant-color-text-secondary) max-[991px]:hidden'
+      }`}
+    >
+      {value}
+    </span>
+  )
+}
+
 export default function UsersTabs<T extends string>({ activeKey, items, isMobile, onChange }: UsersTabsProps<T>) {
   return (
     <Tabs
       activeKey={activeKey}
       onChange={(key) => onChange(key as T)}
       items={items}
+      tabBarGutter={24}
       renderTabBar={
         isMobile
           ? () => (

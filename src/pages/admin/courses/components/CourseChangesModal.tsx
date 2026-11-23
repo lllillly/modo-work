@@ -67,8 +67,10 @@ export default function CourseChangesModal({ courseId, courseName, orgUnits, onC
     <Modal
       open
       title={`변경 이력 · ${courseName}`}
+      width={560}
       centered
       footer={null}
+      className="max-w-[calc(100vw-32px)]"
       onCancel={onClose}
       mask={{ blur: false }}
       classNames={{ body: 'max-h-[calc(100svh-200px)] overflow-y-auto' }}
@@ -99,7 +101,7 @@ export default function CourseChangesModal({ courseId, courseName, orgUnits, onC
                 <p className="m-0 text-caption text-(--ant-color-text-secondary)">
                   {fieldLabels[change.field] ?? change.field}
                 </p>
-                <p className="m-0 flex flex-wrap items-start gap-xs break-words text-body text-(--ant-color-primary)">
+                <p className="m-0 flex flex-wrap items-start gap-xs break-words text-body text-(--ant-color-primary-text)">
                   <span className="whitespace-pre-line">{formatValue(change.field, change.before, orgUnits)}</span>
                   <ArrowRightOutlined aria-label="에서" className="mt-xxs" />
                   <span className="whitespace-pre-line">{formatValue(change.field, change.after, orgUnits)}</span>

@@ -33,6 +33,7 @@ import type {
 } from '../../../../types/taskTemplate'
 import { formatTaskDate } from '../../../tasks/courseTasksData'
 import { getConditionalOffsets, previewDeadline, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
+import PageTitle from '../../../../components/layout/PageTitle'
 
 type FormValues = TemplateInput & { templateKey: string; isActive: boolean }
 
@@ -301,12 +302,12 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
     longOffsetDays: longOffset ?? null,
     shortOffsetDays: shortOffset ?? null,
   })
-  const previewRows: [string, number][] = []
+  const previewRows: [string, number, boolean][] = []
   if (conditional) {
-    if (conditional.long !== null) previewRows.push([longOffset == null ? '장기 과정 (기본 일수)' : '장기 과정', conditional.long])
-    if (conditional.short !== null) previewRows.push([shortOffset == null ? '단기 과정 (기본 일수)' : '단기 과정', conditional.short])
+    if (conditional.long !== null) previewRows.push(['장기 과정', conditional.long, longOffset == null])
+    if (conditional.short !== null) previewRows.push(['단기 과정', conditional.short, shortOffset == null])
   } else if (defaultOffset !== null && defaultOffset !== undefined) {
-    previewRows.push(['마감', defaultOffset])
+    previewRows.push(['마감', defaultOffset, false])
   }
 
   return (
@@ -326,7 +327,7 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
             { title: template ? `${template.templateKey} ${template.title}` : '템플릿 추가' },
           ]}
         />
-        <h2 className="m-0 text-section-title">{template ? '템플릿 수정' : '템플릿 추가'}</h2>
+        <PageTitle>{template ? '템플릿 수정' : '템플릿 추가'}</PageTitle>
       </div>
 
       <div className="grid grid-cols-1 gap-md min-[992px]:grid-cols-[minmax(0,1fr)_340px]">
@@ -522,14 +523,17 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                   <p className="m-0 text-caption text-(--ant-color-text-tertiary)">일수를 넣으면 마감을 보여 드려요.</p>
                 ) : (
                   <ul className="m-0 list-none p-0">
-                    {previewRows.map(([label, offset]) => {
+                    {previewRows.map(([label, offset, fromDefault]) => {
                       const preview = previewDeadline(exampleDate, offset)
                       return (
                         <li
                           key={label}
                           className="flex items-start justify-between gap-sm border-0 border-t border-solid border-(--ant-color-border-secondary) py-sm text-caption first:border-t-0"
                         >
-                          <span className="text-(--ant-color-text-secondary)">{label}</span>
+                          <span className="flex shrink-0 flex-col text-(--ant-color-text-secondary)">
+                            {label}
+                            {fromDefault && <span className="text-(--ant-color-text-tertiary)">기본 일수</span>}
+                          </span>
                           <span className="flex flex-col items-end">
                             <span className="text-body font-medium">{formatTaskDate(preview.dueDate, true)}</span>
                             {preview.shiftReason && (

@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router'
 import { previewCourseImport } from '../../../../api/courses'
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import { useAuth } from '../../../../providers/AuthContext'
+import PageHeader from '../../../../components/layout/PageHeader'
 import CourseImportPreview from './CourseImportPreview'
 
 const importRules = [
@@ -74,13 +75,10 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
 
   return (
     <div className="flex flex-col gap-md">
-      <div>
-        <h2 className="m-0 text-section-title">과정 가져오기</h2>
-        <p className="mt-xxs mb-0 text-caption text-(--ant-color-text-secondary)">
-          {business}의 과정을 CSV 파일로 등록하거나 갱신해요. 오류가 하나라도 있으면 아무것도 적용하지
-          않아요.
-        </p>
-      </div>
+      <PageHeader
+        title="과정 가져오기"
+        description={`${business}의 과정을 CSV 파일로 등록하거나 갱신해요. 오류가 하나라도 있으면 아무것도 적용하지 않아요.`}
+      />
       {jobId ? (
         <CourseImportPreview
           key={jobId}
@@ -99,6 +97,8 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
           <Steps
             current={0}
             size="small"
+            responsive={false}
+            titlePlacement={isMobile ? 'vertical' : 'horizontal'}
             className="max-w-[450px]"
             items={[{ title: '파일 선택' }, { title: '미리보기 확인' }, { title: '등록' }]}
           />
@@ -124,12 +124,14 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
             classNames={{ body: 'p-md min-[992px]:p-lg' }}
           >
             <Upload.Dragger {...uploadProps} className="block">
-              <div className="flex min-h-[140px] flex-col items-center justify-center gap-xs p-md">
-                <InboxOutlined className="text-[32px] text-(--ant-color-primary)" />
+              <div className="flex min-h-[112px] flex-col items-center justify-center gap-xs p-md min-[992px]:min-h-[140px]">
+                <InboxOutlined className="text-[32px] text-(--ant-color-primary-text)" />
                 <p className="m-0 text-card-title font-medium">
                   {busy
                     ? '파일을 전송하고 미리보기를 만드는 중이에요'
-                    : 'CSV 파일을 여기로 끌어 놓거나 눌러서 고르세요'}
+                    : isMobile
+                      ? '눌러서 CSV 파일을 고르세요'
+                      : 'CSV 파일을 여기로 끌어 놓거나 눌러서 고르세요'}
                 </p>
                 <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
                   한 번에 파일 1개 · UTF-8 CSV · 최대 10MiB
@@ -140,7 +142,7 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
               type="link"
               href={`${import.meta.env.BASE_URL}templates/courses_template.csv`}
               download="courses_template.csv"
-              className="mt-sm h-auto p-0 text-body"
+              className="mt-sm hit-area h-auto p-0 text-body"
             >
               양식 내려받기 (courses_template.csv)
             </Button>

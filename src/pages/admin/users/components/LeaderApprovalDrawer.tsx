@@ -123,7 +123,7 @@ export default function LeaderApprovalDrawer({
         {isReady && (
           <div className="flex flex-col gap-xs">
             <span className="text-body font-medium">
-              역할 <span className="text-(--ant-color-error)">*</span>
+              역할 <span className="text-(--ant-color-error-text)">*</span>
             </span>
             <Checkbox checked={assignee} onChange={(event) => setAssignee(event.target.checked)}>
               담당자
@@ -131,7 +131,7 @@ export default function LeaderApprovalDrawer({
             {assignee && (
               <div className="ml-lg flex flex-col gap-xs">
                 <span className="text-caption text-(--ant-color-text-secondary)">
-                  담당/열람 영역 <span className="text-(--ant-color-error)">*</span>
+                  담당/열람 영역 <span className="text-(--ant-color-error-text)">*</span>
                 </span>
                 <Radio.Group
                   value={areaId}

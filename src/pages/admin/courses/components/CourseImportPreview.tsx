@@ -207,7 +207,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
       render: (_, row) => (
         <div className="flex flex-col gap-xs [overflow-wrap:anywhere]">
           {row.errors.map((issue, index) => (
-            <span key={`${issue.field}:${index}`} className="text-(--ant-color-error)">
+            <span key={`${issue.field}:${index}`} className="text-(--ant-color-error-text)">
               {issue.field}: {issue.message}
             </span>
           ))}
@@ -226,7 +226,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
                 )
               }
             >
-              <span className="text-caption text-(--ant-color-warning)">
+              <span className="text-caption text-(--ant-color-warning-text)">
                 <WarningOutlined /> {warning.field}: {warning.message}
               </span>
             </Checkbox>
@@ -244,6 +244,8 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
       <Steps
         current={job?.status === 'APPLIED' ? 2 : 1}
         size="small"
+        responsive={false}
+        titlePlacement={isMobile ? 'vertical' : 'horizontal'}
         className="max-w-[450px]"
         items={[{ title: '파일 선택' }, { title: '미리보기 확인' }, { title: '등록' }]}
       />

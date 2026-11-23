@@ -127,26 +127,26 @@ export default function AssigneeFields({
                 )}
               </div>
               {readOnly && inactive && pendingByArea && (
-                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning)">
+                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning-text)">
                   {pendingCount > 0
                     ? `이 영역에 미완료 할 일 ${pendingCount}건이 남아 있어요`
                     : '이 영역에 남은 미완료 할 일은 없어요'}
                 </p>
               )}
               {!readOnly && !selected.length && (
-                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning)">
+                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning-text)">
                   <WarningOutlined /> 아직 담당자가 없어요. 할 일은 만들어지고, 배정하면 그 담당자에게
                   보여요.
                 </p>
               )}
               {inactive && (
-                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning)">
+                <p className="mt-xs mb-0 text-caption text-(--ant-color-warning-text)">
                   <WarningOutlined /> 비활성 담당자예요. 다른 담당자로 바꾸면 미완료 할 일이 새
                   담당자에게 보여요.
                   {!readOnly && area && (
                     <Button
                       type="link"
-                      className="ml-xs h-auto p-0 text-caption"
+                      className="ml-xs hit-area h-auto p-0 text-caption"
                       onClick={() => {
                         setAddingArea(areaId)
                         setReplacingArea(areaId)

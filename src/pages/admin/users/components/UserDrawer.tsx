@@ -127,7 +127,7 @@ export default function UserDrawer({
   function confirmInactive() {
     if (!checkDraft()) return
     modal.confirm({
-      icon: <WarningOutlined className="text-(--ant-color-warning)" />,
+      icon: <WarningOutlined className="text-(--ant-color-warning-text)" />,
       title: `${user.name} 님을 비활성으로 바꿀까요?`,
       content: '바꾸면 다음 화면 이동부터 로그인이 막혀요. 처리 기록은 그대로 남아요.',
       okText: '비활성으로 바꾸기',
@@ -140,7 +140,7 @@ export default function UserDrawer({
   const orgField = (
     <label className="flex items-center gap-sm">
       <span className="w-24 shrink-0 text-caption text-(--ant-color-text-secondary)">
-        조직 단위 <span className="text-(--ant-color-error)">*</span>
+        조직 단위 <span className="text-(--ant-color-error-text)">*</span>
       </span>
       <Select
         className="flex-1"
@@ -156,7 +156,7 @@ export default function UserDrawer({
   const areaField = (
     <div className="flex flex-col gap-xs">
       <span className="text-caption text-(--ant-color-text-secondary)">
-        담당/열람 영역 <span className="text-(--ant-color-error)">*</span>
+        담당/열람 영역 <span className="text-(--ant-color-error-text)">*</span>
       </span>
       {draft.areaIds.length > 1 && (
         <Alert
@@ -236,7 +236,7 @@ export default function UserDrawer({
         {isReady && (
           <div className="flex flex-col gap-xs">
             <span className="text-body font-medium">
-              역할 <span className="text-(--ant-color-error)">*</span>
+              역할 <span className="text-(--ant-color-error-text)">*</span>
             </span>
             <span className="text-caption text-(--ant-color-text-tertiary)">
               여러 개 고를 수 있어요.

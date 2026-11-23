@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { PlusOutlined } from '@ant-design/icons'
+import { Pen } from 'lucide-react'
 import { Alert, App, Button, Input, Modal, Space, Spin, Switch } from 'antd'
 
 import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
@@ -7,6 +8,7 @@ import { createTemplateTag, getTemplateTags, updateTemplateTag } from '../../../
 import useApiQuery from '../../../../hooks/useApiQuery'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { TemplateTag } from '../../../../types/taskTemplate'
+import IconAction from '../../../../components/common/IconAction'
 
 type TagManagerProps = { businessId: string; onClose: () => void }
 
@@ -145,22 +147,18 @@ export default function TagManager({ businessId, onClose }: TagManagerProps) {
                   <Button onClick={() => setEditing(null)}>취소</Button>
                 </Space.Compact>
               ) : (
-                <>
-                  <span
-                    className={`min-w-0 flex-1 text-body ${tag.isActive ? '' : 'text-(--ant-color-text-tertiary)'}`}
-                  >
+                <span className="flex min-w-0 flex-1 items-center gap-xxs">
+                  <span className={`min-w-0 truncate text-body ${tag.isActive ? '' : 'text-(--ant-color-text-tertiary)'}`}>
                     {tag.name}
                   </span>
-                  <Button
-                    type="link"
-                    size="small"
-                    className="h-auto p-0"
+                  <IconAction
+                    label="이름 바꾸기"
+                    ariaLabel={`${tag.name} 이름 바꾸기`}
+                    icon={<Pen size="1em" />}
                     disabled={!!savingId}
                     onClick={() => setEditing({ id: tag.id, name: tag.name })}
-                  >
-                    이름 바꾸기
-                  </Button>
-                </>
+                  />
+                </span>
               )}
               <Switch
                 aria-label={`${tag.name} 사용`}

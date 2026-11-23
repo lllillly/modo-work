@@ -9,6 +9,7 @@ import { Link } from 'react-router'
 
 import type { ManagedCourse } from '../../../../types/adminCourses'
 import { courseOrgUnits } from '../courseManagementMockData'
+import PageTitle from '../../../../components/layout/PageTitle'
 
 type ArchivedCoursesProps = {
   courses: ManagedCourse[]
@@ -30,7 +31,7 @@ function formatArchivedDate(value: string | null) {
 export default function ArchivedCourses({ courses, isMobile, onRestore }: ArchivedCoursesProps) {
   const archived = courses.filter((course) => course.archivedAt)
   const restore = (course: ManagedCourse) => (
-    <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => onRestore(course)}>
+    <Button type="link" size="small" className="hit-area h-auto p-0 text-caption" onClick={() => onRestore(course)}>
       복원
     </Button>
   )
@@ -59,7 +60,7 @@ export default function ArchivedCourses({ courses, isMobile, onRestore }: Archiv
           className="mb-xs text-caption"
           items={[{ title: <Link to="/admin/courses">과정·담당 배정</Link> }, { title: '보관 목록' }]}
         />
-        <h2 className="m-0 text-section-title">보관 목록</h2>
+        <PageTitle>보관 목록</PageTitle>
         <p className="mt-xxs mb-0 text-caption text-(--ant-color-text-secondary)">
           처리 기록이 있어 삭제 대신 보관한 과정이에요. 복원하면 과정 목록에 다시 나와요.
         </p>

@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router'
-import { ArrowDownOutlined, ArrowUpOutlined, HolderOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons'
+import { DeleteOutlined, HolderOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons'
 import { App, Button, Card, Input, Select, Skeleton, Switch, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
@@ -10,6 +10,7 @@ import useApiQuery from '../../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../../layouts/AppLayout'
 import { useAuth } from '../../../../providers/AuthContext'
 import type { ListItem, ListItemInput, ListKind } from '../../../../types/listManagement'
+import IconAction from '../../../../components/common/IconAction'
 
 type ListRow = ListItem & { key: string; isNew?: boolean }
 
@@ -69,6 +70,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     reordered: false,
   })
   const [dragKey, setDragKey] = useState<string | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
   const [newCount, setNewCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [unsaved, setUnsaved] = useState<{ kind: ListKind; rows: ListRow[] } | null>(null)
@@ -111,6 +113,33 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     next.splice(toIndex, 0, moved)
     setDraft((value) => ({ ...value, rows: next, reordered: true }))
   }
+
+  function dragTo(clientY: number) {
+    const items = [...(listRef.current?.querySelectorAll<HTMLElement>('li[data-key]') ?? [])]
+    const fromIndex = rows.findIndex((row) => row.key === dragKey)
+    if (fromIndex < 0) return
+    const before = items.findIndex((item) => {
+      const rect = item.getBoundingClientRect()
+      return clientY < rect.top + rect.height / 2
+    })
+    const insertAt = before < 0 ? items.length : before
+    moveRow(dragKey, insertAt > fromIndex ? insertAt - 1 : insertAt)
+  }
+
+  const onDragMove = useEffectEvent((event: PointerEvent) => dragTo(event.clientY))
+
+  useEffect(() => {
+    if (!isMobile || !dragKey) return
+    const stop = () => setDragKey(null)
+    window.addEventListener('pointermove', onDragMove)
+    window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
+    return () => {
+      window.removeEventListener('pointermove', onDragMove)
+      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
+    }
+  }, [isMobile, dragKey])
 
   function addRow() {
     const sortOrder = Math.max(-1, ...rows.map((row) => row.sortOrder)) + 1
@@ -251,9 +280,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     row.isInUse ? (
       <span className="text-(--ant-color-text-tertiary)" title="사용 중이라 삭제 대신 숨김만 할 수 있어요">-</span>
     ) : (
-      <Button type="link" size="small" className="h-auto p-0 text-(--ant-color-text-secondary)" onClick={() => remove(row)}>
-        삭제
-      </Button>
+      <IconAction label="삭제" ariaLabel={`${row.name} 삭제`} icon={<DeleteOutlined />} tone="danger" showLabel={isMobile} onClick={() => remove(row)} />
     )
 
   const columns: TableColumnsType<ListRow> = [
@@ -321,7 +348,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     return (
       <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
         <div role="alert" className="flex flex-col items-center gap-sm text-center">
-          <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error)" />
+          <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
           <h3 className="m-0 text-card-title font-medium">목록을 불러오지 못했어요</h3>
           <p className="m-0 text-caption text-(--ant-color-text-secondary)">{getApiErrorMessage(query.error)}</p>
           <Button className="h-7" onClick={query.reload}>
@@ -362,7 +389,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
             onClick={() => changeKind(item.key)}
             className={`flex cursor-pointer items-center justify-between border-0 px-md py-sm text-left text-body ${
               item.key === kind
-                ? 'bg-(--ant-color-primary-bg) text-(--ant-color-primary)'
+                ? 'bg-(--ant-color-primary-bg) text-(--ant-color-primary-text)'
                 : 'bg-transparent text-(--ant-color-text) hover:bg-(--ant-color-fill-tertiary)'
             }`}
           >
@@ -392,7 +419,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
           이름과 순서를 바꾸고, 쓰지 않는 항목은 숨겨요. 사용 중인 항목은 지울 수 없어요.
         </p>
         {isMobile ? (
-          <ul className="m-0 flex list-none flex-col gap-xs p-0">
+          <ul ref={listRef} className="m-0 flex list-none flex-col gap-xs p-0">
             {rows.length === 0 && (
               <li className="py-md text-center text-caption text-(--ant-color-text-tertiary)">
                 항목이 없어요. 항목 추가로 만들어 주세요.
@@ -401,26 +428,24 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
             {rows.map((row, index) => (
               <li
                 key={row.key}
+                data-key={row.key}
                 className={`flex flex-col gap-xs rounded-lg bg-(--ant-color-fill-quaternary) p-sm text-caption ${
                   row.isActive ? '' : 'text-(--ant-color-text-tertiary)'
-                }`}
+                } ${dragKey === row.key ? 'opacity-60 shadow-md' : ''}`}
               >
                 <span className="flex items-center gap-xxs">
                   <Button
                     type="text"
-                    size="small"
-                    icon={<ArrowUpOutlined aria-hidden />}
-                    aria-label={`${row.name || '새 항목'} 위로 옮기기`}
-                    disabled={index === 0}
-                    onClick={() => moveRow(row.key, index - 1)}
-                  />
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ArrowDownOutlined aria-hidden />}
-                    aria-label={`${row.name || '새 항목'} 아래로 옮기기`}
-                    disabled={index === rows.length - 1}
-                    onClick={() => moveRow(row.key, index + 1)}
+                    icon={<HolderOutlined aria-hidden />}
+                    aria-label={`${row.name || '새 항목'} 순서 바꾸기, 끌어서 옮기거나 위아래 화살표로 이동`}
+                    className="-ml-xs shrink-0 cursor-grab touch-none text-(--ant-color-text-tertiary)"
+                    onPointerDown={() => setDragKey(row.key)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                        event.preventDefault()
+                        moveRow(row.key, index + (event.key === 'ArrowUp' ? -1 : 1))
+                      }
+                    }}
                   />
                   <span className="ml-xxs min-w-0 flex-1">{renderName(row)}</span>
                   {!row.isInUse && <span className="ml-xs shrink-0">{renderDelete(row)}</span>}

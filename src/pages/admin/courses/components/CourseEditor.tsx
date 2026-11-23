@@ -16,7 +16,7 @@ import {
 } from 'antd'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import type { CourseDraft, CourseSaveResult, ManagedCourse } from '../../../../types/adminCourses'
 import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
@@ -32,6 +32,7 @@ import { formatActionTime } from '../../../tasks/courseTasksData'
 import CourseChangesModal from './CourseChangesModal'
 import AssigneeFields from './AssigneeFields'
 import CourseCorrectionModal from './CourseCorrectionModal'
+import PageTitle from '../../../../components/layout/PageTitle'
 
 const HISTORY_SUMMARY_SIZE = 1
 
@@ -57,22 +58,19 @@ export default function CourseEditor({
   onReload,
 }: CourseEditorProps) {
   const navigate = useNavigate()
-  const location = useLocation()
   const { modal } = App.useApp()
   const { user, refreshUser } = useAuth()
   const [form] = Form.useForm<CourseFormValues>()
   const [result, setResult] = useState<CourseSaveResult | null>(null)
   const [saveError, setSaveError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const openedForEdit = (location.state as { edit?: boolean } | null)?.edit
-  const [isEditing, setIsEditing] = useState(!course || !!openedForEdit)
   const [needsReload, setNeedsReload] = useState(false)
   const [conflict, setConflict] = useState(false)
   const [correction, setCorrection] = useState<{ type: 'endDate' | 'assignee' } | null>(null)
   const [showHistory, setShowHistory] = useState(false)
 
   const isEnded = !!course?.isReadOnly
-  const readOnly = isEnded || needsReload || !isEditing
+  const readOnly = isEnded || needsReload
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
   const orgUnitId = Form.useWatch('orgUnitId', form) ?? course?.orgUnitId ?? ''
@@ -229,18 +227,18 @@ export default function CourseEditor({
     }
   }
 
-  function leaveEdit() {
-    setIsEditing(false)
-    if (location.state) navigate(location.pathname, { replace: true, state: null })
-  }
-
   function cancelEdit() {
-    if (!course || readOnly) {
+    if (readOnly || !form.isFieldsTouched()) {
       navigate('/admin/courses')
       return
     }
-    form.resetFields()
-    leaveEdit()
+    modal.confirm({
+      title: '변경 내용을 버릴까요?',
+      content: '저장하지 않은 내용은 사라져요.',
+      okText: '버리기',
+      cancelText: '계속 수정',
+      onOk: () => navigate('/admin/courses'),
+    })
   }
 
   function changeOrgUnit(nextOrgId: string) {
@@ -270,9 +268,7 @@ export default function CourseEditor({
             { title: course?.name ?? '과정 추가' },
           ]}
         />
-        <h2 className="m-0 text-section-title">
-          {readOnly ? '과정 보기' : course ? '과정 수정' : '과정 추가'}
-        </h2>
+        <PageTitle>{readOnly ? '과정 보기' : course ? '과정 수정' : '과정 추가'}</PageTitle>
       </div>
       {isEnded && (
         <Alert
@@ -407,7 +403,7 @@ export default function CourseEditor({
           >
             <div>
               <label className="mb-xs block text-caption" htmlFor="managed-course-start">
-                기간 {!readOnly && <span className="text-(--ant-color-error)">*</span>}
+                기간 {!readOnly && <span className="text-(--ant-color-error-text)">*</span>}
               </label>
               <div className="flex items-start gap-xs">
                 <Form.Item
@@ -570,11 +566,6 @@ export default function CourseEditor({
                 일정을 바꾸면 미완료 할 일을 다시 계산해요
               </span>
             )}
-            {!!course && !isEnded && !isEditing && (
-              <Button type="primary" disabled={needsReload} onClick={() => setIsEditing(true)}>
-                수정
-              </Button>
-            )}
             <Button disabled={isSaving} onClick={cancelEdit}>
               {readOnly ? '목록으로' : '취소'}
             </Button>
@@ -616,10 +607,7 @@ export default function CourseEditor({
         onCancel={() => {
           setResult(null)
           if (!course && result) navigate(`/admin/courses/${result.courseId}`, { replace: true })
-          else {
-            leaveEdit()
-            onReload()
-          }
+          else onReload()
         }}
         footer={
           <div className="flex justify-end gap-xs">
@@ -660,7 +648,7 @@ export default function CourseEditor({
         open={conflict}
         title={
           <span>
-            <WarningOutlined className="mr-xs text-(--ant-color-warning)" />
+            <WarningOutlined className="mr-xs text-(--ant-color-warning-text)" />
             과정 상태를 다시 확인해 주세요
           </span>
         }

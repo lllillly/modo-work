@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Skeleton, Tag } from 'antd'
+import { Button, Card, Skeleton } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import { getOrgUnits } from '../../../api/courses'
@@ -9,10 +9,11 @@ import { getAllPages } from '../../../api/pagination'
 import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
 import type { ManagedUser } from '../../../types/adminUsers'
+import PageHeader from '../../../components/layout/PageHeader'
 import AllUsers from './components/AllUsers'
 import ListManagement from './components/ListManagement'
 import PendingUsers from './components/PendingUsers'
-import UsersTabs from './components/UsersTabs'
+import UsersTabs, { TabCount } from './components/UsersTabs'
 import UserDrawer from './components/UserDrawer'
 import { getSameNameUsers } from './usersData'
 
@@ -70,7 +71,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
   const pendingContent = pending.error ? (
     <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
       <div role="alert" className="flex flex-col items-center gap-sm text-center">
-        <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error)" />
+        <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
         <h3 className="m-0 text-card-title font-medium">승인 대기 목록을 불러오지 못했어요</h3>
         <p className="m-0 text-caption text-(--ant-color-text-secondary)">잠시 후 다시 시도해 주세요.</p>
         <Button className="h-7" onClick={pending.reload}>
@@ -88,7 +89,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
 
   return (
     <div className="flex flex-col gap-md">
-      <h2 className="m-0 text-section-title">사용자와 승인</h2>
+      <PageHeader title="사용자와 승인" />
       <UsersTabs
         isMobile={isMobile}
         activeKey={tab}
@@ -99,11 +100,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
             label: (
               <span>
                 승인 대기
-                {pendingUsers.length > 0 && (
-                  <Tag variant="outlined" color="warning" className="ml-xs text-caption">
-                    {pendingUsers.length}
-                  </Tag>
-                )}
+                {pendingUsers.length > 0 && <TabCount value={pendingUsers.length} highlight />}
               </span>
             ),
             children: pendingContent,
@@ -114,7 +111,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
               <span>
                 전체 사용자
                 {total.data && (
-                  <span className="ml-xs text-caption text-(--ant-color-text-tertiary)">{total.data.totalElements}</span>
+                  <TabCount value={total.data.totalElements} />
                 )}
               </span>
             ),
