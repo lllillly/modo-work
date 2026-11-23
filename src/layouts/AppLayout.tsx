@@ -15,6 +15,7 @@ import { userRoleLabels } from '../types/user'
 
 import AppHeader from '../components/layout/AppHeader'
 import AppSidebar from '../components/layout/AppSidebar'
+import { HeaderTitleSlot } from '../components/layout/headerTitleSlot'
 
 type AppLayoutProps = {
   isDark: boolean
@@ -37,6 +38,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
   const [businessSelection, setBusinessSelection] = useState('')
   const loadBusinesses = useCallback((signal: AbortSignal) => getBusinesses(signal), [])
   const businesses = useApiQuery(user ? `businesses:${user.id}` : null, loadBusinesses)
@@ -123,26 +125,31 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
           notificationCount={notificationCount}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
+          titleSlotRef={setTitleSlot}
         />
-        <Layout.Content
-          className={`flex min-h-0 min-w-0 flex-col overflow-y-auto ${isMobile ? 'p-md' : 'p-lg'}`}
-        >
-          <main className="flex flex-1 flex-col">
-            <Suspense fallback={<Spin className="m-auto" aria-label="화면 불러오는 중" />}>
-              <Outlet
-                context={
-                  {
-                    isMobile,
-                    selectedBusiness,
-                    selectedBusinessId,
-                    userName: user.name,
-                    reloadBusinesses: businesses.reload,
-                  } satisfies AppLayoutContext
-                }
-              />
-            </Suspense>
-          </main>
-        </Layout.Content>
+        <Layout className="min-h-0 min-w-0">
+          <Layout.Content
+            className={`flex min-h-0 min-w-0 flex-col overflow-y-auto ${isMobile ? 'p-md' : 'p-lg'}`}
+          >
+            <main className="flex flex-1 flex-col">
+              <HeaderTitleSlot.Provider value={titleSlot}>
+              <Suspense fallback={<Spin className="m-auto" aria-label="화면 불러오는 중" />}>
+                <Outlet
+                  context={
+                    {
+                      isMobile,
+                      selectedBusiness,
+                      selectedBusinessId,
+                      userName: user.name,
+                      reloadBusinesses: businesses.reload,
+                    } satisfies AppLayoutContext
+                  }
+                />
+              </Suspense>
+              </HeaderTitleSlot.Provider>
+            </main>
+          </Layout.Content>
+        </Layout>
       </Layout>
     </Layout>
   )

@@ -1,7 +1,6 @@
-import { DownOutlined, MenuOutlined } from '@ant-design/icons'
+import { BellOutlined, DownOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
 import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
-import { useLocation } from 'react-router'
 
 import ThemeToggle from '../common/ThemeToggle'
 
@@ -16,18 +15,7 @@ type AppHeaderProps = {
   notificationCount: number
   onLogout: () => Promise<void>
   isLoggingOut: boolean
-}
-
-const avatarSrc = `${import.meta.env.BASE_URL}images/avatar-placeholder.svg`
-
-const pageTitles: Record<string, string> = {
-  '/': '홈',
-  '/tasks': '과정별 할 일',
-  '/ask': '물어보기',
-  '/admin/courses': '과정·담당 배정',
-  '/admin/task-templates': '할 일 템플릿',
-  '/admin/courses/import': '과정 가져오기',
-  '/admin/users': '사용자와 승인',
+  titleSlotRef: (element: HTMLElement | null) => void
 }
 
 export default function AppHeader({
@@ -41,30 +29,34 @@ export default function AppHeader({
   notificationCount,
   onLogout,
   isLoggingOut,
+  titleSlotRef,
 }: AppHeaderProps) {
-  const { pathname } = useLocation()
-  const pageTitle = pageTitles[pathname]
-    ?? (pathname.startsWith('/admin/courses/') ? '과정·담당 배정' : null)
-    ?? (pathname.startsWith('/admin/task-templates/') ? '할 일 템플릿' : null)
-    ?? (pathname.startsWith('/documents/') ? '문서' : null)
-    ?? '페이지를 찾을 수 없습니다'
   const userMenuItems: MenuProps['items'] = [
     { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
     { type: 'divider' },
-    { key: 'logout', label: '로그아웃', disabled: isLoggingOut },
+    ...(isMobile
+      ? [
+          {
+            key: 'theme',
+            icon: isDark ? <SunOutlined /> : <MoonOutlined />,
+            label: isDark ? '라이트 모드로 보기' : '다크 모드로 보기',
+          },
+          { type: 'divider' as const },
+        ]
+      : []),
+    { key: 'logout', label: '로그아웃', danger: true, disabled: isLoggingOut },
   ]
 
   function handleUserMenuClick({ key }: { key: string }) {
-    if (key === 'logout') {
-      void onLogout()
-    }
+    if (key === 'logout') void onLogout()
+    if (key === 'theme') onThemeChange(!isDark)
   }
 
   return (
     <Layout.Header
       className={`flex shrink-0 items-center justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) bg-(--ant-color-bg-container) leading-normal ${isMobile ? 'h-14 px-md' : 'h-16 px-lg'}`}
     >
-      <div className="flex min-w-0 items-center gap-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-xs">
         {isMobile && (
           <Button
             type="text"
@@ -75,16 +67,11 @@ export default function AppHeader({
             className="shrink-0"
           />
         )}
-        <h1
-          className={`m-0 truncate font-bold ${isMobile ? 'text-[18px] leading-[27px]' : 'text-section-title'}`}
-          title={pageTitle}
-        >
-          {pageTitle}
-        </h1>
+        <span ref={titleSlotRef} className="min-w-0 flex-1" />
       </div>
 
-      <div className="flex shrink-0 items-center gap-sm">
-        <ThemeToggle isDark={isDark} onThemeChange={onThemeChange} />
+      <div className="flex shrink-0 items-center gap-xs">
+        {!isMobile && <ThemeToggle isDark={isDark} onThemeChange={onThemeChange} />}
         <Popover
           title="알림"
           trigger="click"
@@ -99,11 +86,12 @@ export default function AppHeader({
           <Button
             type="text"
             aria-label={`알림 ${notificationCount}건`}
-            className="flex items-center gap-[6px] px-0 font-regular"
-          >
-            알림
-            <Badge count={notificationCount} size="small" />
-          </Button>
+            icon={
+              <Badge count={notificationCount} size="small">
+                <BellOutlined className="text-[18px]" />
+              </Badge>
+            }
+          />
         </Popover>
 
         <Dropdown
@@ -112,33 +100,26 @@ export default function AppHeader({
           placement="bottomRight"
           autoFocus
         >
-          <Button
-            type={isMobile ? 'text' : 'default'}
-            aria-label={`사용자 메뉴: ${userName}, ${userRole}`}
-            aria-haspopup="menu"
-            loading={isLoggingOut}
-            className={
-              isMobile
-                ? 'h-auto border-0 bg-transparent p-0 shadow-none'
-                : 'h-[38px] gap-xs border-(--ant-color-border-secondary) bg-transparent py-[6px] pr-sm pl-xs font-regular shadow-none'
-            }
-          >
-            <span className="flex items-center gap-xs">
-              <img
-                src={avatarSrc}
-                alt=""
-                width={24}
-                height={24}
-                className={`shrink-0 ${isDark ? 'invert' : ''}`}
-              />
-              {!isMobile && (
-                <>
-                  <span>{userName} - {userRole}</span>
-                  <DownOutlined className="text-[10px] text-(--ant-color-text-tertiary)" />
-                </>
-              )}
-            </span>
-          </Button>
+          {isMobile ? (
+            <Button
+              type="text"
+              aria-label={`사용자 메뉴: ${userName}, ${userRole}`}
+              aria-haspopup="menu"
+              loading={isLoggingOut}
+              icon={<UserOutlined className="text-[18px]" />}
+            />
+          ) : (
+            <Button
+              type="text"
+              aria-label={`사용자 메뉴: ${userName}, ${userRole}`}
+              aria-haspopup="menu"
+              loading={isLoggingOut}
+              className="gap-xs px-sm font-regular"
+            >
+              {userName}
+              <DownOutlined className="text-[10px] text-(--ant-color-text-tertiary)" />
+            </Button>
+          )}
         </Dropdown>
       </div>
     </Layout.Header>
