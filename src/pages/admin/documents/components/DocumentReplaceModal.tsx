@@ -70,7 +70,7 @@ export default function DocumentReplaceModal({ item, isMobile, onClose, onReplac
       width={420}
       title={
         <span className="flex items-center gap-xs">
-          <WarningOutlined className="text-(--ant-color-warning)" />
+          <WarningOutlined className="text-(--ant-color-warning-text)" />
           &apos;{item.title}&apos; 문서를 새 파일로 교체할까요?
         </span>
       }
@@ -103,13 +103,13 @@ export default function DocumentReplaceModal({ item, isMobile, onClose, onReplac
               </>
             ) : (
               <>
-                <InboxOutlined className="text-2xl text-(--ant-color-primary)" />
+                <InboxOutlined className="text-2xl text-(--ant-color-primary-text)" />
                 <span className="text-body">{isMobile ? '눌러서 PDF 파일을 고르세요' : 'PDF 파일을 끌어 놓거나 눌러서 고르세요'}</span>
               </>
             )}
           </div>
         </Upload.Dragger>
-        {fileError && <span className="text-caption text-(--ant-color-error)">{fileError}</span>}
+        {fileError && <span className="text-caption text-(--ant-color-error-text)">{fileError}</span>}
         <span className="text-body">
           <span className="mr-xs font-medium">버전</span>
           v{item.contentRevision} → v{item.contentRevision + 1}

@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { InboxOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Card, Input, Skeleton } from 'antd'
+import { Button, Card, Skeleton } from 'antd'
 import { Link } from 'react-router'
 
 import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
+import PageHeader from '../../../components/layout/PageHeader'
 import type { DocumentItem } from '../../../types/documents'
 import { ALL_TYPES, getDocumentMeta, getDocumentTypes, getExternalHref, isSearchExcluded } from '../documentData'
 import useDocuments from '../useDocuments'
+import SearchInput from '../../../components/common/SearchInput'
+import FilterChip from '../../../components/common/FilterChip'
 
 type DocumentListProps = {
   businessId: string
@@ -28,11 +31,9 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
   )
 
   const search = (
-    <Input
-      aria-label="문서 제목 검색"
-      prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-      placeholder="문서 제목 검색"
-      allowClear
+    <SearchInput
+      label="문서 제목 검색"
+      onPage
       value={keyword}
       onChange={(event) => setKeyword(event.target.value)}
     />
@@ -45,19 +46,9 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
       }`}
     >
       {[{ id: ALL_TYPES, name: '전체' }, ...types].map((type) => (
-        <Button
-          key={type.id}
-          shape="round"
-          color={typeId === type.id ? 'primary' : 'default'}
-          variant="outlined"
-          aria-pressed={typeId === type.id}
-          onClick={() => setTypeId(type.id)}
-          className={`shrink-0 text-caption ${
-            typeId === type.id ? 'bg-(--ant-color-primary-bg)' : ''
-          }`}
-        >
+        <FilterChip key={type.id} selected={typeId === type.id} onClick={() => setTypeId(type.id)} className="text-caption">
           {type.name}
-        </Button>
+        </FilterChip>
       ))}
       {!isMobile && (
         <span className="text-caption text-(--ant-color-text-tertiary)">사업: {businessName} + 공통</span>
@@ -67,14 +58,7 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
 
   return (
     <div className="flex flex-col gap-md">
-      {!isMobile && (
-        <div className="flex flex-col gap-xxs">
-          <h2 className="m-0 text-section-title">문서</h2>
-          <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-            운영에 필요한 문서를 보고, 문서 안의 내용을 찾을 수 있어요.
-          </p>
-        </div>
-      )}
+      <PageHeader title="문서" description="운영에 필요한 문서를 보고, 문서 안의 내용을 찾을 수 있어요." />
 
       {query.isLoading ? (
         <Card
@@ -111,10 +95,10 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
               {filters}
             </>
           ) : (
-            <>
+            <div className="flex items-center justify-between gap-md">
               {filters}
-              {search}
-            </>
+              <div className="w-60 shrink-0">{search}</div>
+            </div>
           )}
           {visibleDocuments.length === 0 && trimmedKeyword ? (
             <NoticeCard

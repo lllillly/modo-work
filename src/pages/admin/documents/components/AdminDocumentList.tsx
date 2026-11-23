@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react'
-import { InboxOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Input, Select, Skeleton, Table, Tag } from 'antd'
+import { DeleteOutlined, FileAddOutlined, HistoryOutlined, InboxOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Card, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
@@ -18,12 +18,18 @@ import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
 import { formatShortDate, getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
 import DocumentVersionsDrawer from '../../../documents/components/DocumentVersionsDrawer'
+import PageHeader from '../../../../components/layout/PageHeader'
 import DocumentReplaceModal from './DocumentReplaceModal'
 import DocumentUploadDrawer from './DocumentUploadDrawer'
+import SearchInput from '../../../../components/common/SearchInput'
+import IconAction from '../../../../components/common/IconAction'
+import HintTooltip from '../../../../components/common/HintTooltip'
 
 const ALL_FILTER = 'all'
 
 type AdminDocumentListProps = { isMobile: boolean }
+
+const linkReplaceNotice = '링크 문서는 파일로 교체할 수 없어요'
 
 export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) {
   const { message, modal } = App.useApp()
@@ -126,7 +132,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     }
 
     modal.confirm({
-      icon: <WarningOutlined className="text-(--ant-color-error)" />,
+      icon: <WarningOutlined className="text-(--ant-color-error-text)" />,
       title: `'${item.title}' 문서를 삭제할까요?`,
       content: (
         <div className="flex flex-col gap-sm">
@@ -171,6 +177,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     {
       title: '파일',
       key: 'file',
+      responsive: ['xl'],
       render: (_, item) => getFileSummary(item),
     },
     {
@@ -189,7 +196,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
               {status.label}
             </Tag>
             {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (
-              <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => retry(item)}>
+              <Button type="link" size="small" className="hit-area h-auto p-0 text-caption" onClick={() => retry(item)}>
                 다시 시도
               </Button>
             )}
@@ -200,6 +207,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     {
       title: '수정일 · 등록자',
       key: 'updated',
+      responsive: ['xl'],
       render: (_, item) => (
         <span className="text-(--ant-color-text-tertiary)">
           {formatShortDate(item.updatedAt)} · {item.createdBy.name}
@@ -209,24 +217,30 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     {
       title: '',
       key: 'actions',
-      width: 200,
+      width: 120,
       render: (_, item) => (
-        <span className="flex items-center justify-end gap-sm">
-          <Button
-            type="link"
-            size="small"
-            className="h-auto p-0"
+        <span className="flex items-center justify-end">
+          <IconAction
+            label={item.sourceType === 'LINK' ? linkReplaceNotice : '새 파일로 교체'}
+            ariaLabel={`${item.title} 새 파일로 교체`}
+            icon={<FileAddOutlined />}
+            tone="primary"
             disabled={item.sourceType === 'LINK'}
             onClick={() => setReplaceItem(item)}
-          >
-            새 파일로 교체
-          </Button>
-          <Button type="link" size="small" className="h-auto p-0" onClick={() => setVersionItem(item)}>
-            버전
-          </Button>
-          <Button type="link" size="small" danger className="h-auto p-0" onClick={() => void confirmDelete(item)}>
-            삭제
-          </Button>
+          />
+          <IconAction
+            label="버전 기록"
+            ariaLabel={`${item.title} 버전 기록`}
+            icon={<HistoryOutlined />}
+            onClick={() => setVersionItem(item)}
+          />
+          <IconAction
+            label="삭제"
+            ariaLabel={`${item.title} 삭제`}
+            icon={<DeleteOutlined />}
+            tone="danger"
+            onClick={() => void confirmDelete(item)}
+          />
         </span>
       ),
     },
@@ -235,7 +249,6 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
   const uploadButton = (
     <Button
       type="primary"
-      block={isMobile}
       icon={<UploadOutlined aria-hidden />}
       onClick={() => setShowUpload(true)}
     >
@@ -243,21 +256,15 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
     </Button>
   )
 
+  const hasList = !documents.isLoading && !documents.error && allDocuments.length > 0
+
   return (
     <div className="flex flex-col gap-md">
-      {isMobile ? (
-        uploadButton
-      ) : (
-        <div className="flex items-start justify-between gap-sm">
-          <div className="flex flex-col gap-xxs">
-            <h2 className="m-0 text-section-title">문서 업로드</h2>
-            <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-              문서와 교육자료를 올려요. 올린 문서는 문서 메뉴에서 보고, PDF는 물어보기가 근거로 써요.
-            </p>
-          </div>
-          {uploadButton}
-        </div>
-      )}
+      <PageHeader
+        title="문서 업로드"
+        description="문서와 교육자료를 올려요. 올린 문서는 문서 메뉴에서 보고, PDF는 물어보기가 근거로 써요."
+        actions={hasList ? undefined : uploadButton}
+      />
 
       {documents.isLoading ? (
         <Card
@@ -290,11 +297,9 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-xs">
-            <Input
-              aria-label="문서 이름 검색"
-              prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-              placeholder="문서 이름 검색"
-              allowClear
+            <SearchInput
+              label="문서 이름 검색"
+              onPage
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className={isMobile ? 'w-full' : 'w-65'}
@@ -319,6 +324,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                 ...businessItems.map((business) => ({ value: business.id, label: business.name })),
               ]}
             />
+            <span className="ml-auto">{uploadButton}</span>
           </div>
           {isMobile ? (
             <div className="rounded-lg bg-(--ant-color-bg-container)">
@@ -348,33 +354,42 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
                         {status.label}
                       </Tag>
                     </div>
-                    <span className="flex items-center gap-sm">
-                      <Button
-                        type="link"
-                        size="small"
-                        className="h-auto p-0"
-                        disabled={item.sourceType === 'LINK'}
-                        onClick={() => setReplaceItem(item)}
-                      >
-                        새 파일로 교체
-                      </Button>
-                      <Button type="link" size="small" className="h-auto p-0" onClick={() => setVersionItem(item)}>
-                        버전
-                      </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        className="h-auto p-0 text-(--ant-color-text-secondary)"
-                        onClick={() => void confirmDelete(item)}
-                      >
-                        삭제
-                      </Button>
-                      {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (
-                        <Button type="link" size="small" className="h-auto p-0" onClick={() => retry(item)}>
-                          다시 시도
-                        </Button>
-                      )}
-                    </span>
+                    <div className="flex items-center justify-between gap-xs">
+                      <span className="flex items-center gap-sm">
+                        <HintTooltip title={item.sourceType === 'LINK' ? linkReplaceNotice : undefined}>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<FileAddOutlined aria-hidden />}
+                            disabled={item.sourceType === 'LINK'}
+                            className="hit-area h-auto p-0 text-caption"
+                            onClick={() => setReplaceItem(item)}
+                          >
+                            새 파일로 교체
+                          </Button>
+                        </HintTooltip>
+                        {item.indexStatus === 'FAILED' && !isIndexRetrying(item) && (
+                          <Button type="link" size="small" icon={<ReloadOutlined aria-hidden />} className="hit-area h-auto p-0 text-caption" onClick={() => retry(item)}>
+                            다시 시도
+                          </Button>
+                        )}
+                      </span>
+                      <span className="-mr-xs flex items-center">
+                        <IconAction
+                          label="버전 기록"
+                          ariaLabel={`${item.title} 버전 기록`}
+                          icon={<HistoryOutlined />}
+                          onClick={() => setVersionItem(item)}
+                        />
+                        <IconAction
+                          label="삭제"
+                          ariaLabel={`${item.title} 삭제`}
+                          icon={<DeleteOutlined />}
+                          tone="danger"
+                          onClick={() => void confirmDelete(item)}
+                        />
+                      </span>
+                    </div>
                   </div>
                 )
               })}
@@ -388,7 +403,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
               pagination={false}
               size="small"
               rowHoverable={false}
-              scroll={{ x: 760 }}
+              scroll={{ x: 640 }}
               locale={{
                 emptyText: (
                   <div className="flex flex-col items-center gap-xs py-lg">

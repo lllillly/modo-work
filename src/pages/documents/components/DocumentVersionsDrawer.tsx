@@ -60,7 +60,7 @@ export default function DocumentVersionsDrawer({
 
   function confirmRestore(version: DocumentVersion) {
     modal.confirm({
-      icon: <WarningOutlined className="text-(--ant-color-warning)" />,
+      icon: <WarningOutlined className="text-(--ant-color-warning-text)" />,
       title: `'${item.title}' v${version.contentRevision} 판을 복원할까요?`,
       content: `v${version.contentRevision} 파일로 새 판(v${item.contentRevision + 1})을 만들어요. 지금 판과 이전 판은 그대로 남아요. 물어보기는 복원한 파일을 다시 읽어요.`,
       okText: '복원',
@@ -153,7 +153,7 @@ export default function DocumentVersionsDrawer({
                       </a>
                     )}
                     {onRestored && !version.current && version.sourceType === 'FILE' && item.sourceType === 'FILE' && (
-                      <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => confirmRestore(version)}>
+                      <Button type="link" size="small" className="hit-area h-auto p-0 text-caption" onClick={() => confirmRestore(version)}>
                         복원
                       </Button>
                     )}

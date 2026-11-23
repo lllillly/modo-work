@@ -107,11 +107,11 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
   return (
     <Drawer
       open
-      size={480}
+      size={isMobile ? '100%' : 480}
       title="문서 올리기"
       onClose={onClose}
-      maskClosable={!isSaving}
-      closable={!isSaving}
+      mask={{ closable: !isSaving }}
+      closable={isSaving ? false : { placement: 'end' }}
       footer={
         <div className="flex flex-col gap-xs min-[992px]:flex-row min-[992px]:items-center min-[992px]:justify-between">
           <span className="text-caption text-(--ant-color-text-tertiary)">
@@ -150,7 +150,7 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
               <>
                 <Upload.Dragger accept=".pdf,application/pdf" showUploadList={false} beforeUpload={pickFile}>
                   <div className="flex flex-col items-center gap-xxs p-md">
-                    <InboxOutlined className="text-2xl text-(--ant-color-primary)" />
+                    <InboxOutlined className="text-2xl text-(--ant-color-primary-text)" />
                     {file ? (
                       <>
                         <span className="text-body font-medium">{file.name}</span>
@@ -232,10 +232,10 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
           <Select disabled placeholder="준비 중이에요" />
         </Form.Item>
         <div className="flex items-center gap-xs rounded-md bg-(--ant-color-fill-quaternary) px-sm py-xs text-caption">
-          <WarningOutlined aria-hidden className="text-(--ant-color-warning)" />
+          <WarningOutlined aria-hidden className="text-(--ant-color-warning-text)" />
           계정이나 비밀번호가 담긴 문서는 올리지 마세요.
         </div>
-        {submitError && <p className="mt-sm mb-0 text-caption text-(--ant-color-error)">{submitError}</p>}
+        {submitError && <p className="mt-sm mb-0 text-caption text-(--ant-color-error-text)">{submitError}</p>}
       </Form>
     </Drawer>
   )

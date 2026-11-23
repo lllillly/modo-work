@@ -21,10 +21,9 @@ export default function EvidenceView({ evidence, isAdmin }: EvidenceViewProps) {
         <p className="m-0">{evidence.label}</p>
         {openPath && (
           <Button
-            color="primary"
             variant="outlined"
             onClick={() => navigate(openPath)}
-            className="h-auto border-(--ant-color-primary-border) px-sm py-xxs text-caption shadow-none"
+            className="h-auto border-(--ant-color-primary-border) px-sm py-xxs text-caption text-(--ant-color-primary-text) shadow-none"
           >
             관련 화면 열기
           </Button>

@@ -44,7 +44,7 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
           className={isMobile ? 'rounded-xl' : 'rounded-lg'}
           classNames={{
             textarea: 'min-h-10! resize-none pr-16 pl-sm py-2',
-            count: `right-sm bottom-2 text-caption ${overCount > 0 ? 'text-(--ant-color-error)' : ''}`,
+            count: `right-sm bottom-2 text-caption ${overCount > 0 ? 'text-(--ant-color-error-text)' : ''}`,
           }}
         />
         <Button
@@ -61,7 +61,7 @@ export default function QuestionInput({ value, onChange, onSend, isMobile, isEnd
       </div>
 
       {overCount > 0 && (
-        <p className="m-0 text-caption text-(--ant-color-error)">
+        <p className="m-0 text-caption text-(--ant-color-error-text)">
           {MAX_QUERY_LENGTH}자까지 입력할 수 있어요. {overCount}자를 줄여 주세요.
         </p>
       )}

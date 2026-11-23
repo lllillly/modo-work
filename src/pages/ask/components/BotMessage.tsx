@@ -85,7 +85,7 @@ function BotContent({ turn, canChoose, canRetry, isAdmin, onChoose, onRetry }: B
   if (response.status === 'pii_warning') {
     return (
       <>
-        <Title icon={<WarningOutlined className="text-base text-(--ant-color-warning)" />}>
+        <Title icon={<WarningOutlined className="text-base text-(--ant-color-warning-text)" />}>
           질문에 개인정보가 들어 있어서 답하지 않았어요
         </Title>
         <p className="m-0">이름, 전화번호 같은 개인정보를 빼고 다시 물어봐 주세요. 질문 기록에는 가린 상태로만 남아요.</p>
@@ -177,7 +177,7 @@ function ErrorContent({ turn, canRetry, isAdmin, onRetry }: ErrorContentProps) {
     return (
       <>
         <EvidenceView evidence={turn.selected} isAdmin={isAdmin} />
-        <p className="m-0 text-caption text-(--ant-color-error)">{view.title}. {view.description}</p>
+        <p className="m-0 text-caption text-(--ant-color-error-text)">{view.title}. {view.description}</p>
         {retry}
       </>
     )
@@ -186,7 +186,7 @@ function ErrorContent({ turn, canRetry, isAdmin, onRetry }: ErrorContentProps) {
   return (
     <>
       <Title
-        icon={<ExclamationCircleOutlined className={`text-base ${view.tone === 'warning' ? 'text-(--ant-color-warning)' : 'text-(--ant-color-error)'}`} />}
+        icon={<ExclamationCircleOutlined className={`text-base ${view.tone === 'warning' ? 'text-(--ant-color-warning-text)' : 'text-(--ant-color-error-text)'}`} />}
       >
         {view.title}
       </Title>
@@ -227,7 +227,7 @@ function ClarifyContent({ turn, candidates, contextUsed, canChoose, onChoose }: 
       </div>
       <Button
         type="link"
-        className={`h-auto self-start p-0 text-caption ${isNoneChosen ? 'font-medium' : ''}`}
+        className={`hit-area h-auto self-start p-0 text-caption ${isNoneChosen ? 'font-medium' : !canChoose ? 'text-(--ant-color-text-tertiary)' : ''}`}
         disabled={!canChoose && !isNoneChosen}
         aria-pressed={isNoneChosen}
         onClick={canChoose ? () => onChoose(turn, 'none') : undefined}
@@ -259,13 +259,12 @@ function CandidateButton({ label, source, isChosen, disabled, onClick }: Candida
   return (
     <Button
       block
-      color={isChosen ? 'primary' : 'default'}
       variant="outlined"
       disabled={disabled && !isChosen}
       aria-pressed={isChosen}
       onClick={disabled ? undefined : onClick}
       className={`h-auto flex-wrap justify-between gap-x-sm gap-y-0 px-sm py-xs text-left whitespace-normal shadow-none ${
-        isChosen ? 'bg-(--ant-color-primary-bg)' : ''
+        isChosen ? 'border-(--ant-color-info)! bg-(--ant-color-primary-bg)! text-(--ant-color-primary-text)!' : disabled ? 'text-(--ant-color-text-tertiary)' : ''
       }`}
     >
       <span className="min-w-0">{label}</span>

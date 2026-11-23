@@ -1,6 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { PlusOutlined } from '@ant-design/icons'
-import { Button, Card, Divider } from 'antd'
+import { App, Button, Card, Divider } from 'antd'
 import type { InputRef } from 'antd'
 import { useOutletContext } from 'react-router'
 
@@ -22,7 +22,9 @@ import {
 } from './askSession'
 
 import BotMessage from './components/BotMessage'
+import NewChatFab from './components/NewChatFab'
 import QuestionInput from './components/QuestionInput'
+import PageTitle from '../../components/layout/PageTitle'
 
 export default function AskPage() {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
@@ -31,17 +33,20 @@ export default function AskPage() {
   const session = useSyncExternalStore(subscribeAskSession, () => getAskSession(sessionKey))
 
   return (
-    <div className={`flex min-h-0 flex-1 basis-0 flex-col ${isMobile ? '-m-md' : ''}`}>
-      {selectedBusinessId ? (
-        <AskChat key={sessionKey} sessionKey={sessionKey} session={session} />
-      ) : (
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
-          <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
-          <p className="m-0 mt-xxs text-caption text-(--ant-color-text-secondary)">
-            선택할 수 있는 사업이 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
-          </p>
-        </Card>
-      )}
+    <div className="flex min-h-0 flex-1 basis-0 flex-col">
+      <PageTitle className="sr-only">물어보기</PageTitle>
+      <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? '-mx-md -mb-md' : ''}`}>
+        {selectedBusinessId ? (
+          <AskChat key={sessionKey} sessionKey={sessionKey} session={session} />
+        ) : (
+          <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
+            <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
+            <p className="m-0 mt-xxs text-caption text-(--ant-color-text-secondary)">
+              선택할 수 있는 사업이 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
+            </p>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
@@ -58,6 +63,17 @@ function AskChat({ sessionKey, session }: AskChatProps) {
   const inputRef = useRef<InputRef>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const isNearBottom = useRef(true)
+  const { modal } = App.useApp()
+
+  function confirmNewChat() {
+    modal.confirm({
+      title: '새 대화를 시작할까요?',
+      content: '지금 대화 내용은 사라져요.',
+      okText: '새 대화',
+      cancelText: '취소',
+      onOk: () => resetAskSession(sessionKey),
+    })
+  }
   const turnCount = useRef(0)
 
   const isAdmin = !!user?.roles.some((role) => role.role === 'ADMIN')
@@ -174,14 +190,17 @@ function AskChat({ sessionKey, session }: AskChatProps) {
   return (
     <section
       aria-label="물어보기 대화"
-      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container)'}`}
+      className={`relative flex min-h-0 flex-1 flex-col overflow-hidden ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container)'}`}
     >
-      <div className="flex shrink-0 items-center justify-between gap-sm px-sm pt-sm min-[992px]:justify-end min-[992px]:px-lg">
-        {isMobile && <span className="text-caption text-(--ant-color-text-tertiary)">개인정보는 넣지 마세요</span>}
-        <Button icon={<PlusOutlined />} disabled={turns.length === 0} onClick={() => resetAskSession(sessionKey)}>
-          새 대화
-        </Button>
-      </div>
+      {isMobile ? (
+        turns.length > 0 && <NewChatFab onClick={confirmNewChat} />
+      ) : (
+        <div className="flex shrink-0 justify-end px-lg pt-sm">
+          <Button icon={<PlusOutlined />} disabled={turns.length === 0} onClick={confirmNewChat}>
+            새 대화
+          </Button>
+        </div>
+      )}
       <div
         className="min-h-0 flex-1 overflow-y-auto"
         onScroll={(event) => {
@@ -190,6 +209,11 @@ function AskChat({ sessionKey, session }: AskChatProps) {
         }}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-sm p-md min-[992px]:gap-md min-[992px]:px-0 min-[992px]:py-lg">
+          {isMobile && (
+            <p className="m-0 text-center text-caption text-(--ant-color-text-tertiary)">
+              이름·전화번호 같은 개인정보는 넣지 마세요
+            </p>
+          )}
           {turns.length === 0 ? (
             <Welcome isMobile={isMobile} onSelect={sendQuestion} />
           ) : (

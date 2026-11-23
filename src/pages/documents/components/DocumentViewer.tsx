@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowLeftOutlined, FullscreenOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, FullscreenOutlined, HistoryOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
 import { Button, Card, Input, InputNumber, Skeleton, Tag } from 'antd'
 import { Link, useParams, useSearchParams } from 'react-router'
 
@@ -8,6 +8,7 @@ import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard
 import { formatShortDate, getDocumentScope, getExternalHref, getViewerMeta } from '../documentData'
 import DocumentVersionsDrawer from './DocumentVersionsDrawer'
 import useDocuments from '../useDocuments'
+import IconAction from '../../../components/common/IconAction'
 
 type DocumentViewerProps = {
   businessId: string
@@ -127,9 +128,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
     </Tag>
   )
   const versionsButton = (
-    <Button type="link" size="small" className="h-auto p-0 text-caption" onClick={() => setShowVersions(true)}>
-      버전 기록
-    </Button>
+    <IconAction label="버전 기록" icon={<HistoryOutlined />} onClick={() => setShowVersions(true)} />
   )
   const versionsDrawer = showVersions && (
     <DocumentVersionsDrawer
@@ -146,14 +145,14 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
       <div className="-m-md flex min-h-0 flex-1 flex-col bg-(--ant-color-bg-container)">
         <div className="flex items-center justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-md py-sm">
           <div className="min-w-0">
-            <h2 className="m-0 truncate text-body font-medium">{item.title}</h2>
+            <h1 className="m-0 truncate text-body font-medium">{item.title}</h1>
             <p className="m-0 flex items-center gap-xs text-caption text-(--ant-color-text-tertiary)">
               {getViewerMeta(item, businessName)}
               {revisedTag}
-              {versionsButton}
             </p>
           </div>
           <span className="flex shrink-0 items-center">
+            {versionsButton}
             <Button type="text" aria-label="문서 안에서 찾기" icon={<SearchOutlined />} disabled />
             {fullscreenButton}
           </span>
@@ -173,7 +172,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <Link to="/documents" className="text-caption">
           <ArrowLeftOutlined aria-hidden /> 문서
         </Link>
-        <h2 className="m-0 text-card-title font-bold">{item.title}</h2>
+        <h1 className="m-0 text-card-title font-bold">{item.title}</h1>
         <span className="text-caption text-(--ant-color-text-tertiary)">{getViewerMeta(item, businessName)}</span>
         {revisedTag}
         {versionsButton}
