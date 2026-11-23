@@ -103,7 +103,7 @@ export default function TaskPhaseList({
                             classNames={{ icon: task.isCompleted ? 'border-(--ant-color-primary)! bg-(--ant-color-primary)! after:border-(--ant-color-white)!' : '' }} />
                         ) : hasCheckbox && <span aria-hidden className="w-4 shrink-0" />}
                         <div className="flex min-w-0 flex-1 flex-col gap-xxs">
-                          <button type="button" onClick={() => onOpenTask(task.id)} className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-body leading-5 text-(--ant-color-text) hover:text-(--ant-color-primary)">
+                          <button type="button" onClick={() => onOpenTask(task.id)} className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-body leading-5 text-(--ant-color-text) hover:text-(--ant-color-primary-text)">
                             {task.title}
                           </button>
                           <p className="m-0 truncate text-caption leading-4 text-(--ant-color-text-tertiary)">

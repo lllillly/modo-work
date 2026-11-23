@@ -68,8 +68,9 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
       title: '기간',
       key: 'period',
       width: '23%',
+      responsive: ['xl'],
       render: (_, course) => (
-        <span className="text-(--ant-color-text-secondary)">{renderPeriod(course)}</span>
+        <span className="whitespace-nowrap text-(--ant-color-text-secondary)">{renderPeriod(course)}</span>
       ),
     },
     {
@@ -86,9 +87,9 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
       render: (_, course) => {
         const task = course.nextTask
         return task ? (
-          <div className="flex flex-wrap items-center gap-xs">
-            <span>{task.title}</span>
-            <DeadlineTag task={task} />
+          <div className="flex items-center justify-between gap-sm">
+            <span className="min-w-0 truncate">{task.title}</span>
+            <span className="shrink-0"><DeadlineTag task={task} /></span>
           </div>
         ) : <span className="text-(--ant-color-text-tertiary)">없음</span>
       },

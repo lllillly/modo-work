@@ -54,8 +54,8 @@ export default function HomeCalendar({ selectedDate, onSelectDate, onMonthChange
         <div className="mb-xs flex items-center justify-between gap-xs">
           <h3 className="m-0 text-card-title">{year}년 {month + 1}월</h3>
           <div className="flex">
-            <Button type="text" size="small" aria-label="이전 달" icon={<LeftOutlined />} onClick={() => changeMonth(-1)} />
-            <Button type="text" size="small" aria-label="다음 달" icon={<RightOutlined />} onClick={() => changeMonth(1)} />
+            <Button type="text" size="small" className="hit-area" aria-label="이전 달" icon={<LeftOutlined />} onClick={() => changeMonth(-1)} />
+            <Button type="text" size="small" className="hit-area" aria-label="다음 달" icon={<RightOutlined />} onClick={() => changeMonth(1)} />
           </div>
         </div>
       )}
@@ -81,8 +81,8 @@ export default function HomeCalendar({ selectedDate, onSelectDate, onMonthChange
                 const hasTask = taskDates.has(value)
                 const hasOverdue = taskDates.get(value)
                 let dateClassName = 'bg-transparent text-(--ant-color-text) hover:bg-(--ant-color-fill-tertiary)'
-                if (isToday) dateClassName = 'bg-transparent font-medium text-(--ant-color-primary) hover:bg-(--ant-color-fill-tertiary)'
-                if (isSelected) dateClassName = 'bg-(--ant-color-primary-bg) text-(--ant-color-primary)'
+                if (isToday) dateClassName = 'bg-transparent font-medium text-(--ant-color-primary-text) hover:bg-(--ant-color-fill-tertiary)'
+                if (isSelected) dateClassName = 'bg-(--ant-color-primary-bg) font-medium text-(--ant-color-primary-text)'
 
                 return (
                   <td key={weekday} className="h-11 p-0 min-[992px]:h-12">

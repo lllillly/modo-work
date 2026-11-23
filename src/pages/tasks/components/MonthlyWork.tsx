@@ -48,7 +48,7 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
       render: (_, group) => (
         <span className="flex flex-wrap items-center gap-xxs">
           {formatTaskDate(group.startDate).split('(')[0]} ~ {formatTaskDate(group.endDate).split('(')[0]}
-          {isCurrent(group) && <span className="text-[11px] font-medium text-(--ant-color-primary)">현재</span>}
+          {isCurrent(group) && <span className="text-[11px] font-medium text-(--ant-color-primary-text)">현재</span>}
         </span>
       ),
     },
@@ -60,7 +60,7 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
             <li key={cycle.id ?? cycle.dueDate} className="flex flex-wrap items-center gap-xxs">
               {formatTaskDate(cycle.dueDate)}
               {cycle.title && (taskId ? (
-                <Button type="link" onClick={() => onOpenTask(taskId)} className="h-auto p-0 text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</Button>
+                <Button type="link" onClick={() => onOpenTask(taskId)} className="hit-area h-auto p-0 text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</Button>
               ) : <span className="text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</span>)}
               {cycle.rawDueDate !== cycle.dueDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">{formatTaskDate(cycle.rawDueDate).split('(')[0]} 당김</span>}
               {cycle.dueDate > courseEndDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">종료일 뒤</span>}
@@ -78,7 +78,7 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
       </h3>
       <Table<CycleGroup>
         rowKey="key" columns={columns} dataSource={visibleGroups} size="small" pagination={false} rowHoverable={false}
-        rowClassName={(group) => isCurrent(group) ? '[&>td]:bg-(--ant-color-primary-bg) [&>td:first-child]:rounded-l-md [&>td:last-child]:rounded-r-md [&>td:not(:last-child)]:text-(--ant-color-primary)' : ''}
+        rowClassName={(group) => isCurrent(group) ? '[&>td]:bg-(--ant-color-primary-bg) [&>td:first-child]:rounded-l-md [&>td:last-child]:rounded-r-md [&>td:not(:last-child)]:text-(--ant-color-primary-text)' : ''}
         classNames={{ header: { cell: 'rounded-none! px-xs py-xs text-caption font-regular text-(--ant-color-text-secondary)' }, body: { cell: 'border-b-0! px-xs py-sm text-caption' } }}
       />
       {groups.length > 1 && (

@@ -9,6 +9,7 @@ import type { TaskActionType } from '../../types/courseTasks'
 import { useAuth } from '../../providers/AuthContext'
 import { getToday } from '../home/dateUtils'
 import HomeError from '../home/components/AssigneeHomeError'
+import PageHeader from '../../components/layout/PageHeader'
 import {
   applyTaskAction, canViewCourse, formatTaskDate, getCourseDays,
   getCourseTaskView, getMonthlyCycles, getTaskPermissions, recalculateCourseTasks,
@@ -22,12 +23,18 @@ import CourseTasksSkeleton from './components/CourseTasksSkeleton'
 import MonthlyWork from './components/MonthlyWork'
 import TaskDetailDrawer from './components/TaskDetailDrawer'
 import TaskPhaseList from './components/TaskPhaseList'
+import FilterChip from '../../components/common/FilterChip'
 
 export default function TasksPage() {
   const { user } = useAuth()
   const [params] = useSearchParams()
-  if (user && params.get('source') !== 'mock') return <ApiCourseTasks user={user} />
-  return user ? <CourseTasksContent key={user.id} user={user} /> : null
+  if (!user) return null
+  return (
+    <div className="flex min-w-0 flex-col gap-md">
+      <PageHeader title="과정별 할 일" />
+      {params.get('source') !== 'mock' ? <ApiCourseTasks user={user} /> : <CourseTasksContent key={user.id} user={user} />}
+    </div>
+  )
 }
 
 function CourseTasksContent({ user }: { user: AuthUser }) {
@@ -164,8 +171,7 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
 
   const filters = (
     <div className="flex flex-wrap items-center gap-xs">
-      {['all', ...tags].map((tag) => <Button key={tag} shape="round" color={tagFilter === tag ? 'primary' : 'default'} variant="outlined" aria-pressed={tagFilter === tag}
-        onClick={() => setTagFilter(tag)} className={`h-8 px-md shadow-none ${tagFilter === tag ? 'bg-(--ant-color-primary-bg)' : ''}`}>{tag === 'all' ? '전체' : tag}</Button>)}
+      {['all', ...tags].map((tag) => <FilterChip key={tag} selected={tagFilter === tag} onClick={() => setTagFilter(tag)} className="h-8 px-md">{tag === 'all' ? '전체' : tag}</FilterChip>)}
       {!isMobile && <span className="ml-auto text-caption text-(--ant-color-text-secondary)">전체 {visibleTasks.length} · 완료 {visibleTasks.filter((task) => task.isCompleted).length}</span>}
     </div>
   )
@@ -173,20 +179,20 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
   return (
     <div className="flex min-w-0 flex-col gap-sm min-[992px]:gap-md">
       {isMobile ? <Card variant="borderless" className="shadow-none" classNames={{ body: 'flex flex-col gap-sm p-md' }}>{courseSelector}{schedule}</Card> : <>{courseSelector}</>}
-      {isEnded && <Alert type="info" className="py-2.5" title="종료된 과정이에요. 일정과 과정 정보는 바꿀 수 없지만, 남은 할 일은 계속 처리할 수 있어요." classNames={{ title: 'text-caption text-(--ant-color-info)' }} />}
+      {isEnded && <Alert type="info" className="py-2.5" title="종료된 과정이에요. 일정과 과정 정보는 바꿀 수 없지만, 남은 할 일은 계속 처리할 수 있어요." classNames={{ title: 'text-caption text-(--ant-color-info-text)' }} />}
       {!isMobile && schedule}
 
       {isLoading ? <CourseTasksSkeleton /> : isError ? <HomeError onRetry={retry} /> : isEmpty ? <CourseTasksEmpty /> : (
         <>
           {isMobile && <Card variant="borderless" className="shadow-none" classNames={{ body: 'min-h-[110px] p-md' }}>
-            <h3 className="m-0 text-body leading-5 font-medium">월 주기 {currentCycle ? `${currentCycle.number} / ${cycles.length}` : cycles.length}{currentCycle && <span className="ml-xs text-caption text-(--ant-color-primary)">현재</span>}</h3>
+            <h3 className="m-0 text-body leading-5 font-medium">월 주기 {currentCycle ? `${currentCycle.number} / ${cycles.length}` : cycles.length}{currentCycle && <span className="ml-xs text-caption text-(--ant-color-primary-text)">현재</span>}</h3>
             <p className="mt-xs mb-0 text-caption leading-[18px] text-(--ant-color-text-secondary)">{currentCycle ? `${formatTaskDate(currentCycle.startDate).split('(')[0]} ~ ${formatTaskDate(currentCycle.endDate).split('(')[0]} · 주기 할 일 마감 ${formatTaskDate(currentCycle.dueDate)}`
               : isEnded ? '모든 주기가 종료됐어요.' : '아직 시작하지 않은 과정이에요.'}</p>
-            <div className="mt-xs flex items-center justify-between gap-xs"><span className="text-caption leading-[18px] text-(--ant-color-text-secondary)">상시 업무 {alwaysTasks.length}</span><Button type="link" className="h-auto p-0 text-caption leading-[18px]"
+            <div className="mt-xs flex items-center justify-between gap-xs"><span className="text-caption leading-[18px] text-(--ant-color-text-secondary)">상시 업무 {alwaysTasks.length}</span><Button type="link" className="hit-area h-auto p-0 text-caption leading-[18px]"
               onClick={() => setShowMonthlyWork(true)}>월 주기·상시 업무 보기</Button></div>
           </Card>}
 
-          <div className="grid grid-cols-1 items-start gap-md min-[992px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="grid grid-cols-1 items-start gap-md min-[1200px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
             <div className={`min-w-0 ${isMobile ? '' : 'rounded-lg bg-(--ant-color-bg-container) p-lg'}`}>
               <div className="mb-sm min-[992px]:mb-lg">{filters}</div>
               <TaskPhaseList key={`${course.id}-${selectedBusiness}-${isMobile}`} course={course} tasks={visibleTasks} user={user} isMobile={isMobile} onOpenTask={openTask} onComplete={(taskId) => processTask(taskId, 'COMPLETE', '')} />

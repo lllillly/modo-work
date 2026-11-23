@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router'
 import type { LeaderArea, LeaderHomeCourse } from '../../../types/leaderHome'
 import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
+import { clickableRowProps } from '../../../components/common/clickableRow'
 
 type LeaderCourseListProps = {
   courses: LeaderHomeCourse[]
@@ -57,7 +58,7 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
       ),
     },
     {
-      title: '조직 단위', key: 'orgUnit',
+      title: '조직 단위', key: 'orgUnit', responsive: ['xl'],
       render: (_, course) => (
         <span className="flex items-center gap-xxs whitespace-nowrap">
           {course.orgUnit.name}
@@ -65,9 +66,9 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
         </span>
       ),
     },
-    { title: '담당', key: 'assignees', render: (_, course) => <AssigneeNames names={course.assigneeNames} /> },
+    { title: '담당', key: 'assignees', responsive: ['xl'], render: (_, course) => <AssigneeNames names={course.assigneeNames} /> },
     ...areas.map((area) => ({
-      title: area.name, key: area.id, width: 150,
+      title: area.name, key: area.id, width: 120,
       render: (_: unknown, course: LeaderHomeCourse) => <AreaProgress course={course} areaId={area.id} />,
     })),
     {
@@ -129,13 +130,13 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
         </ul>
       ) : (
         <Table<LeaderHomeCourse>
-          rowKey="id" columns={columns} dataSource={courses} pagination={false} size="small" scroll={{ x: 900 }}
-          onRow={(course) => ({
-            onClick: (event) => {
-              if (event.target instanceof Element && event.target.closest('a')) return
+          rowKey="id" columns={columns} dataSource={courses} pagination={false} size="small" scroll={{ x: 640 }}
+          onRow={(course) =>
+            clickableRowProps((event) => {
+              if (event?.target instanceof Element && event.target.closest('a')) return
               void navigate(getCourseTasksPath(course.id))
-            },
-          })}
+            })
+          }
           rowClassName="cursor-pointer"
           classNames={{
             header: { cell: 'px-sm py-sm text-caption font-regular text-(--ant-color-text-secondary)' },

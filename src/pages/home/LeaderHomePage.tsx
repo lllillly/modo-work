@@ -20,13 +20,15 @@ import HomeSkeleton from './components/AssigneeHomeSkeleton'
 import LeaderCourseList from './components/LeaderCourseList'
 import LeaderReviewList from './components/LeaderReviewList'
 import TaskList from './components/TaskList'
+import { clickableRowProps } from '../../components/common/clickableRow'
+import PageTitle from '../../components/layout/PageTitle'
 
 const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
 
 export default function LeaderHomePage({ user }: { user: AuthUser }) {
   const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { refreshUser } = useAuth()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [showAllAlerts, setShowAllAlerts] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [shown, setShown] = useState<{ businessId: string; data: LeaderHomeResponse }>()
@@ -62,11 +64,34 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
 
   function reviewTask(taskId: string) {
     const task = current?.records.items.find((record) => record.task.id === taskId)?.task
-    if (task) void review([task])
+    if (!task) return
+    modal.confirm({
+      title: '확인 처리할까요?',
+      content: `${task.title} 완료 내용을 확인한 것으로 기록해요.`,
+      okText: '확인 처리',
+      cancelText: '닫기',
+      onOk: () => review([task]),
+    })
   }
 
   function reviewAll() {
-    void review(current?.pendingReviews.items.filter((task) => task.canReview) ?? [])
+    const tasks = current?.pendingReviews.items.filter((task) => task.canReview) ?? []
+    if (tasks.length === 0) return
+    modal.confirm({
+      title: `확인 대기 ${tasks.length}건을 모두 확인 처리할까요?`,
+      content: '완료 내용을 확인한 것으로 한 번에 기록해요.',
+      okText: '모두 확인 처리',
+      cancelText: '닫기',
+      onOk: () => review(tasks),
+    })
+  }
+
+  function goTo(target: string, label: string) {
+    return {
+      role: 'button',
+      'aria-label': `${label} 보기`,
+      ...clickableRowProps(() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })),
+    }
   }
 
   function renderAlertDescription(task: LeaderHomeTask) {
@@ -106,21 +131,25 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
     : []
   const summaryCards = homeData
     ? [
-        { label: '진행 중 과정', value: homeData.activeCourseCount, className: 'order-1', valueClassName: '' },
-        { label: '확인 대기', value: homeData.summary.pendingReviewCount, className: 'order-2 min-[992px]:order-4', valueClassName: 'text-(--ant-color-primary)' },
+        { label: '진행 중 과정', value: homeData.activeCourseCount, className: 'order-1', valueClassName: '', target: 'leader-courses' },
+        { label: '확인 대기', value: homeData.summary.pendingReviewCount, className: 'order-4', valueClassName: 'text-(--ant-color-primary-text)', target: 'leader-records' },
         ...overdueAreas.map((area) => ({
           label: `기한 지남 - ${area.name}`, value: area.count,
-          className: 'order-3 min-[992px]:order-2', valueClassName: 'text-status-overdue-text',
+          className: 'order-2', valueClassName: 'text-status-overdue-text', target: 'leader-alerts',
         })),
+      ]
+    : []
+  const mobileSummary = homeData
+    ? [
+        { label: '진행 중 과정', value: homeData.activeCourseCount, valueClassName: '', tileClassName: 'bg-(--ant-color-fill-quaternary)', target: 'leader-courses' },
+        { label: '기한 지남', value: homeData.summary.overdueCount, valueClassName: 'text-status-overdue-text', tileClassName: 'bg-(--ant-color-error-bg)', target: 'leader-alerts' },
+        { label: '확인 대기', value: homeData.summary.pendingReviewCount, valueClassName: 'text-(--ant-color-primary-text)', tileClassName: 'bg-(--ant-color-primary-bg)', target: 'leader-records' },
       ]
     : []
 
   return (
     <div className="flex min-w-0 flex-col gap-sm min-[992px]:gap-md">
-      <div className="flex items-center justify-between gap-sm">
-        <h2 className="m-0 text-section-title">{selectedBusiness} 과정 현황</h2>
-        {!isMobile && <Button icon={<PlusOutlined />} disabled>공지 작성</Button>}
-      </div>
+      <PageTitle>{selectedBusiness} 과정 현황</PageTitle>
 
       {refreshError && (
         <Alert
@@ -142,9 +171,9 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
         <HomeError title="과정 현황을 불러오지 못했어요" onRetry={query.reload} />
       ) : !homeData ? (
         <>
-          <div className="grid grid-cols-2 gap-xs min-[992px]:auto-cols-fr min-[992px]:grid-flow-col min-[992px]:gap-md" aria-hidden="true">
-            {[0, 1, 2, 3].map((index) => (
-              <Card key={index} variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-5' }}>
+          <div className="grid auto-cols-fr grid-flow-col gap-xs min-[992px]:gap-md" aria-hidden="true">
+            {(isMobile ? [0] : [0, 1, 2, 3]).map((index) => (
+              <Card key={index} variant="borderless" className="shadow-none" classNames={{ body: 'px-md py-sm min-[992px]:px-lg min-[992px]:py-md' }}>
                 <Skeleton active title={{ width: 80 }} paragraph={{ rows: 1, width: 40 }} />
               </Card>
             ))}
@@ -160,45 +189,72 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
         </Card>
       ) : (
         <>
-          <div className="flex flex-col items-start gap-xs min-[992px]:flex-row min-[992px]:items-center">
-            <span className="text-caption text-(--ant-color-text-secondary)">내 확인 범위</span>
-            {getLeaderReviewScope(user).labels.map((label) => <Tag key={label} color="processing" variant="outlined" className="m-0 rounded-lg px-xs py-xxs">{label}</Tag>)}
-          </div>
-
-          <div className="grid grid-cols-2 gap-xs min-[992px]:auto-cols-fr min-[992px]:grid-flow-col min-[992px]:gap-md" aria-label="과정 현황 요약">
-            {summaryCards.map((card) => (
-              <Card key={card.label} variant="borderless" className={`shadow-none ${card.className}`} classNames={{ body: 'px-md py-sm min-[992px]:p-5' }}>
-                <p className="m-0 mb-xxs text-caption text-(--ant-color-text-secondary)">{card.label}</p>
-                <p className={`m-0 text-section-title-lg min-[992px]:text-page-title ${card.valueClassName}`}>{card.value}</p>
-              </Card>
-            ))}
-          </div>
-
-          {alerts.length > 0 && (
-            <Card variant="borderless" className="shadow-none" classNames={cardClassNames} role="region" aria-labelledby="leader-alerts-title">
-              <div className="mb-xs flex flex-wrap items-center gap-xs">
-                <h2 id="leader-alerts-title" className="m-0 text-card-title">리더 알림</h2>
-                {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
-                {homeData.summary.dueSoonCount > 0 && <Tag color="warning" variant="outlined" className="m-0">임박 {homeData.summary.dueSoonCount}</Tag>}
-                {!isMobile && <span className="ml-auto text-caption text-(--ant-color-text-tertiary)">{alerts.some((task) => task.isReadOnly) ? '보기만 가능한 업무 포함' : '내 확인 범위 전체'}</span>}
-              </div>
-              <TaskList tasks={visibleAlerts} hasMore={alerts.length > alertLimit} renderDescription={renderAlertDescription} />
-              {alerts.length > alertLimit && (
-                <Button type="link" block onClick={() => setShowAllAlerts(!showAllAlerts)}>
-                  {showAllAlerts ? '접기' : `알림 ${alerts.length - visibleAlerts.length}건 더 보기`}
-                </Button>
-              )}
+          {isMobile ? (
+            <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-md py-sm' }} aria-label="과정 현황 요약">
+              <dl className="m-0 grid grid-cols-3 gap-xs">
+                {mobileSummary.map((item) => (
+                  <div key={item.label} {...goTo(item.target, item.label)} className={`flex cursor-pointer flex-col gap-xxs rounded-lg px-sm py-xs ${item.tileClassName}`}>
+                    <dt className="text-caption text-(--ant-color-text-secondary)">{item.label}</dt>
+                    <dd className={`m-0 text-section-title ${item.valueClassName}`}>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="m-0 mt-sm border-0 border-t border-solid border-(--ant-color-border-secondary) pt-xs text-caption text-(--ant-color-text-tertiary)">
+                내 확인 범위: {getLeaderReviewScope(user).labels.join(', ')}
+              </p>
             </Card>
+          ) : (
+            <>
+              <div className="flex flex-row items-center gap-xs">
+                <span className="text-caption text-(--ant-color-text-secondary)">내 확인 범위</span>
+                {getLeaderReviewScope(user).labels.map((label) => <Tag key={label} color="processing" variant="outlined" className="m-0 rounded-lg px-xs py-xxs">{label}</Tag>)}
+                <Button icon={<PlusOutlined />} disabled className="ml-auto">공지 작성</Button>
+              </div>
+
+              <div className="grid auto-cols-fr grid-flow-col gap-md" aria-label="과정 현황 요약">
+                {summaryCards.map((card) => (
+                  <Card key={card.label} {...goTo(card.target, card.label)} variant="borderless" className={`cursor-pointer shadow-none transition-shadow hover:shadow-(--card-hover-shadow) focus-visible:shadow-(--card-hover-shadow) ${card.className}`} classNames={{ body: 'px-lg py-md' }}>
+                    <p className="m-0 mb-xxs text-caption text-(--ant-color-text-secondary)">{card.label}</p>
+                    <p className={`m-0 text-section-title-lg ${card.valueClassName}`}>{card.value}</p>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
 
-          <LeaderReviewList
-            key={`records-${selectedBusiness}`} tasks={homeData.records} pendingCount={homeData.summary.pendingReviewCount}
-            isMobile={isMobile} ownOrgUnitId={user.orgUnit?.id}
-            onReview={reviewTask}
-            onReviewAll={reviewAll}
-          />
+          <div className="grid grid-cols-1 gap-sm min-[992px]:gap-md min-[1200px]:grid-cols-2">
+            {alerts.length > 0 && (
+              <Card id="leader-alerts" variant="borderless" className="h-full scroll-mt-md shadow-none" classNames={cardClassNames} role="region" aria-labelledby="leader-alerts-title">
+                <div className="mb-xs flex min-h-8 flex-wrap items-center gap-xs">
+                  <h2 id="leader-alerts-title" className="m-0 text-card-title">리더 알림</h2>
+                  {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
+                  {homeData.summary.dueSoonCount > 0 && <Tag color="warning" variant="outlined" className="m-0">임박 {homeData.summary.dueSoonCount}</Tag>}
+                  {!isMobile && <span className="ml-auto text-caption text-(--ant-color-text-tertiary)">{alerts.some((task) => task.isReadOnly) ? '보기만 가능한 업무 포함' : '내 확인 범위 전체'}</span>}
+                </div>
+                <div className={showAllAlerts ? 'min-[1200px]:max-h-[456px] min-[1200px]:overflow-y-auto' : ''}>
+                  <TaskList tasks={visibleAlerts} hasMore={alerts.length > alertLimit} renderDescription={renderAlertDescription} />
+                </div>
+                {alerts.length > alertLimit && (
+                  <Button type="link" block onClick={() => setShowAllAlerts(!showAllAlerts)}>
+                    {showAllAlerts ? '접기' : `알림 ${alerts.length - visibleAlerts.length}건 더 보기`}
+                  </Button>
+                )}
+              </Card>
+            )}
 
-          <LeaderCourseList key={`courses-${selectedBusiness}`} courses={homeData.courses} areas={homeData.areas} isMobile={isMobile} ownOrgUnitId={user.orgUnit?.id} />
+            <div id="leader-records" className={`scroll-mt-md ${alerts.length > 0 ? '' : 'min-[1200px]:col-span-2'}`}>
+              <LeaderReviewList
+                key={`records-${selectedBusiness}`} tasks={homeData.records} pendingCount={homeData.summary.pendingReviewCount}
+                isMobile={isMobile} ownOrgUnitId={user.orgUnit?.id}
+                onReview={reviewTask}
+                onReviewAll={reviewAll}
+              />
+            </div>
+          </div>
+
+          <div id="leader-courses" className="scroll-mt-md">
+            <LeaderCourseList key={`courses-${selectedBusiness}`} courses={homeData.courses} areas={homeData.areas} isMobile={isMobile} ownOrgUnitId={user.orgUnit?.id} />
+          </div>
         </>
       )}
     </div>

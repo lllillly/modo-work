@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRightOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Pen } from 'lucide-react'
 import { Alert, Button, Card, DatePicker, Drawer, Form, Input, Modal } from 'antd'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
@@ -9,6 +10,7 @@ import type { CourseTasksCourse } from '../../../types/courseTasks'
 import { getToday } from '../../home/dateUtils'
 import CourseHistoryModal from '../../admin/courses/components/CourseHistoryModal'
 import { formatActionTime, getCourseDays, getMonthlyCycles } from '../courseTasksData'
+import IconAction from '../../../components/common/IconAction'
 
 type CourseScheduleProps = {
   course: CourseTasksCourse
@@ -98,7 +100,7 @@ export default function CourseSchedule({
 
   return (
     <>
-      <Card variant="borderless" className="shadow-none" classNames={{ body: isMobile ? 'p-0' : 'px-lg py-12' }}>
+      <Card variant="borderless" className="shadow-none" classNames={{ body: isMobile ? 'p-0' : 'px-lg py-md' }}>
         <div className="flex flex-wrap items-center gap-xs min-[992px]:gap-sm">
           {isMobile ? (
             <span className="text-body">{course.startDate} ~ {course.endDate}</span>
@@ -110,9 +112,11 @@ export default function CourseSchedule({
               <Input id="course-end-date" value={course.endDate} readOnly tabIndex={-1} className="pointer-events-none w-[140px]" />
             </>
           )}
-          {canEdit && <Button type="link" className="ml-auto px-0 text-caption" onClick={() => setIsEditing(true)}>일정 수정</Button>}
-          {!isMobile && <span className={`${canEdit ? '' : 'ml-auto'} text-caption text-(--ant-color-text-tertiary)`}>{isReadOnly ? '종료되거나 보관된 과정의 일정은 변경할 수 없어요' : canEdit ? '일정을 바꾸면 미완료 할 일 마감과 월 주기가 다시 계산돼요' : '이 과정의 일정 수정 권한이 없어요'}</span>}
-          <Button type="link" className={`${isMobile ? 'ml-auto h-auto' : ''} px-0 text-caption`} onClick={() => setShowHistory(true)}>{remote ? '일정 변경 이력' : `변경 이력 ${course.changeHistory.length}건`}</Button>
+          {!isMobile && <span className="min-w-0 text-caption text-(--ant-color-text-tertiary)">{isReadOnly ? '종료되거나 보관된 과정의 일정은 변경할 수 없어요' : canEdit ? '일정을 바꾸면 미완료 할 일 마감과 월 주기가 다시 계산돼요' : '이 과정의 일정 수정 권한이 없어요'}</span>}
+          <span className="ml-auto flex shrink-0 items-center">
+            {canEdit && <IconAction label="일정 수정" icon={<Pen size="1em" />} tone="primary" onClick={() => setIsEditing(true)} />}
+            <IconAction label={remote ? '일정 변경 이력' : `변경 이력 ${course.changeHistory.length}건`} icon={<HistoryOutlined />} onClick={() => setShowHistory(true)} />
+          </span>
         </div>
       </Card>
 
@@ -157,7 +161,7 @@ export default function CourseSchedule({
               <li key={entry.id} className="flex flex-col gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) py-md last:border-b-0 last:pb-0">
                 <p className="m-0 flex flex-wrap items-center gap-x-xs gap-y-xxs text-body leading-5">
                   <span className="font-medium">{entry.label}</span>
-                  <span className="inline-flex flex-wrap items-center gap-xxs text-(--ant-color-primary)">
+                  <span className="inline-flex flex-wrap items-center gap-xxs text-(--ant-color-primary-text)">
                     {entry.before}<ArrowRightOutlined aria-hidden className="text-caption" /><span className="sr-only">에서 </span>{entry.after}
                   </span>
                 </p>

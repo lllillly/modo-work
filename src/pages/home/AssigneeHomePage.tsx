@@ -19,6 +19,7 @@ import AssigneeHomeError from './components/AssigneeHomeError'
 import CourseList from './components/CourseList'
 import HomeCalendar from './components/HomeCalendar'
 import TaskList from './components/TaskList'
+import PageTitle from '../../components/layout/PageTitle'
 
 const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
 
@@ -133,7 +134,7 @@ export default function AssigneeHomePage() {
     <div className="flex flex-col gap-sm min-[992px]:gap-md">
       <div className="flex flex-col gap-sm min-[992px]:flex-row min-[992px]:items-center min-[992px]:justify-between">
         <div className="flex flex-col gap-xs min-[992px]:gap-xxs">
-          <h2 className="m-0 text-section-title">{userName}님, 안녕하세요</h2>
+          <PageTitle>{userName}님, 안녕하세요</PageTitle>
           {!isError && <p className="m-0 text-caption text-(--ant-color-text-secondary)">{summary}</p>}
         </div>
         {canViewAll && (

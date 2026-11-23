@@ -30,6 +30,7 @@ import MonthlyWork from './components/MonthlyWork'
 import TaskDetailDrawer from './components/TaskDetailDrawer'
 import TaskPhaseList from './components/TaskPhaseList'
 import { formatTaskDate } from './courseTasksData'
+import FilterChip from '../../components/common/FilterChip'
 import {
   getStoredMonthlyCycles,
   toCourseTask,
@@ -427,7 +428,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'min-h-[110px] p-md' }}>
           <h3 className="m-0 text-body leading-5 font-medium">
             월 주기
-            {currentCycle && <span className="ml-xs text-caption text-(--ant-color-primary)">현재</span>}
+            {currentCycle && <span className="ml-xs text-caption text-(--ant-color-primary-text)">현재</span>}
           </h3>
           <p className="mt-xs mb-0 text-caption text-(--ant-color-text-secondary)">
             {cycleDescription}
@@ -436,7 +437,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
             <span className="text-caption text-(--ant-color-text-secondary)">
               상시 업무 {alwaysTasks.length}
             </span>
-            <Button type="link" className="h-auto p-0 text-caption" onClick={() => setShowMonthly(true)}>
+            <Button type="link" className="hit-area h-auto p-0 text-caption" onClick={() => setShowMonthly(true)}>
               월 주기·상시 업무 보기
             </Button>
           </div>
@@ -445,22 +446,15 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
       {tasks.length === 0 ? (
         <CourseTasksEmpty />
       ) : (
-        <div className="grid grid-cols-1 items-start gap-md min-[992px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid grid-cols-1 items-start gap-md min-[1200px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
           <div
             className={isMobile ? 'min-w-0' : 'min-w-0 rounded-lg bg-(--ant-color-bg-container) p-lg'}
           >
             <div className="mb-sm flex flex-wrap items-center gap-xs">
               {['all', ...tags].map((item) => (
-                <Button
-                  key={item}
-                  shape="round"
-                  color={tag === item ? 'primary' : 'default'}
-                  variant="outlined"
-                  aria-pressed={tag === item}
-                  onClick={() => setTag(item)}
-                >
+                <FilterChip key={item} selected={tag === item} onClick={() => setTag(item)}>
                   {item === 'all' ? '전체' : item}
-                </Button>
+                </FilterChip>
               ))}
               <span className="ml-auto text-caption">
                 전체 {visibleTasks.length} · 완료{' '}

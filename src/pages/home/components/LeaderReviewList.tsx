@@ -28,12 +28,12 @@ function formatActionTime(value?: string) {
 
 export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrgUnitId, onReview, onReviewAll }: LeaderReviewListProps) {
   const [showAll, setShowAll] = useState(false)
-  const limit = isMobile ? 3 : 5
+  const limit = isMobile ? 3 : 4
   const visibleTasks = showAll ? tasks : tasks.slice(0, limit)
 
   return (
-    <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
-      <div className="mb-xs flex flex-wrap items-center justify-between gap-xs">
+    <Card variant="borderless" className="h-full shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+      <div className="mb-xs flex min-h-8 flex-wrap items-center justify-between gap-xs">
         <h2 className="m-0 flex items-center gap-xs text-card-title">
           처리 기록 <span className="text-caption font-regular text-(--ant-color-text-tertiary)">최신순</span>
         </h2>
@@ -47,34 +47,38 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
       {tasks.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="처리 기록이 없어요" className="my-lg" />
       ) : (
-        <ul className="m-0 list-none p-0">
-          {visibleTasks.map((task) => (
-            <li key={task.id} className={`flex min-h-14 items-center gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md ${tasks.length > limit ? 'last:border-b-0' : ''}`}>
-              <div className="min-w-0 flex-1">
-                <Link to={getCourseTasksPath(task.courseId, task.id)} className="m-0 block text-body text-(--ant-color-text)">
-                  {task.title}
-                </Link>
-                <p className="m-0 text-caption leading-[18px] text-(--ant-color-text-tertiary)">
-                  {[
-                    !isMobile && task.courseName,
-                    task.orgUnit.id !== ownOrgUnitId && task.orgUnit.name,
-                    task.completedBy,
-                    formatActionTime(task.completedAt),
-                    task.reviewedBy && `확인 ${task.reviewedBy} ${formatActionTime(task.reviewedAt)}`,
-                    task.completionMemo && `"${task.completionMemo}"`,
-                  ].filter(Boolean).join(' - ')}
-                </p>
-              </div>
-              {task.canReview && task.reviewStatus === 'pending' ? (
-                <Button size="small" aria-label={`${task.title} 확인`} onClick={() => onReview(task.id)}>확인</Button>
-              ) : (
-                <span className="flex shrink-0 flex-col items-end gap-xxs">
-                  <DeadlineTag task={task} showReviewStatus={task.requiresReview} />
-                  {task.isReadOnly && <span className="text-caption text-(--ant-color-text-tertiary)">보기만 가능</span>}
-                </span>
-              )}
-            </li>
-          ))}
+        <ul className={`m-0 list-none p-0 ${showAll ? 'min-[1200px]:max-h-[456px] min-[1200px]:overflow-y-auto' : ''}`}>
+          {visibleTasks.map((task) => {
+            const description = [
+              !isMobile && task.courseName,
+              task.orgUnit.id !== ownOrgUnitId && task.orgUnit.name,
+              task.completedBy,
+              formatActionTime(task.completedAt),
+              task.reviewedBy && `확인 ${task.reviewedBy} ${formatActionTime(task.reviewedAt)}`,
+              task.completionMemo && `"${task.completionMemo}"`,
+            ].filter(Boolean).join(' - ')
+
+            return (
+              <li key={task.id} className={`relative flex min-h-14 items-center gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs transition-colors hover:rounded-lg hover:bg-(--row-hover) min-[992px]:px-md ${tasks.length > limit ? 'last:border-b-0' : ''}`}>
+                <div className="min-w-0 flex-1">
+                  <Link to={getCourseTasksPath(task.courseId, task.id)} className="m-0 block truncate text-body text-(--ant-color-text) after:absolute after:inset-0 after:content-['']">
+                    {task.title}
+                  </Link>
+                  <p className="m-0 truncate text-caption leading-[18px] text-(--ant-color-text-tertiary)" title={description}>
+                    {description}
+                  </p>
+                </div>
+                {task.canReview && task.reviewStatus === 'pending' ? (
+                  <Button size="small" aria-label={`${task.title} 확인`} onClick={() => onReview(task.id)} className="relative z-1">확인</Button>
+                ) : (
+                  <span className="flex shrink-0 flex-col items-end gap-xxs">
+                    <DeadlineTag task={task} showReviewStatus={task.requiresReview} />
+                    {task.isReadOnly && <span className="text-caption text-(--ant-color-text-tertiary)">보기만 가능</span>}
+                  </span>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 

@@ -2,7 +2,7 @@ import { Card, Skeleton } from 'antd'
 
 export default function CourseTasksSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-md min-[992px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]" role="status" aria-label="과정별 할 일 불러오는 중">
+    <div className="grid grid-cols-1 gap-md min-[1200px]:grid-cols-[minmax(0,1fr)_320px] min-[1280px]:grid-cols-[minmax(0,1fr)_400px]" role="status" aria-label="과정별 할 일 불러오는 중">
       <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-lg' }}>
         <Skeleton active round paragraph={false} title={{ width: 200 }} classNames={{ title: 'm-0! h-5!' }} />
         <div className="mt-md flex flex-col gap-md">

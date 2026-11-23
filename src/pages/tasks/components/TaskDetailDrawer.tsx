@@ -141,7 +141,17 @@ export default function TaskDetailDrawer({
       })
       return
     }
-    void recordAction(type, type === 'REVIEW' ? '' : memo).catch(() => {})
+    if (type === 'REVIEW') {
+      modal.confirm({
+        title: '확인 처리할까요?',
+        content: `${task.title} 완료 내용을 확인한 것으로 기록해요.`,
+        okText: '확인 처리',
+        cancelText: '닫기',
+        onOk: () => recordAction('REVIEW', ''),
+      })
+      return
+    }
+    void recordAction(type, memo).catch(() => {})
   }
 
   const actionButtons = (

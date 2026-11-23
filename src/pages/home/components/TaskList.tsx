@@ -47,7 +47,7 @@ export default function TaskList<T extends HomeTask>({ tasks, showCheckbox = fal
         )
 
         return (
-          <li key={task.id} className={`flex items-center border-0 border-b border-solid border-(--ant-color-border-secondary) ${hasMore ? 'last:border-b-0' : ''}`}>
+          <li key={task.id} className={`flex items-center border-0 border-b border-solid border-(--ant-color-border-secondary) transition-colors hover:rounded-lg hover:bg-(--row-hover) ${hasMore ? 'last:border-b-0' : ''}`}>
             <div className={rowClassName}>
               {task.canComplete && hasCheckbox ? (
                 <Checkbox
