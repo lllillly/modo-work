@@ -32,7 +32,7 @@ export default function AppHeader({
   titleSlotRef,
 }: AppHeaderProps) {
   const userMenuItems: MenuProps['items'] = [
-    { key: 'account', label: `${userName} - ${userRole}`, disabled: true },
+    { type: 'group', key: 'account', label: <span className="text-(--ant-color-text)">{userName} - {userRole}</span> },
     { type: 'divider' },
     ...(isMobile
       ? [

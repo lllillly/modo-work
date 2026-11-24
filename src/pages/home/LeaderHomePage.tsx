@@ -86,7 +86,8 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
     })
   }
 
-  function goTo(target: string, label: string) {
+  function goTo(target: string | null, label: string) {
+    if (!target) return {}
     return {
       role: 'button',
       'aria-label': `${label} 보기`,
@@ -135,14 +136,14 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
         { label: '확인 대기', value: homeData.summary.pendingReviewCount, className: 'order-4', valueClassName: 'text-(--ant-color-primary-text)', target: 'leader-records' },
         ...overdueAreas.map((area) => ({
           label: `기한 지남 - ${area.name}`, value: area.count,
-          className: 'order-2', valueClassName: 'text-status-overdue-text', target: 'leader-alerts',
+          className: 'order-2', valueClassName: 'text-status-overdue-text', target: null,
         })),
       ]
     : []
   const mobileSummary = homeData
     ? [
         { label: '진행 중 과정', value: homeData.activeCourseCount, valueClassName: '', tileClassName: 'bg-(--ant-color-fill-quaternary)', target: 'leader-courses' },
-        { label: '기한 지남', value: homeData.summary.overdueCount, valueClassName: 'text-status-overdue-text', tileClassName: 'bg-(--ant-color-error-bg)', target: 'leader-alerts' },
+        { label: '기한 지남', value: homeData.summary.overdueCount, valueClassName: 'text-status-overdue-text', tileClassName: 'bg-(--ant-color-error-bg)', target: null },
         { label: '확인 대기', value: homeData.summary.pendingReviewCount, valueClassName: 'text-(--ant-color-primary-text)', tileClassName: 'bg-(--ant-color-primary-bg)', target: 'leader-records' },
       ]
     : []
@@ -193,7 +194,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
             <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-md py-sm' }} aria-label="과정 현황 요약">
               <dl className="m-0 grid grid-cols-3 gap-xs">
                 {mobileSummary.map((item) => (
-                  <div key={item.label} {...goTo(item.target, item.label)} className={`flex cursor-pointer flex-col gap-xxs rounded-lg px-sm py-xs ${item.tileClassName}`}>
+                  <div key={item.label} {...goTo(item.target, item.label)} className={`flex flex-col gap-xxs rounded-lg px-sm py-xs ${item.target ? 'cursor-pointer' : ''} ${item.tileClassName}`}>
                     <dt className="text-caption text-(--ant-color-text-secondary)">{item.label}</dt>
                     <dd className={`m-0 text-section-title ${item.valueClassName}`}>{item.value}</dd>
                   </div>
@@ -213,7 +214,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
 
               <div className="grid auto-cols-fr grid-flow-col gap-md" aria-label="과정 현황 요약">
                 {summaryCards.map((card) => (
-                  <Card key={card.label} {...goTo(card.target, card.label)} variant="borderless" className={`cursor-pointer shadow-none transition-shadow hover:shadow-(--card-hover-shadow) focus-visible:shadow-(--card-hover-shadow) ${card.className}`} classNames={{ body: 'px-lg py-md' }}>
+                  <Card key={card.label} {...goTo(card.target, card.label)} variant="borderless" className={`shadow-none ${card.target ? 'cursor-pointer transition-shadow hover:shadow-(--card-hover-shadow) focus-visible:shadow-(--card-hover-shadow)' : ''} ${card.className}`} classNames={{ body: 'px-lg py-md' }}>
                     <p className="m-0 mb-xxs text-caption text-(--ant-color-text-secondary)">{card.label}</p>
                     <p className={`m-0 text-section-title-lg ${card.valueClassName}`}>{card.value}</p>
                   </Card>
