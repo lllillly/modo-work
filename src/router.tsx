@@ -15,6 +15,10 @@ const CoursesPage = lazy(() => import('./pages/admin/courses/CoursesPage'))
 const TaskTemplatesPage = lazy(() => import('./pages/admin/templates/TaskTemplatesPage'))
 const AskPage = lazy(() => import('./pages/ask/AskPage'))
 const UsersPage = lazy(() => import('./pages/admin/users/UsersPage'))
+const QuestionsAdminPage = lazy(() => import('./pages/admin/questions/QuestionsAdminPage'))
+const SettingsTransferPage = lazy(() => import('./pages/admin/config/SettingsTransferPage'))
+const SettingsPage = lazy(() => import('./pages/admin/settings/SettingsPage'))
+const ServiceTokensPage = lazy(() => import('./pages/admin/service-tokens/ServiceTokensPage'))
 
 type AppRouterProps = {
   isDark: boolean
@@ -37,6 +41,10 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
               <Route path="/admin/task-templates/*" element={<TaskTemplatesPage />} /> {/* 할 일 템플릿 */}
               <Route path="/admin/documents" element={<AdminDocumentsPage />} />
               <Route path="/admin/users" element={<UsersPage />} /> {/* 사용자와 승인 */}
+              <Route path="/admin/questions" element={<QuestionsAdminPage />} /> {/* 물어보기 관리 */}
+              <Route path="/admin/config" element={<SettingsTransferPage />} /> {/* 설정 내보내기와 가져오기 */}
+              <Route path="/admin/service-tokens" element={<ServiceTokensPage />} /> {/* 서비스 토큰 관리 */}
+              <Route path="/admin/settings" element={<SettingsPage />} /> {/* 휴무일 설정 */}
               <Route path="/admin/import" element={<Navigate to="/admin/courses/import" replace />} />
               <Route
                 path="*"

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { CarryOutOutlined, CloseOutlined, CloudUploadOutlined, CommentOutlined, FileTextOutlined, HomeOutlined, ImportOutlined, KeyOutlined, MessageOutlined, NotificationOutlined, ReadOutlined, SettingOutlined, SnippetsOutlined, SolutionOutlined, SwapOutlined, TeamOutlined } from '@ant-design/icons'
+import { ApiOutlined, CalendarOutlined, CarryOutOutlined, CloseOutlined, CloudUploadOutlined, CommentOutlined, FileTextOutlined, HomeOutlined, ImportOutlined, MessageOutlined, NotificationOutlined, ReadOutlined, SnippetsOutlined, SolutionOutlined, SwapOutlined, TeamOutlined } from '@ant-design/icons'
 import { PanelLeft } from 'lucide-react'
 import { Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
 import type { ThemeConfig } from 'antd'
@@ -44,9 +44,9 @@ const adminNavItems: NavItem[] = [
   { key: '/admin/documents', to: '/admin/documents', label: '문서 업로드', icon: <CloudUploadOutlined /> },
   { key: '/admin/questions', label: '물어보기 관리', icon: <CommentOutlined /> },
   { key: '/admin/import', to: '/admin/courses/import', label: '과정 가져오기', icon: <ImportOutlined /> },
-  { key: '/admin/service-tokens', label: '서비스 토큰 관리', icon: <KeyOutlined /> },
-  { key: '/admin/config', label: '설정 내보내기 & 가져오기', icon: <SwapOutlined /> },
-  { key: '/admin/settings', label: '설정', icon: <SettingOutlined /> },
+  { key: '/admin/service-tokens', to: '/admin/service-tokens', label: '서비스 토큰 관리', icon: <ApiOutlined /> },
+  { key: '/admin/config', to: '/admin/config', label: '설정 내보내기 & 가져오기', icon: <SwapOutlined /> },
+  { key: '/admin/settings', to: '/admin/settings', label: '휴무일 설정', icon: <CalendarOutlined /> },
 ]
 
 function toMenuItems(items: NavItem[]) {
