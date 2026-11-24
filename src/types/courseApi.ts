@@ -35,6 +35,7 @@ export type CourseResponse = {
   lengthType: 'LONG' | 'SHORT'
   scheduleRevision: number
   version: number
+  archivedAt?: string | null
   isReadOnly: boolean
   assignees: AreaAssignment[]
 }

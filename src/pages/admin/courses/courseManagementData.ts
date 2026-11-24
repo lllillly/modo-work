@@ -18,6 +18,10 @@ export function getCoursePeriod(startDate: string, endDate: string) {
   return { days, label: days >= 180 ? '장기' : '단기' }
 }
 
+export function formatCoursePeriod(course: Pick<ManagedCourse, 'startDate' | 'endDate'>) {
+  return `${course.startDate.replaceAll('-', '.')} ~ ${course.endDate.replaceAll('-', '.')}`
+}
+
 export function getCourseState(course: Pick<ManagedCourse, 'startDate' | 'endDate'>, today = getToday()) {
   if (course.endDate < today) return '종료'
   if (course.startDate > today) return '예정'
@@ -48,4 +52,15 @@ export function getInactiveAssignees(course: ManagedCourse) {
   return Object.values(course.assignedUsers)
     .flat()
     .filter((user) => user.status === 'INACTIVE')
+}
+
+const archiveDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+export function formatArchivedDate(value?: string | null) {
+  return value ? archiveDateFormatter.format(new Date(value)).replaceAll('-', '.') : '-'
 }

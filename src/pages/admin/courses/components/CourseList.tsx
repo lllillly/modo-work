@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Checkbox, Dropdown, Grid, Pagination, Select, Skeleton, Table, theme } from 'antd'
+import { DeleteOutlined, InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Card, Checkbox, Dropdown, Grid, Pagination, Select, Skeleton, Table, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import type { ManagedCourse } from '../../../../types/adminCourses'
 import type { CourseProgressStatus } from '../../../../types/courseApi'
-import { getOrgUnitName, toManagedCourse } from '../courseManagementData'
-import { getAssignmentAreas, getCourses } from '../../../../api/courses'
+import { formatCoursePeriod, getOrgUnitName, toManagedCourse } from '../courseManagementData'
+import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { deleteCourse, getAssignmentAreas, getCourses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import useMediaQuery from '../../../../hooks/useMediaQuery'
 import { useAuth } from '../../../../providers/AuthContext'
@@ -49,7 +50,8 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const isWidest = useMediaQuery('(min-width: 1366px)')
   const { token } = theme.useToken()
   const selectFont = `${token.fontSize}px ${token.fontFamily}`
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
+  const { modal, message } = App.useApp()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(0)
   const [searchText, setSearchText] = useState('')
@@ -94,6 +96,36 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const statusOptions = [{ value: ALL_FILTER, label: isMobile ? '상태' : '상태: 전체' }, ...progressOptions]
   const hasFilter = !!search.trim() || orgUnitId !== ALL_FILTER || progressStatus !== ALL_FILTER || needsAssignment
 
+  function removeCourse(course: ManagedCourse) {
+    modal.confirm({
+      title: `'${course.name}' 과정을 삭제할까요?`,
+      content: '완료, 확인, 메모 같은 처리 기록이 있으면 삭제하지 않고 보관해요. 처리 기록이 없으면 과정과 할 일이 모두 지워지고 되돌릴 수 없어요.',
+      okText: '삭제',
+      okButtonProps: { danger: true },
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          const result = await deleteCourse(course.id, course.version)
+          message.success(
+            result.disposition === 'ARCHIVED'
+              ? '처리 기록이 있어 과정을 보관했어요. 보관 목록에서 복원할 수 있어요.'
+              : '과정을 삭제했어요.',
+          )
+          if (visibleCourses.length === 1 && page > 0) setPage(page - 1)
+          else query.reload()
+        } catch (error) {
+          message.error(
+            error instanceof ApiError && error.status === 409
+              ? '다른 사람이 먼저 바꿨거나 이미 보관된 과정이에요. 목록을 다시 불러왔어요.'
+              : getApiErrorMessage(error),
+          )
+          if (isAuthStateError(error)) void refreshUser()
+          else query.reload()
+        }
+      },
+    })
+  }
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchText)
@@ -119,7 +151,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       width: 180,
       render: (_, course) => (
         <span className="whitespace-nowrap">
-          {course.startDate.replaceAll('-', '.')} ~ {course.endDate.replaceAll('-', '.')}
+          {formatCoursePeriod(course)}
         </span>
       ),
     },
@@ -147,18 +179,17 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       title: '',
       key: 'actions',
       width: 48,
-      render: (_, course) =>
-        course.isReadOnly ? <span className="block h-8" /> : (
-          <span className="flex items-center" onClick={(event) => event.stopPropagation()}>
-            <IconAction label="보관" ariaLabel={`${course.name} 보관`} icon={<InboxOutlined />} disabled />
-          </span>
-        ),
+      render: (_, course) => (
+        <span className="flex items-center" onClick={(event) => event.stopPropagation()}>
+          <IconAction label="삭제" ariaLabel={`${course.name} 삭제`} icon={<DeleteOutlined />} tone="danger" onClick={() => removeCourse(course)} />
+        </span>
+      ),
     },
   ] satisfies TableColumnsType<ManagedCourse>
 
   const actions = isMobile ? (
     <>
-      <Button icon={<InboxOutlined aria-hidden />} aria-label="보관 목록" onClick={() => navigate('archived')} disabled />
+      <Button icon={<InboxOutlined aria-hidden />} aria-label="보관 목록" onClick={() => navigate('archived')} />
       <Button icon={<UploadOutlined aria-hidden />} aria-label="CSV로 가져오기" onClick={() => navigate('import')} />
       <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
         과정 추가
@@ -166,7 +197,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
     </>
   ) : (
     <>
-      <Button icon={<InboxOutlined aria-hidden />} onClick={() => navigate('archived')} disabled>
+      <Button icon={<InboxOutlined aria-hidden />} onClick={() => navigate('archived')}>
         보관 목록
       </Button>
       <Button icon={<UploadOutlined aria-hidden />} onClick={() => navigate('import')}>
@@ -352,59 +383,54 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       ) : isMobile ? (
         visibleCourses.length ? (
           <div className="flex flex-col gap-sm">
-            {visibleCourses.map((course) => {
-              const isEnded = course.isReadOnly
-
-              return (
-                <div key={course.id} className="relative rounded-lg bg-(--ant-color-bg-container)">
-                  <Link
-                    to={course.id}
-                    className="flex w-full flex-col items-start rounded-lg p-md text-left
-                      text-(--ant-color-text) hover:bg-(--ant-color-fill-quaternary)"
+            {visibleCourses.map((course) => (
+              <div key={course.id} className="relative rounded-lg bg-(--ant-color-bg-container)">
+                <Link
+                  to={course.id}
+                  className="flex w-full flex-col items-start rounded-lg p-md text-left
+                    text-(--ant-color-text) hover:bg-(--ant-color-fill-quaternary)"
+                >
+                  <span
+                    className="flex w-full items-center justify-between gap-xs pr-xl"
                   >
-                    <span
-                      className="flex w-full items-center justify-between gap-xs pr-xl"
-                    >
-                      <span className="min-w-0 text-body font-medium">{course.name}</span>
-                    </span>
-                    <span className="text-caption text-(--ant-color-text-secondary)">
-                      {course.externalKey} ·{' '}
-                      {course.orgUnitName ?? getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-'} · 정원{' '}
-                      {course.capacity ?? '-'}
-                    </span>
-                    <span
-                      className="flex flex-wrap items-center gap-xs text-caption
-                      text-(--ant-color-text-secondary)"
-                    >
-                      {course.startDate.replaceAll('-', '.')} ~ {course.endDate.replaceAll('-', '.')}
-                      <CourseLengthTag {...course} />
-                    </span>
-                    <span className="flex w-full items-center justify-between gap-xs">
-                      <AssignmentStatus course={course} requiredAreaIds={orgs.data?.requiredAreaIds} />
-                      <CourseStateTag course={course} />
-                    </span>
-                  </Link>
-                  {!isEnded && (
-                    <Dropdown
-                      trigger={['click']}
-                      placement="bottomRight"
-                      autoFocus
-                      menu={{
-                        items: [{ key: 'archive', label: '보관', icon: <InboxOutlined />, disabled: true }],
-                      }}
-                    >
-                      <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        aria-label={`${course.name} 작업 메뉴`}
-                        aria-haspopup="menu"
-                        className="absolute top-xs right-xs h-10 w-10"
-                      />
-                    </Dropdown>
-                  )}
-                </div>
-              )
-            })}
+                    <span className="min-w-0 text-body font-medium">{course.name}</span>
+                  </span>
+                  <span className="text-caption text-(--ant-color-text-secondary)">
+                    {course.externalKey} ·{' '}
+                    {course.orgUnitName ?? getOrgUnitName(course.orgUnitId, courseOrgUnits, user) ?? '-'} · 정원{' '}
+                    {course.capacity ?? '-'}
+                  </span>
+                  <span
+                    className="flex flex-wrap items-center gap-xs text-caption
+                    text-(--ant-color-text-secondary)"
+                  >
+                    {formatCoursePeriod(course)}
+                    <CourseLengthTag {...course} />
+                  </span>
+                  <span className="flex w-full items-center justify-between gap-xs">
+                    <AssignmentStatus course={course} requiredAreaIds={orgs.data?.requiredAreaIds} />
+                    <CourseStateTag course={course} />
+                  </span>
+                </Link>
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  autoFocus
+                  menu={{
+                    items: [{ key: 'delete', label: '삭제', icon: <DeleteOutlined />, danger: true }],
+                    onClick: () => removeCourse(course),
+                  }}
+                >
+                  <Button
+                    type="text"
+                    icon={<MoreOutlined />}
+                    aria-label={`${course.name} 작업 메뉴`}
+                    aria-haspopup="menu"
+                    className="absolute top-xs right-xs h-10 w-10"
+                  />
+                </Dropdown>
+              </div>
+            ))}
           </div>
         ) : (
           <Card variant="borderless" className="shadow-none">

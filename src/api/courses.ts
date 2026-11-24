@@ -41,6 +41,7 @@ type CourseListFilter = {
   orgUnitId?: string
   progressStatus?: CourseProgressStatus
   needsAssignmentReview?: boolean
+  state?: 'active' | 'archived'
 }
 
 export function getCourses(
@@ -49,13 +50,25 @@ export function getCourses(
   filter: CourseListFilter = {},
   signal?: AbortSignal,
 ) {
-  const query = new URLSearchParams({ businessId, page: String(page), size: '20', state: 'active' })
+  const query = new URLSearchParams({ businessId, page: String(page), size: '20', state: filter.state ?? 'active' })
   if (filter.q?.trim()) query.set('q', filter.q.trim())
   if (filter.orgUnitId) query.set('orgUnitId', filter.orgUnitId)
   if (filter.progressStatus) query.set('progressStatus', filter.progressStatus)
   if (filter.needsAssignmentReview) query.set('needsAssignmentReview', 'true')
   return getApi<PageResponse<CourseResponse>>(`/admin/courses?${query}`, signal)
 }
+
+export async function deleteCourse(id: string, version: number) {
+  const response = await requestApi(`/admin/courses/${encodeURIComponent(id)}?version=${version}`, { method: 'DELETE' })
+  return response.json() as Promise<{ courseId: string; disposition: 'ARCHIVED' | 'DELETED' }>
+}
+
+export const restoreCourse = (id: string, version: number) =>
+  sendApi<{ course: CourseResponse; recalculation: Recalculation }>(
+    `/admin/courses/${encodeURIComponent(id)}/restore`,
+    'POST',
+    { version },
+  )
 
 export const getCourse = (id: string, signal?: AbortSignal) =>
   getApi<{ course: CourseResponse }>(`/admin/courses/${encodeURIComponent(id)}`, signal)
