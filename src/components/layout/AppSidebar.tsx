@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { ApiOutlined, CalendarOutlined, CarryOutOutlined, CloseOutlined, CloudUploadOutlined, CommentOutlined, FileTextOutlined, HomeOutlined, ImportOutlined, MessageOutlined, NotificationOutlined, ReadOutlined, SnippetsOutlined, SolutionOutlined, SwapOutlined, TeamOutlined } from '@ant-design/icons'
+import { ApiOutlined, CalendarOutlined, CarryOutOutlined, CloseOutlined, CloudUploadOutlined, CommentOutlined, FileTextOutlined, HomeOutlined, ImportOutlined, MessageOutlined, SnippetsOutlined, SolutionOutlined, SwapOutlined, TeamOutlined } from '@ant-design/icons'
 import { PanelLeft } from 'lucide-react'
 import { Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
 import type { ThemeConfig } from 'antd'
@@ -23,7 +23,7 @@ type AppSidebarProps = {
 
 type NavItem = {
   key: string
-  to?: string
+  to: string
   label: string
   icon: ReactNode
 }
@@ -33,8 +33,6 @@ const navItems: NavItem[] = [
   { key: '/tasks', to: '/tasks', label: '과정별 할 일', icon: <CarryOutOutlined /> },
   { key: '/ask', to: '/ask', label: '물어보기', icon: <MessageOutlined /> },
   { key: '/documents', to: '/documents', label: '문서', icon: <FileTextOutlined /> },
-  { key: '/notices', label: '공지', icon: <NotificationOutlined /> },
-  { key: '/education', label: '교육', icon: <ReadOutlined /> },
 ]
 
 const adminNavItems: NavItem[] = [
@@ -53,8 +51,7 @@ function toMenuItems(items: NavItem[]) {
   return items.map((item) => ({
     key: item.key,
     icon: item.icon,
-    label: item.to ? <Link to={item.to}>{item.label}</Link> : item.label,
-    disabled: !item.to,
+    label: <Link to={item.to}>{item.label}</Link>,
   }))
 }
 
@@ -62,25 +59,19 @@ function RailItem({ item, selected }: { item: NavItem; selected: boolean }) {
   const className = 'flex h-10 w-10 items-center justify-center rounded-lg text-lg'
 
   return (
-    <HintTooltip title={item.to ? item.label : `${item.label} (준비 중)`} placement="right">
-      {item.to ? (
-        <Link
-          to={item.to}
-          aria-label={item.label}
-          aria-current={selected ? 'page' : undefined}
-          className={`${className} transition-colors focus-visible:outline-2 focus-visible:outline-(--ant-color-primary) ${
-            selected
-              ? 'bg-(--nav-selected-bg) text-(--nav-selected-text)'
-              : 'text-(--ant-color-text-secondary) hover:bg-(--ant-color-fill-tertiary) hover:text-(--ant-color-text)'
-          }`}
-        >
-          {item.icon}
-        </Link>
-      ) : (
-        <span aria-disabled="true" aria-label={`${item.label} (준비 중)`} className={`${className} text-(--ant-color-text-quaternary)`}>
-          {item.icon}
-        </span>
-      )}
+    <HintTooltip title={item.label} placement="right">
+      <Link
+        to={item.to}
+        aria-label={item.label}
+        aria-current={selected ? 'page' : undefined}
+        className={`${className} transition-colors focus-visible:outline-2 focus-visible:outline-(--ant-color-primary) ${
+          selected
+            ? 'bg-(--nav-selected-bg) text-(--nav-selected-text)'
+            : 'text-(--ant-color-text-secondary) hover:bg-(--ant-color-fill-tertiary) hover:text-(--ant-color-text)'
+        }`}
+      >
+        {item.icon}
+      </Link>
     </HintTooltip>
   )
 }
