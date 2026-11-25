@@ -60,15 +60,21 @@ BASE_PATH=/portal npm run build
 | `src/providers/AuthProvider.tsx`, `AuthContext.ts` | 로그인 상태 관리 |
 | `src/api/`, `src/types/` | API 요청과 데이터 타입 |
 | `src/hooks/useApiQuery.ts` | 조회 상태, 요청 취소, 재조회 |
+| `src/hooks/useApiErrorHandler.ts` | 오류 문구 표시(`showError`)와 로그인 상태 재확인(`checkLogin`) |
 | `src/hooks/useMediaQuery.ts` | 화면 폭 조건 확인 |
+| `src/utils/date.ts` | 날짜 계산과 표시 형식(서울 시간 기준) |
+| `src/utils/roles.ts` | 관리자 확인(`isAdmin`) |
+| `src/api/client.ts`, `src/api/pagination.ts` | 오류 문구, 충돌 확인(`isConflict`), 한 쪽 개수(`PAGE_SIZE`) |
 | `src/pages/auth/` | 로그인과 인증 상태별 화면 |
 | `src/pages/home/` | 담당자와 리더 홈 |
 | `src/pages/tasks/` | 과정별 할 일, 상세, 일정과 월 주기 |
 | `src/pages/admin/courses/` | 과정 관리와 CSV 가져오기 |
 | `src/pages/ask/` | 물어보기 |
 | `src/pages/documents/`, `src/pages/admin/documents/` | 문서 보기와 문서 업로드 |
-| `src/components/common/NoticeCard.tsx` | 오류, 권한, 빈 상태 안내 카드 |
-| `src/components/common/` | 아이콘 버튼, 필터칩, 검색창, 안내 툴팁, 줄 전체 클릭 |
+| `src/components/common/NoticeCard.tsx` | 상태 안내 카드의 기본 틀 |
+| `LoadingError`, `NoPermission`, `PageNotFound`, `EmptyData`, `NoSearchResult` | 불러오기 실패와 다시 시도, 권한 없음, 없는 페이지, 아직 없음, 검색 결과 없음. 모든 화면이 같은 모양을 씁니다 |
+| `ContentCard`, `tableStyle.ts`(`smallTableStyle`) | 본문 카드 여백, 작은 표 모양 |
+| `src/components/common/` | 아이콘 버튼, 필터칩, 검색창, 안내 툴팁, 줄 전체 클릭, 사용 방법 창 |
 | `src/pages/admin/users/` | 사용자와 승인 |
 | `src/pages/admin/config/` | 설정 내보내기와 가져오기 |
 | `src/pages/admin/settings/` | 휴무일 설정 |
