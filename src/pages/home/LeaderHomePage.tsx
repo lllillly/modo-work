@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { PlusOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Skeleton, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
@@ -209,7 +208,6 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
               <div className="flex flex-row items-center gap-xs">
                 <span className="text-caption text-(--ant-color-text-secondary)">내 확인 범위</span>
                 {getLeaderReviewScope(user).labels.map((label) => <Tag key={label} color="processing" variant="outlined" className="m-0 rounded-lg px-xs py-xxs">{label}</Tag>)}
-                <Button icon={<PlusOutlined />} disabled className="ml-auto">공지 작성</Button>
               </div>
 
               <div className="grid auto-cols-fr grid-flow-col gap-md" aria-label="과정 현황 요약">

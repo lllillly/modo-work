@@ -373,10 +373,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
       aria-label="목록 종류"
       value={kind}
       onChange={changeKind}
-      options={[
-        ...listKinds.map((item) => ({ value: item.key, label: `${item.label} ${lists[item.key].length}개` })),
-        { value: 'noticeTypes', label: '공지 유형 (준비 중)', disabled: true },
-      ]}
+      options={listKinds.map((item) => ({ value: item.key, label: `${item.label} ${lists[item.key].length}개` }))}
     />
   ) : (
     <Card variant="borderless" className="w-60 shrink-0 self-start shadow-none" classNames={{ body: 'p-0' }}>
@@ -397,10 +394,6 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
             <span className="text-caption text-(--ant-color-text-tertiary)">{lists[item.key].length}개</span>
           </button>
         ))}
-        <span className="flex items-center justify-between px-md py-sm text-body text-(--ant-color-text-disabled)">
-          공지 유형
-          <span className="text-caption">준비 중</span>
-        </span>
       </nav>
     </Card>
   )
