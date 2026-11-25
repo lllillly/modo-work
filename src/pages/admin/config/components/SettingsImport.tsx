@@ -22,9 +22,10 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
   const { modal, message } = App.useApp()
   const { refreshUser } = useAuth()
   const [selected, setSelected] = useState<{ file: File; kind: SettingsKind } | null>(null)
-  const [preview, setPreview] = useState<SettingsImportPreview | null>(null)
+  const [preview, setPreview] = useState<{ file: File; result: SettingsImportPreview } | null>(null)
   const [failure, setFailure] = useState<{ step: 'preview' | 'apply'; error: unknown } | null>(null)
   const [busy, setBusy] = useState(false)
+  const checked = preview && preview.file === selected?.file ? preview.result : null
 
   function reset() {
     setPreview(null)
@@ -38,6 +39,7 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
 
   async function selectFile(file: File) {
     reset()
+    setSelected(null)
     const fileKind: unknown = await file.text().then((text) => JSON.parse(text).kind).catch(() => undefined)
     const match = settingsKinds.find((item) => item.value === fileKind)
     if (!match) {
@@ -50,10 +52,11 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
 
   async function check() {
     if (!selected) return
+    const { file, kind } = selected
     setBusy(true)
     reset()
     try {
-      setPreview(await previewSettingsImport(selected.kind, selected.file))
+      setPreview({ file, result: await previewSettingsImport(kind, file) })
     } catch (error) {
       fail('preview', error)
     } finally {
@@ -62,7 +65,7 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
   }
 
   function apply() {
-    if (!selected || !preview) return
+    if (!selected || !checked) return
     const { file, kind } = selected
     modal.confirm({
       title: `${getKindLabel(kind)} 설정을 적용할까요?`,
@@ -141,11 +144,11 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
           </p>
         )}
 
-        {preview && (
+        {checked && (
           <Alert
             type="success"
             showIcon
-            title={`${getKindLabel(preview.kind)} ${preview.itemCount}개 항목을 확인했어요. 적용하면 이 환경에 반영돼요.`}
+            title={`${getKindLabel(checked.kind)} ${checked.itemCount}개 항목을 확인했어요. 적용하면 이 환경에 반영돼요.`}
           />
         )}
         {failure && (
@@ -168,10 +171,10 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
         )}
 
         <div className="flex justify-end gap-xs">
-          <Button disabled={!selected || busy} loading={busy && !preview} onClick={() => void check()}>
+          <Button disabled={!selected || busy} loading={busy && !checked} onClick={() => void check()}>
             미리보기
           </Button>
-          <Button type="primary" disabled={!preview || busy} loading={busy && !!preview} onClick={apply}>
+          <Button type="primary" disabled={!checked || busy} loading={busy && !!checked} onClick={apply}>
             적용
           </Button>
         </div>
