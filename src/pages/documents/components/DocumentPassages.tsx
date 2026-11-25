@@ -56,7 +56,7 @@ export default function DocumentPassages({
   linkTo,
   showTitle = true,
 }: DocumentPassagesProps) {
-  if (isLoading) return <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />
+  if (isLoading && passages.length === 0) return <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />
   if (error && passages.length === 0) {
     return <LoadingError plain title="본문 검색 결과를 불러오지 못했어요" error={error} onRetry={onRetry} />
   }
@@ -80,7 +80,7 @@ export default function DocumentPassages({
           </Link>
         </li>
       ))}
-      {error ? (
+      {isLoading ? null : error ? (
         <li className="py-sm text-caption text-(--ant-color-error-text)">
           더 불러오지 못했어요. <Button type="link" size="small" onClick={onMore}>다시 시도</Button>
         </li>

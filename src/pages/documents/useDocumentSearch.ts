@@ -60,6 +60,7 @@ export default function useDocumentSearch(businessId: string, keyword: string, d
   }, [active, businessId, documentId, limit, query, key])
 
   const current = active && result?.key === key ? result : null
+  const shown = current ?? (active ? result : null)
 
   const loadMore = useCallback(() => {
     if (!current) return
@@ -73,7 +74,7 @@ export default function useDocumentSearch(businessId: string, keyword: string, d
             ? {
                 ...latest,
                 passages: [...latest.passages, ...passages],
-                nextOffset: latest.nextOffset + PASSAGE_LIMIT,
+                nextOffset: latest.nextOffset + limit,
                 hasMore: data.hasMore && passages.length === data.results.length,
                 isLoadingMore: false,
               }
@@ -90,9 +91,9 @@ export default function useDocumentSearch(businessId: string, keyword: string, d
     active,
     query,
     isLoading: active && current === null,
-    passages: current?.passages ?? [],
+    passages: shown?.passages ?? [],
     hasMore: current?.hasMore ?? false,
-    notIndexedCount: current?.notIndexedCount ?? 0,
+    notIndexedCount: shown?.notIndexedCount ?? 0,
     isLoadingMore: current?.isLoadingMore ?? false,
     error: current?.error,
     retry: () => setAttempt((value) => value + 1),

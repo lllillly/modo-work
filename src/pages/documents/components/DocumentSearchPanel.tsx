@@ -39,7 +39,7 @@ export default function DocumentSearchPanel({ businessId, documentId, autoFocus 
           />
           {!search.isLoading && !search.error && search.passages.length === 0 && (
             <p className="m-0 py-md text-center text-caption text-(--ant-color-text-tertiary)">
-              이 문서에서 찾은 구절이 없어요.
+              검색 상위 결과에 이 문서의 구절이 없어요. 다른 단어로 찾아 보세요.
             </p>
           )}
         </div>
