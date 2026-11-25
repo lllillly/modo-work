@@ -4,6 +4,7 @@ import type {
   DeletionContext,
   DocumentItem,
   DocumentKind,
+  DocumentSearchResult,
   DocumentVersion,
   UploadDocumentMetadata,
 } from '../types/documents'
@@ -21,6 +22,9 @@ export function getDocumentFileUrl(documentId: string, businessId: string, page 
   const query = new URLSearchParams({ businessId })
   return `${import.meta.env.BASE_URL}api/documents/${encodeURIComponent(documentId)}/file?${query}#page=${page}&navpanes=0`
 }
+
+export const searchDocumentPassages = (businessId: string, query: string, offset: number, limit: number) =>
+  sendApi<DocumentSearchResult>('/documents/search', 'POST', { businessId, query, limit, offset })
 
 export function getAdminDocuments(signal?: AbortSignal) {
   return getAllPages((page) => {

@@ -53,3 +53,17 @@ export type DocumentVersion = {
   createdBy: { id: string; name: string }
   createdAt: string
 }
+
+export type DocumentPassage = {
+  documentId: string
+  documentTitle: string
+  page: number
+  quote: string
+  score: number
+}
+
+export type DocumentSearchResult = {
+  results: DocumentPassage[]
+  hasMore: boolean
+  notIndexedDocumentIds: string[]
+}

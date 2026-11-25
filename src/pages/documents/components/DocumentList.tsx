@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { RightOutlined } from '@ant-design/icons'
-import { Button, Card, Skeleton } from 'antd'
+import { Card, Skeleton } from 'antd'
 import { Link } from 'react-router'
 
 import LoadingError from '../../../components/common/LoadingError'
@@ -10,6 +10,8 @@ import PageHeader from '../../../components/layout/PageHeader'
 import type { DocumentItem } from '../../../types/documents'
 import { ALL_TYPES, getDocumentMeta, getDocumentTypes, getExternalHref, isSearchExcluded } from '../documentData'
 import useDocuments from '../useDocuments'
+import useDocumentSearch from '../useDocumentSearch'
+import DocumentPassages from './DocumentPassages'
 import SearchInput from '../../../components/common/SearchInput'
 import FilterChip from '../../../components/common/FilterChip'
 
@@ -23,6 +25,7 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
   const [typeId, setTypeId] = useState(ALL_TYPES)
   const [keyword, setKeyword] = useState('')
   const query = useDocuments(businessId)
+  const passages = useDocumentSearch(businessId, keyword)
   const documents = query.data ?? []
   const types = getDocumentTypes(documents)
   const trimmedKeyword = keyword.trim().toLowerCase()
@@ -34,7 +37,8 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
 
   const search = (
     <SearchInput
-      label="문서 제목 검색"
+      maxLength={500}
+      label="문서 제목·본문 검색"
       onPage
       value={keyword}
       onChange={(event) => setKeyword(event.target.value)}
@@ -92,30 +96,58 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
               <div className="w-60 shrink-0">{search}</div>
             </div>
           )}
-          {visibleDocuments.length === 0 && trimmedKeyword ? (
+          {visibleDocuments.length === 0 && trimmedKeyword && !passages.active ? (
             <NoSearchResult
               title={`"${keyword.trim()}"이 나온 문서가 없어요`}
-              description="다른 단어로 찾거나, 물어보기에 질문해 보세요. 텍스트가 없는 PDF는 검색되지 않아요."
-              action={
-                <Button className="h-7" disabled>
-                  물어보기로 질문하기
-                </Button>
-              }
+              description="다른 단어로 찾거나, 물어보기에 질문해 보세요. 검색어는 2글자 이상 넣어 주세요."
             />
           ) : (
-            <div className="rounded-lg bg-(--ant-color-bg-container) px-md min-[992px]:px-lg">
-              <p className="m-0 py-2.5 text-caption text-(--ant-color-text-secondary)">
-                볼 수 있는 문서 {visibleDocuments.length}개
-              </p>
-              {visibleDocuments.map((item) => (
-                <DocumentRow
-                  key={item.id}
-                  item={item}
-                  meta={getDocumentMeta(item, businessName)}
-                  isMobile={isMobile}
-                />
-              ))}
-            </div>
+            <>
+              {(visibleDocuments.length > 0 || !passages.active) && (
+                <div className="rounded-lg bg-(--ant-color-bg-container) px-md min-[992px]:px-lg">
+                  <p className="m-0 py-2.5 text-caption text-(--ant-color-text-secondary)">
+                    {trimmedKeyword ? '제목이 맞는 문서' : '볼 수 있는 문서'} {visibleDocuments.length}개
+                  </p>
+                  {visibleDocuments.map((item) => (
+                    <DocumentRow
+                      key={item.id}
+                      item={item}
+                      meta={getDocumentMeta(item, businessName)}
+                      isMobile={isMobile}
+                    />
+                  ))}
+                </div>
+              )}
+              {passages.active && (
+                <div className="rounded-lg bg-(--ant-color-bg-container) px-md pb-sm min-[992px]:px-lg">
+                  <p className="m-0 py-2.5 text-caption text-(--ant-color-text-secondary)">
+                    문서 본문에서 찾은 구절
+                    {passages.notIndexedCount > 0 && (
+                      <span className="text-(--ant-color-text-tertiary)">
+                        {' '}
+                        · 본문을 아직 읽지 못한 문서 {passages.notIndexedCount}개는 제목으로만 찾아요
+                      </span>
+                    )}
+                  </p>
+                  <DocumentPassages
+                    passages={passages.passages}
+                    query={passages.query}
+                    isLoading={passages.isLoading}
+                    isLoadingMore={passages.isLoadingMore}
+                    error={passages.error}
+                    hasMore={passages.hasMore}
+                    onMore={passages.loadMore}
+                    onRetry={passages.retry}
+                    linkTo={(passage) => `/documents/${passage.documentId}?page=${passage.page}`}
+                  />
+                  {!passages.isLoading && !passages.error && passages.passages.length === 0 && (
+                    <p className="m-0 border-0 border-t border-solid border-(--ant-color-border-secondary) py-md text-center text-caption text-(--ant-color-text-tertiary)">
+                      본문에서 찾은 구절이 없어요. 다른 단어로 찾거나 물어보기에 질문해 보세요.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </>
       )}

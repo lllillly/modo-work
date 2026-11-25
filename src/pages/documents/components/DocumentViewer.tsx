@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { ArrowLeftOutlined, FullscreenOutlined, HistoryOutlined, LeftOutlined, LinkOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Card, Input, InputNumber, Skeleton, Tag } from 'antd'
+import { Button, Card, InputNumber, Skeleton, Tag } from 'antd'
 import { Link, useParams, useSearchParams } from 'react-router'
 
 import { getDocumentFileUrl } from '../../../api/documents'
@@ -8,6 +8,7 @@ import LoadingError from '../../../components/common/LoadingError'
 import NoticeCard from '../../../components/common/NoticeCard'
 import PageNotFound from '../../../components/common/PageNotFound'
 import { getDocumentScope, getExternalHref, getViewerMeta } from '../documentData'
+import DocumentSearchPanel from './DocumentSearchPanel'
 import DocumentVersionsDrawer from './DocumentVersionsDrawer'
 import useDocuments from '../useDocuments'
 import IconAction from '../../../components/common/IconAction'
@@ -25,6 +26,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
   const page = Math.max(1, Number.parseInt(params.get('page') ?? '', 10) || 1)
   const frameBox = useRef<HTMLDivElement>(null)
   const [showVersions, setShowVersions] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
   const query = useDocuments(businessId)
   const item = query.data?.find((candidate) => candidate.id === documentId)
 
@@ -143,10 +145,21 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
           </div>
           <span className="flex shrink-0 items-center">
             {versionsButton}
-            <Button type="text" aria-label="문서 안에서 찾기" icon={<SearchOutlined />} disabled />
+            <Button
+              type="text"
+              aria-label="문서 안에서 찾기"
+              aria-expanded={showSearch}
+              icon={<SearchOutlined />}
+              onClick={() => setShowSearch((open) => !open)}
+            />
             {fullscreenButton}
           </span>
         </div>
+        {showSearch && (
+          <div className="max-h-[45vh] overflow-y-auto border-0 border-b border-solid border-(--ant-color-border-secondary) p-md">
+            <DocumentSearchPanel businessId={businessId} documentId={item.id} autoFocus />
+          </div>
+        )}
         <div className="min-h-0 flex-1 bg-(--ant-color-fill-tertiary)">{frame}</div>
         <div className="flex justify-center border-0 border-t border-solid border-(--ant-color-border-secondary) py-2.5">
           {pageControls}
@@ -175,12 +188,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg bg-(--ant-color-fill-tertiary)">{frame}</div>
         <aside className="flex w-80 shrink-0 flex-col gap-xs rounded-lg bg-(--ant-color-bg-container) p-md">
           <p className="m-0 text-body font-medium">이 문서에서 찾기</p>
-          <Input
-            aria-label="이 문서에서 찾기"
-            prefix={<SearchOutlined className="text-(--ant-color-text-tertiary)" />}
-            placeholder="문서 안 검색은 준비 중이에요"
-            disabled
-          />
+          <DocumentSearchPanel businessId={businessId} documentId={item.id} />
         </aside>
       </div>
       <div className="flex items-center gap-xs rounded-lg bg-(--ant-color-bg-container) px-md py-2.5 text-caption">
