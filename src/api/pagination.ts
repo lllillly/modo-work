@@ -1,5 +1,7 @@
 import type { PageResponse } from '../types/courseApi'
 
+export const PAGE_SIZE = 20
+
 export async function withRestPages<T>(first: PageResponse<T>, load: (page: number) => Promise<PageResponse<T>>) {
   const items = [...first.items]
 

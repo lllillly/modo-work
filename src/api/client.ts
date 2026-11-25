@@ -59,6 +59,10 @@ export function getApiErrorMessage(error: unknown) {
     : '서버 응답을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.'
 }
 
+export function isConflict(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 409
+}
+
 export function isAuthStateError(error: unknown): error is ApiError {
   return (
     error instanceof ApiError &&
