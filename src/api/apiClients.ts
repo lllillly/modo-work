@@ -1,5 +1,7 @@
-import type { IssuedApiClient } from '../types/apiClients'
-import { requestApi, sendApi } from './client'
+import type { ApiClient, IssuedApiClient } from '../types/apiClients'
+import { getApi, requestApi, sendApi } from './client'
+
+export const getApiClients = (signal?: AbortSignal) => getApi<{ items: ApiClient[] }>('/admin/api-clients', signal)
 
 export const issueApiClient = (name: string, businesses: string[]) =>
   sendApi<IssuedApiClient>('/admin/api-clients', 'POST', { name, scope: 'COURSE_SUMMARY_READ', businesses })

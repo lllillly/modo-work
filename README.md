@@ -41,7 +41,7 @@ BASE_PATH=/portal npm run build
 | 사용자와 승인 (S11) | `/admin/users` | 승인 대기와 전체 사용자 목록, 가입 승인, 역할 수정, 활성 상태 변경, 목록 관리 API 연결. 조직 단위 리더는 소속 조직으로 승인과 역할 추가 |
 | 할 일 템플릿 (S12) | `/admin/task-templates` | 템플릿 목록, 추가, 수정, 사용 켜고 끄기, 태그 관리, 연결 문서 선택 API 연결 |
 | 휴무일 설정 (S15) | `/admin/settings` | 공휴일과 회사 휴무일 조회, 회사 휴무일 추가, 수정, 삭제 API 연결. 그 밖의 설정값은 화면 없이 서버 설정으로 변경 |
-| 서비스 토큰 관리 | `/admin/service-tokens` | 토큰 발급(원문 한 번만 표시)과 발급 ID로 폐기 API 연결. 발급 목록 조회 API가 없어 이번 화면에서 발급한 토큰만 표시 |
+| 서비스 토큰 관리 | `/admin/service-tokens` | 토큰 목록(폐기한 토큰 포함), 발급(원문 한 번만 표시), 폐기 API 연결 |
 | 설정 내보내기 & 가져오기 | `/admin/config` | 기준 목록, 할 일 템플릿, 설정값, 의도, Q&A 파일 내려받기와 미리보기, 적용 API 연결 |
 
 `courseId`가 없으면 진행 중인 첫 과정을 엽니다. 관리자는 관리자 과정 API로, 리더와 담당자는 홈 API의 과정 목록으로 과정을 고릅니다. 일정 수정 권한이 없으면 일정 조회가 403이라 수정 버튼 없이 보여줍니다.
@@ -78,7 +78,7 @@ BASE_PATH=/portal npm run build
 | `src/pages/admin/users/` | 사용자와 승인 |
 | `src/pages/admin/config/` | 설정 내보내기와 가져오기 |
 | `src/pages/admin/settings/` | 휴무일 설정 |
-| `src/pages/admin/service-tokens/` | 서비스 토큰 발급과 폐기 |
+| `src/pages/admin/service-tokens/` | 서비스 토큰 목록, 발급, 폐기 |
 
 Pretendard는 `public/fonts/`에서 불러옵니다. Ant Design reset과 겹치지 않도록 Tailwind Preflight는 제외했습니다.
 992px 이상은 데스크탑, 그 미만은 모바일입니다. 본문과 사이드바는 각각 스크롤하며 모바일에서는 메뉴 버튼으로 사이드바를 엽니다. 모바일 스크롤바는 숨기되 스크롤은 유지합니다.
@@ -249,7 +249,7 @@ PDF는 `iframe`으로 표시하므로 문서 안에서 직접 스크롤해도 �
 
 공휴일(`source: API`)은 서버가 자동으로 가져오므로 수정과 삭제 버튼을 두지 않습니다. 회사 휴무일을 바꾸면 서버가 영향받는 미완료 할 일의 마감을 다시 계산하고, 마감이 바뀐 건수(`deadlineChangedTaskCount`)를 안내합니다. 수정은 바뀐 칸만 현재 `version`과 함께 보냅니다. 확신 기준값 같은 물어보기 설정값은 의뢰측 답변(11-24 질의응답)에 따라 화면을 두지 않습니다. 임박 기준과 알림 발송 시각은 설정 API가 없어 화면을 두지 않고 서버 환경변수(예: `MESSENGER_DUE_SOON_BUSINESS_DAYS`)로 바꿉니다. 설정 가져오기의 `settings` 파일에는 질문 기록 보관 일수만 들어 있습니다. 형식은 [일정과 홈 API](../../contracts/api/schedule-and-home.md)의 공휴일·회사 휴무일 절을 따릅니다.
 
-서비스 토큰은 고른 사업의 과정 요약만 읽을 수 있는 `COURSE_SUMMARY_READ` 권한으로 발급합니다. 토큰 원문은 발급 응답에서 한 번만 받을 수 있어 닫기 전까지 창을 유지하고 복사 버튼과 호출 예시를 보여 줍니다. 발급 목록 조회 API가 없어 이번 화면에서 발급한 토큰만 목록에 두고, 그 밖의 토큰은 발급 ID로 폐기합니다. 형식은 [연동 API와 서비스 토큰](../../contracts/api/integration.md)을 따릅니다.
+서비스 토큰은 고른 사업의 과정 요약만 읽을 수 있는 `COURSE_SUMMARY_READ` 권한으로 발급합니다. 토큰 원문은 발급 응답에서 한 번만 받을 수 있어 닫기 전까지 창을 유지하고 복사 버튼과 호출 예시를 보여 줍니다. 목록은 최근 발급 순으로 보여 주고, 폐기한 토큰은 "폐기됨"과 폐기 시각을 표시하며 폐기 버튼을 숨깁니다. 형식은 [연동 API와 서비스 토큰](../../contracts/api/integration.md)을 따릅니다.
 
 ## 상태별 화면 확인
 

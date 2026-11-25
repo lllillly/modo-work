@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { CopyOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Form, Input, Modal, Select } from 'antd'
+import { Alert, App, Button, Form, Input, Modal, Select, Skeleton, Tag } from 'antd'
 
-import type { IssuedApiClient } from '../../../../types/apiClients'
+import type { ApiClient, IssuedApiClient } from '../../../../types/apiClients'
 import { ApiError } from '../../../../api/client'
-import { issueApiClient, revokeApiClient } from '../../../../api/apiClients'
+import { getApiClients, issueApiClient, revokeApiClient } from '../../../../api/apiClients'
 import { getBusinesses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import IconAction from '../../../../components/common/IconAction'
 import ContentCard from '../../../../components/common/ContentCard'
+import EmptyData from '../../../../components/common/EmptyData'
+import LoadingError from '../../../../components/common/LoadingError'
 import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 import { formatDateTime } from '../../../../utils/date'
 
@@ -19,10 +21,9 @@ export default function ServiceTokens() {
   const { showError } = useApiErrorHandler()
   const [form] = Form.useForm<IssueForm>()
   const businesses = useApiQuery('businesses', getBusinesses)
+  const clients = useApiQuery('api-clients', getApiClients)
   const [issuing, setIssuing] = useState(false)
-  const [issued, setIssued] = useState<IssuedApiClient[]>([])
   const [shown, setShown] = useState<IssuedApiClient | null>(null)
-  const [revokeId, setRevokeId] = useState('')
   const businessOptions = (businesses.data?.items ?? []).map((item) => ({ value: item.id, label: item.name }))
   const businessName = (id: string) => businessOptions.find((option) => option.value === id)?.label ?? `사업 ${id}`
   const exampleUrl = `${window.location.origin}${import.meta.env.BASE_URL}api/integration/courses/summary?business=`
@@ -31,9 +32,9 @@ export default function ServiceTokens() {
     setIssuing(true)
     try {
       const result = await issueApiClient(values.name.trim(), values.businesses)
-      setIssued((current) => [result, ...current])
       setShown(result)
       form.resetFields()
+      clients.reload()
     } catch (error) {
       showError(error)
     } finally {
@@ -50,23 +51,22 @@ export default function ServiceTokens() {
     }
   }
 
-  function revoke(id: string, name?: string) {
+  function revoke(client: ApiClient) {
     modal.confirm({
       title: '토큰을 폐기할까요?',
-      content: `${name ? `${name} (발급 ID ${id})` : `발급 ID ${id}`}. 폐기하면 이 토큰으로 요약을 읽을 수 없고 되돌릴 수 없어요.`,
+      content: `${client.name} (발급 ID ${client.id}). 폐기하면 이 토큰으로 요약을 읽을 수 없고 되돌릴 수 없어요.`,
       okText: '폐기',
       okButtonProps: { danger: true },
       cancelText: '취소',
       onOk: async () => {
         try {
-          await revokeApiClient(id)
+          await revokeApiClient(client.id)
           message.success('토큰을 폐기했어요.')
-          setIssued((current) => current.filter((item) => item.id !== id))
-          setRevokeId('')
         } catch (error) {
-          if (error instanceof ApiError && error.status === 404) message.error('없는 발급 ID예요. 다시 확인해 주세요.')
+          if (error instanceof ApiError && error.status === 404) message.error('이미 지워진 토큰이에요. 목록을 다시 불러왔어요.')
           else showError(error)
         }
+        clients.reload()
       },
     })
   }
@@ -99,40 +99,42 @@ export default function ServiceTokens() {
       </ContentCard>
 
       <ContentCard>
-        <h2 className="m-0 text-card-title">토큰 폐기</h2>
+        <h2 className="m-0 text-card-title">발급한 토큰</h2>
         <p className="mt-xxs mb-sm text-caption text-(--ant-color-text-secondary)">
-          발급한 토큰 목록을 불러오는 기능이 아직 없어요. 이 화면에서 방금 발급한 토큰만 아래에 보이고, 새로고침하면 사라져요. 다른 토큰은 발급 ID로 폐기해 주세요.
+          최근 발급한 순서예요. 폐기한 토큰도 기록으로 남아요.
         </p>
-        {issued.length > 0 && (
-          <ul className="m-0 mb-sm list-none p-0">
-            {issued.map((item) => (
+        {clients.error ? (
+          <LoadingError plain title="토큰 목록을 불러오지 못했어요" error={clients.error} onRetry={clients.reload} />
+        ) : clients.isLoading ? (
+          <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />
+        ) : !clients.data?.items.length ? (
+          <EmptyData plain compact title="아직 발급한 토큰이 없어요" description="왼쪽에서 이름과 사업을 고르고 발급해 주세요." />
+        ) : (
+          <ul className="m-0 list-none p-0">
+            {clients.data.items.map((client) => (
               <li
-                key={item.id}
+                key={client.id}
                 className="flex items-center gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) py-sm last:border-b-0"
               >
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-body font-medium">{item.name}</span>
+                  <span className="flex min-w-0 items-center gap-xs">
+                    <span className={`truncate text-body font-medium ${client.revokedAt ? 'text-(--ant-color-text-tertiary)' : ''}`}>
+                      {client.name}
+                    </span>
+                    {client.revokedAt && <Tag className="m-0 shrink-0">폐기됨</Tag>}
+                  </span>
                   <span className="text-caption text-(--ant-color-text-tertiary)">
-                    발급 ID {item.id} · {item.businesses.map(businessName).join(', ')} · {formatDateTime(item.issuedAt)}
+                    발급 ID {client.id} · {client.businesses.map(businessName).join(', ')} · {formatDateTime(client.issuedAt)}
+                    {client.revokedAt && ` · 폐기 ${formatDateTime(client.revokedAt)}`}
                   </span>
                 </span>
-                <IconAction label="폐기" ariaLabel={`${item.name} 폐기`} icon={<DeleteOutlined />} tone="danger" onClick={() => revoke(item.id, item.name)} />
+                {!client.revokedAt && (
+                  <IconAction label="폐기" ariaLabel={`${client.name} 폐기`} icon={<DeleteOutlined />} tone="danger" onClick={() => revoke(client)} />
+                )}
               </li>
             ))}
           </ul>
         )}
-        <div className="flex gap-xs">
-          <Input
-            aria-label="폐기할 발급 ID"
-            placeholder="발급 ID"
-            value={revokeId}
-            onChange={(event) => setRevokeId(event.target.value.replace(/\D/g, ''))}
-            inputMode="numeric"
-          />
-          <Button danger disabled={!revokeId} onClick={() => revoke(revokeId)}>
-            폐기
-          </Button>
-        </div>
       </ContentCard>
 
       {shown && (
