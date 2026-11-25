@@ -34,7 +34,7 @@ import CourseCorrectionModal from './CourseCorrectionModal'
 import PageTitle from '../../../../components/layout/PageTitle'
 import ContentCard from '../../../../components/common/ContentCard'
 import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
-import { formatDateTime } from '../../../../utils/date'
+import { formatDate, formatDateTime } from '../../../../utils/date'
 
 const HISTORY_SUMMARY_SIZE = 1
 
@@ -73,6 +73,8 @@ export default function CourseEditor({
   const [showHistory, setShowHistory] = useState(false)
 
   const isEnded = !!course?.isReadOnly
+  const isArchived = !!course?.archivedAt
+  const listPath = isArchived ? '/admin/courses/archived' : '/admin/courses'
   const readOnly = isEnded || needsReload
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
@@ -230,7 +232,7 @@ export default function CourseEditor({
 
   function cancelEdit() {
     if (readOnly || !form.isFieldsTouched()) {
-      navigate('/admin/courses')
+      navigate(listPath)
       return
     }
     modal.confirm({
@@ -238,7 +240,7 @@ export default function CourseEditor({
       content: '저장하지 않은 내용은 사라져요.',
       okText: '버리기',
       cancelText: '계속 수정',
-      onOk: () => navigate('/admin/courses'),
+      onOk: () => navigate(listPath),
     })
   }
 
@@ -266,12 +268,25 @@ export default function CourseEditor({
           className="mb-xxs text-caption"
           items={[
             { title: <Link to="/admin/courses">과정·담당 배정</Link> },
+            ...(isArchived ? [{ title: <Link to="/admin/courses/archived">보관 목록</Link> }] : []),
             { title: course?.name ?? '과정 추가' },
           ]}
         />
         <PageTitle>{readOnly ? '과정 보기' : course ? '과정 수정' : '과정 추가'}</PageTitle>
       </div>
-      {isEnded && (
+      {isArchived && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<LockOutlined />}
+          title={
+            <span className="text-caption">
+              보관된 과정이에요({formatDate(course?.archivedAt)} 보관). 읽기만 할 수 있고, 바꾸려면 보관 목록에서 복원해 주세요.
+            </span>
+          }
+        />
+      )}
+      {isEnded && !isArchived && (
         <Alert
           type="info"
           showIcon

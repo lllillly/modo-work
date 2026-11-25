@@ -58,7 +58,7 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
 
   const columns: TableColumnsType<ManagedCourse> = [
     { title: '외부 키', dataIndex: 'externalKey', width: 112, responsive: ['xl'] },
-    { title: '과정명', dataIndex: 'name' },
+    { title: '과정명', key: 'name', render: (_, course) => <Link to={`/admin/courses/${course.id}`}>{course.name}</Link> },
     { title: '조직 단위', key: 'orgUnit', render: (_, course) => course.orgUnitName ?? '-' },
     { title: '기간', key: 'period', className: 'whitespace-nowrap', render: (_, course) => formatCoursePeriod(course) },
     { title: '보관한 날', dataIndex: 'archivedAt', width: 104, render: formatDate },
@@ -97,7 +97,9 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
             courses.map((course) => (
               <Card key={course.id} variant="borderless" className="shadow-none" classNames={{ body: 'p-md' }}>
                 <div className="flex items-start justify-between gap-xs">
-                  <span className="min-w-0 text-body font-medium">{course.name}</span>
+                  <Link to={`/admin/courses/${course.id}`} className="min-w-0 text-body font-medium">
+                    {course.name}
+                  </Link>
                   <IconAction label="복원" ariaLabel={`${course.name} 복원`} icon={<RollbackOutlined />} tone="primary" showLabel onClick={() => restore(course)} />
                 </div>
                 <p className="m-0 text-caption text-(--ant-color-text-secondary)">
