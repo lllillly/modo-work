@@ -3,7 +3,6 @@ import { App, Grid, Layout, Spin } from 'antd'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { resetAskSession } from '../pages/ask/askSession'
-import { notificationCount } from '../pages/home/assigneeHomeMockData'
 
 import { getBusinesses } from '../api/courses'
 import useApiQuery from '../hooks/useApiQuery'
@@ -121,7 +120,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
           onMenuOpen={() => setIsMenuOpen(true)}
           userName={user.name}
           userRole={roleLabel}
-          notificationCount={notificationCount}
+          businessId={selectedBusinessId}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
           titleSlotRef={setTitleSlot}

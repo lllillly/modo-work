@@ -9,7 +9,6 @@ export const currentUser = {
   roleLabel: '관리자',
 }
 
-export const notificationCount = 0
 export const invalidEmail = 'user@gmail.com'
 
 export const courses: Course[] = [

@@ -214,7 +214,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
             {alerts.length > 0 && (
               <ContentCard id="leader-alerts" className="h-full scroll-mt-md" role="region" aria-labelledby="leader-alerts-title">
                 <div className="mb-xs flex min-h-8 flex-wrap items-center gap-xs">
-                  <h2 id="leader-alerts-title" className="m-0 text-card-title">리더 알림</h2>
+                  <h2 id="leader-alerts-title" className="m-0 text-card-title">알림</h2>
                   {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
                   {homeData.summary.dueSoonCount > 0 && <Tag color="warning" variant="outlined" className="m-0">임박 {homeData.summary.dueSoonCount}</Tag>}
                   {!isMobile && <span className="ml-auto text-caption text-(--ant-color-text-tertiary)">{alerts.some((task) => task.isReadOnly) ? '보기만 가능한 업무 포함' : '내 확인 범위 전체'}</span>}

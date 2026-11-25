@@ -5,6 +5,7 @@ import { getApi } from './client'
 import { withRestPages } from './pagination'
 
 const LIST_SIZE = '100'
+const HEADER_ALERT_SIZE = '10'
 
 type AssigneeHomeQuery = {
   businessId: string
@@ -46,6 +47,19 @@ export async function getLeaderHome(businessId: string, signal?: AbortSignal) {
     withRestPages(first.records, (page) => load({ recordPage: String(page) }).then((home) => home.records)),
   ])
   return { ...first, alerts, pendingReviews, courses, records }
+}
+
+export function getHeaderAlerts(
+  businessId: string,
+  isLeader: boolean,
+  signal?: AbortSignal,
+): Promise<Pick<AssigneeHomeResponse, 'today' | 'alerts'>> {
+  if (isLeader) {
+    const query = new URLSearchParams({ businessId, alertSize: HEADER_ALERT_SIZE, reviewSize: '1', courseSize: '1', recordSize: '1' })
+    return getApi<LeaderHomeResponse>(`/home/leader?${query}`, signal)
+  }
+  const query = new URLSearchParams({ businessId, scope: 'mine', alertSize: HEADER_ALERT_SIZE, courseSize: '1' })
+  return getApi<AssigneeHomeResponse>(`/home/assignee?${query}`, signal)
 }
 
 export async function getHomeCourses(

@@ -1,9 +1,9 @@
-import { BellOutlined, DownOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
-import { Badge, Button, Dropdown, Layout, Popover } from 'antd'
+import { DownOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Dropdown, Layout } from 'antd'
 import type { MenuProps } from 'antd'
 
 import ThemeToggle from '../common/ThemeToggle'
-import EmptyData from '../../components/common/EmptyData'
+import HeaderAlerts from './HeaderAlerts'
 
 type AppHeaderProps = {
   isDark: boolean
@@ -13,7 +13,7 @@ type AppHeaderProps = {
   isMenuOpen: boolean
   userName: string
   userRole: string
-  notificationCount: number
+  businessId?: string
   onLogout: () => Promise<void>
   isLoggingOut: boolean
   titleSlotRef: (element: HTMLElement | null) => void
@@ -27,7 +27,7 @@ export default function AppHeader({
   isMenuOpen,
   userName,
   userRole,
-  notificationCount,
+  businessId,
   onLogout,
   isLoggingOut,
   titleSlotRef,
@@ -73,24 +73,7 @@ export default function AppHeader({
 
       <div className="flex shrink-0 items-center gap-xs">
         {!isMobile && <ThemeToggle isDark={isDark} onThemeChange={onThemeChange} />}
-        <Popover
-          title="알림"
-          trigger="click"
-          placement="bottomRight"
-          content={
-<EmptyData plain compact title="새 알림이 없어요" />
-          }
-        >
-          <Button
-            type="text"
-            aria-label={`알림 ${notificationCount}건`}
-            icon={
-              <Badge count={notificationCount} size="small">
-                <BellOutlined className="text-[18px]" />
-              </Badge>
-            }
-          />
-        </Popover>
+        <HeaderAlerts businessId={businessId} isMobile={isMobile} />
 
         <Dropdown
           menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
