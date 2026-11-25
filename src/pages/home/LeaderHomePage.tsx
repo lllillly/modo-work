@@ -104,8 +104,9 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
 
     return (
       <span className="flex min-w-0 items-center gap-xxs">
-        <span className="min-w-0 flex-1 truncate" title={description}>{description}</span>
-        {task.isReadOnly && <Tag color="processing" variant="outlined" className="m-0 shrink-0">보기만 가능</Tag>}
+        <span className="min-w-0 truncate" title={description}>{description}</span>
+        {task.hasInactiveAssignee && <Tag color="warning" variant="outlined" className="m-0 shrink-0">재배정 필요</Tag>}
+        {task.isReadOnly && <Tag color="processing" variant="outlined" className="ml-auto shrink-0">보기만 가능</Tag>}
       </span>
     )
   }

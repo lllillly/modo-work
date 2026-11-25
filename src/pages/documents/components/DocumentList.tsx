@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { RightOutlined } from '@ant-design/icons'
 import { Card, Skeleton } from 'antd'
 import { Link } from 'react-router'
@@ -9,6 +8,8 @@ import NoSearchResult from '../../../components/common/NoSearchResult'
 import PageHeader from '../../../components/layout/PageHeader'
 import type { DocumentItem } from '../../../types/documents'
 import { ALL_TYPES, getDocumentMeta, getDocumentTypes, getExternalHref, isSearchExcluded } from '../documentData'
+import useSearchDraft from '../../../hooks/useSearchDraft'
+import useUrlFilters from '../../../hooks/useUrlFilters'
 import useDocuments from '../useDocuments'
 import useDocumentSearch from '../useDocumentSearch'
 import DocumentPassages from './DocumentPassages'
@@ -22,8 +23,9 @@ type DocumentListProps = {
 }
 
 export default function DocumentList({ businessId, businessName, isMobile }: DocumentListProps) {
-  const [typeId, setTypeId] = useState(ALL_TYPES)
-  const [keyword, setKeyword] = useState('')
+  const { getFilter, setFilters } = useUrlFilters()
+  const typeId = getFilter('type', ALL_TYPES)
+  const [keyword, setKeyword] = useSearchDraft(getFilter('q'), (value) => setFilters({ q: value }))
   const query = useDocuments(businessId)
   const passages = useDocumentSearch(businessId, keyword)
   const documents = query.data ?? []
@@ -52,7 +54,7 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
       }`}
     >
       {[{ id: ALL_TYPES, name: '전체' }, ...types].map((type) => (
-        <FilterChip key={type.id} selected={typeId === type.id} onClick={() => setTypeId(type.id)} className="text-caption">
+        <FilterChip key={type.id} selected={typeId === type.id} onClick={() => setFilters({ type: type.id === ALL_TYPES ? null : type.id })} className="text-caption">
           {type.name}
         </FilterChip>
       ))}

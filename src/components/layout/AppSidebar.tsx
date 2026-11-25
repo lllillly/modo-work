@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ApiOutlined, CalendarOutlined, CarryOutOutlined, CloseOutlined, CloudUploadOutlined, CommentOutlined, FileTextOutlined, HomeOutlined, ImportOutlined, MessageOutlined, SnippetsOutlined, SolutionOutlined, SwapOutlined, TeamOutlined } from '@ant-design/icons'
 import { PanelLeft } from 'lucide-react'
-import { Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
+import { Badge, Button, ConfigProvider, Drawer, Layout, Menu, Select } from 'antd'
 import type { ThemeConfig } from 'antd'
 import { Link, useLocation } from 'react-router'
 
 import HintTooltip from '../common/HintTooltip'
+import { getAdminUsers, getManagedUsers } from '../../api/users'
+import useApiQuery from '../../hooks/useApiQuery'
 
 import type { UserRole } from '../../types/user'
 
@@ -47,15 +49,20 @@ const adminNavItems: NavItem[] = [
   { key: '/admin/settings', to: '/admin/settings', label: '휴무일 설정', icon: <CalendarOutlined /> },
 ]
 
-function toMenuItems(items: NavItem[]) {
+function toMenuItems(items: NavItem[], counts: Record<string, number> = {}) {
   return items.map((item) => ({
     key: item.key,
     icon: item.icon,
-    label: <Link to={item.to}>{item.label}</Link>,
+    label: (
+      <Link to={item.to} className="flex items-center justify-between gap-xs">
+        {item.label}
+        {!!counts[item.key] && <Badge count={counts[item.key]} size="small" title={`승인 대기 ${counts[item.key]}명`} />}
+      </Link>
+    ),
   }))
 }
 
-function RailItem({ item, selected }: { item: NavItem; selected: boolean }) {
+function RailItem({ item, selected, count = 0 }: { item: NavItem; selected: boolean; count?: number }) {
   const className = 'flex h-10 w-10 items-center justify-center rounded-lg text-lg'
 
   return (
@@ -70,7 +77,9 @@ function RailItem({ item, selected }: { item: NavItem; selected: boolean }) {
             : 'text-(--ant-color-text-secondary) hover:bg-(--ant-color-fill-tertiary) hover:text-(--ant-color-text)'
         }`}
       >
-        {item.icon}
+        <Badge count={count} size="small" offset={[4, -2]} title={`승인 대기 ${count}명`}>
+          <span className="text-lg text-inherit">{item.icon}</span>
+        </Badge>
       </Link>
     </HintTooltip>
   )
@@ -108,6 +117,16 @@ export default function AppSidebar({
     }
   })
   const isRail = !isMobile && collapsed
+  const canApprove = role === 'ADMIN' || isOrgLeader
+  const loadPendingCount = useCallback(
+    (signal: AbortSignal) =>
+      (role === 'ADMIN' ? getAdminUsers : getManagedUsers)(0, { status: 'PENDING' }, signal, 1).then((page) => page.totalElements),
+    [role],
+  )
+  const pendingQuery = useApiQuery(canApprove ? `pending-user-count:${role}:${pathname}` : null, loadPendingCount)
+  const [pendingCount, setPendingCount] = useState(0)
+  if (pendingQuery.data !== undefined && pendingQuery.data !== pendingCount) setPendingCount(pendingQuery.data)
+  const adminCounts = { '/admin/users': pendingCount }
 
   function changeCollapsed(collapsed: boolean) {
     setCollapsed(collapsed)
@@ -196,7 +215,7 @@ export default function AppSidebar({
                 mode="inline"
                 inlineIndent={12}
                 selectedKeys={[selectedAdminKey]}
-                items={toMenuItems(visibleAdminItems)}
+                items={toMenuItems(visibleAdminItems, adminCounts)}
                 onClick={onClose}
                 className="border-e-0"
               />
@@ -225,7 +244,7 @@ export default function AppSidebar({
       {visibleAdminItems.length > 0 && (
         <>
           <div className="my-xxs w-8 border-0 border-t border-solid border-(--ant-color-border-secondary)" />
-          {visibleAdminItems.map((item) => <RailItem key={item.key} item={item} selected={item.key === selectedAdminKey} />)}
+          {visibleAdminItems.map((item) => <RailItem key={item.key} item={item} selected={item.key === selectedAdminKey} count={adminCounts[item.key as keyof typeof adminCounts]} />)}
         </>
       )}
     </nav>

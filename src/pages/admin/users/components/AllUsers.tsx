@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Card, Pagination, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import type { getAdminUsers } from '../../../../api/users'
 import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
+import usePageInRange from '../../../../hooks/usePageInRange'
+import useSearchDraft from '../../../../hooks/useSearchDraft'
+import useUrlFilters from '../../../../hooks/useUrlFilters'
 import type { ManagedUser, UserStatus } from '../../../../types/adminUsers'
 import type { OptionItem } from '../../../../types/courseApi'
 import type { UserRole } from '../../../../types/user'
@@ -19,7 +22,6 @@ import { smallTableStyle } from '../../../../components/common/tableStyle'
 import { formatDateTime } from '../../../../utils/date'
 
 const ALL_FILTER = 'all'
-const SEARCH_DELAY = 300
 
 const roleOptions = (Object.keys(userRoleLabels) as UserRole[]).map((role) => ({
   value: role,
@@ -43,12 +45,13 @@ type AllUsersProps = {
 }
 
 export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, canEdit, isMobile, onEdit }: AllUsersProps) {
-  const [page, setPage] = useState(0)
-  const [searchText, setSearchText] = useState('')
-  const [search, setSearch] = useState('')
-  const [orgUnitId, setOrgUnitId] = useState(ALL_FILTER)
-  const [role, setRole] = useState<UserRole | typeof ALL_FILTER>(ALL_FILTER)
-  const [status, setStatus] = useState<UserStatus | typeof ALL_FILTER>(ALL_FILTER)
+  const { getFilter, getPage, setFilters } = useUrlFilters()
+  const page = getPage()
+  const search = getFilter('q')
+  const orgUnitId = getFilter('orgUnitId', ALL_FILTER)
+  const role = getFilter('role', ALL_FILTER) as UserRole | typeof ALL_FILTER
+  const status = getFilter('status', ALL_FILTER) as UserStatus | typeof ALL_FILTER
+  const [searchText, setSearchText] = useSearchDraft(search, (value) => setFilters({ q: value, page: null }))
   const load = useCallback(
     (signal: AbortSignal) =>
       loadUsers(
@@ -64,15 +67,12 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
     [loadUsers, page, search, orgUnitId, role, status],
   )
   const query = useApiQuery(`${refreshKey}:${page}:${search}:${orgUnitId}:${role}:${status}`, load)
+  usePageInRange(page, query.data?.totalPages, setPage)
   const hasFilter = !!search.trim() || orgUnitId !== ALL_FILTER || role !== ALL_FILTER || status !== ALL_FILTER
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearch(searchText)
-      setPage(0)
-    }, SEARCH_DELAY)
-    return () => clearTimeout(timer)
-  }, [searchText])
+  function setPage(value: number) {
+    setFilters({ page: value > 0 ? String(value + 1) : null })
+  }
 
   const getAreaNames = (user: ManagedUser) =>
     user.areas.length ? user.areas.map((area) => area.name).join(', ') : '영역 없음'
@@ -164,10 +164,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
             className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
             popupMatchSelectWidth={false}
             value={orgUnitId}
-            onChange={(value) => {
-              setOrgUnitId(value)
-              setPage(0)
-            }}
+            onChange={(value) => setFilters({ orgUnitId: value === ALL_FILTER ? null : value, page: null })}
             options={[
               { value: ALL_FILTER, label: isMobile ? '조직 단위' : '조직 단위: 전체' },
               ...orgUnits.map((org) => ({ value: org.id, label: org.name })),
@@ -179,10 +176,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
           className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
           popupMatchSelectWidth={false}
           value={role}
-          onChange={(value) => {
-            setRole(value)
-            setPage(0)
-          }}
+          onChange={(value) => setFilters({ role: value === ALL_FILTER ? null : value, page: null })}
           options={[{ value: ALL_FILTER, label: isMobile ? '역할' : '역할: 전체' }, ...roleOptions]}
         />
         <Select
@@ -190,10 +184,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
           className="min-w-0 flex-1 min-[992px]:w-auto min-[992px]:flex-none"
           popupMatchSelectWidth={false}
           value={status}
-          onChange={(value) => {
-            setStatus(value)
-            setPage(0)
-          }}
+          onChange={(value) => setFilters({ status: value === ALL_FILTER ? null : value, page: null })}
           options={[
             { value: ALL_FILTER, label: isMobile ? '상태' : '상태: 전체' },
             { value: 'ACTIVE', label: '활성' },

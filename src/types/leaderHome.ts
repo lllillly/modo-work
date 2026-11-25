@@ -26,6 +26,7 @@ export type LeaderHomeTask = LeaderTask & HomeTask & {
   orgUnit: LeaderCourse['orgUnit']
   isReadOnly: boolean
   canReview: boolean
+  hasInactiveAssignee: boolean
 }
 
 export type LeaderHomeCourse = Omit<LeaderCourse, 'areas' | 'businessName'> & {

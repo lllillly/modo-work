@@ -15,6 +15,8 @@ import LoadingError from '../../../../components/common/LoadingError'
 import EmptyData from '../../../../components/common/EmptyData'
 import NoSearchResult from '../../../../components/common/NoSearchResult'
 import useApiQuery from '../../../../hooks/useApiQuery'
+import useSearchDraft from '../../../../hooks/useSearchDraft'
+import useUrlFilters from '../../../../hooks/useUrlFilters'
 import type { DocumentItem } from '../../../../types/documents'
 import { getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
 import DocumentVersionsDrawer from '../../../documents/components/DocumentVersionsDrawer'
@@ -37,9 +39,10 @@ const linkReplaceNotice = '링크 문서는 파일로 교체할 수 없어요'
 export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) {
   const { message, modal } = App.useApp()
   const { showError } = useApiErrorHandler()
-  const [search, setSearch] = useState('')
-  const [kindId, setKindId] = useState(ALL_FILTER)
-  const [businessId, setBusinessId] = useState(ALL_FILTER)
+  const { getFilter, setFilters } = useUrlFilters()
+  const [search, setSearch] = useSearchDraft(getFilter('q'), (value) => setFilters({ q: value }))
+  const kindId = getFilter('kind', ALL_FILTER)
+  const businessId = getFilter('business', ALL_FILTER)
   const [showUpload, setShowUpload] = useState(false)
   const [replaceItem, setReplaceItem] = useState<DocumentItem | null>(null)
   const [versionItem, setVersionItem] = useState<DocumentItem | null>(null)
@@ -295,7 +298,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             <Select
               aria-label="종류 필터"
               value={kindId}
-              onChange={setKindId}
+              onChange={(value) => setFilters({ kind: value === ALL_FILTER ? null : value })}
               popupMatchSelectWidth={false}
               options={[
                 { value: ALL_FILTER, label: '종류: 전체' },
@@ -305,7 +308,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
             <Select
               aria-label="사업 필터"
               value={businessId}
-              onChange={setBusinessId}
+              onChange={(value) => setFilters({ business: value === ALL_FILTER ? null : value })}
               popupMatchSelectWidth={false}
               options={[
                 { value: ALL_FILTER, label: '사업: 전체' },

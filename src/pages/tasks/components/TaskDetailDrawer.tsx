@@ -71,7 +71,7 @@ export default function TaskDetailDrawer({
   if (!isAlways) {
     properties.push(['단계', phaseName ?? '없음'])
   }
-  if (!isMobile && !showMismatch && task.displayText) {
+  if (!showMismatch && task.displayText) {
     properties.push(['표기 문구', task.displayText])
   }
 

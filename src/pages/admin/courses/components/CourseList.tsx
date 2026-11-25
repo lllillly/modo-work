@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { DeleteOutlined, InboxOutlined, MoreOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Checkbox, Dropdown, Grid, Pagination, Select, Skeleton, Table, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -11,8 +11,11 @@ import { isAuthStateError, isConflict } from '../../../../api/client'
 import { deleteCourse, getAssignmentAreas, getCourses } from '../../../../api/courses'
 import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
+import usePageInRange from '../../../../hooks/usePageInRange'
 import useMediaQuery from '../../../../hooks/useMediaQuery'
 import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import useSearchDraft from '../../../../hooks/useSearchDraft'
+import useUrlFilters from '../../../../hooks/useUrlFilters'
 import { useAuth } from '../../../../providers/AuthContext'
 import PageHeader from '../../../../components/layout/PageHeader'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
@@ -26,7 +29,6 @@ import NoSearchResult from '../../../../components/common/NoSearchResult'
 import { smallTableStyle } from '../../../../components/common/tableStyle'
 
 const ALL_FILTER = 'all'
-const SEARCH_DELAY = 300
 const SELECT_PADDING = 48
 const MAX_SELECT_WIDTH = 280
 
@@ -60,12 +62,17 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const { showError } = useApiErrorHandler()
   const { modal, message } = App.useApp()
   const [params, setParams] = useSearchParams()
-  const [page, setPage] = useState(0)
-  const [searchText, setSearchText] = useState('')
-  const [search, setSearch] = useState('')
-  const [orgUnitId, setOrgUnitId] = useState(ALL_FILTER)
-  const [progressStatus, setProgressStatus] = useState<CourseProgressStatus | typeof ALL_FILTER>(ALL_FILTER)
-  const [needsAssignment, setNeedsAssignment] = useState(false)
+  const { getFilter, getPage, setFilters } = useUrlFilters()
+  const page = getPage()
+  const search = getFilter('q')
+  const orgUnitId = getFilter('orgUnitId', ALL_FILTER)
+  const progressStatus = getFilter('status', ALL_FILTER) as CourseProgressStatus | typeof ALL_FILTER
+  const needsAssignment = getFilter('review') === 'true'
+  const [searchText, setSearchText] = useSearchDraft(search, (value) => setFilters({ q: value, page: null }))
+
+  function setPage(value: number) {
+    setFilters({ page: value > 0 ? String(value + 1) : null })
+  }
   const load = useCallback(
     (signal: AbortSignal) =>
       getCourses(
@@ -89,6 +96,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
     `${businessId}:${page}:${search}:${orgUnitId}:${progressStatus}:${needsAssignment}`,
     load,
   )
+  usePageInRange(page, query.data?.totalPages, setPage)
   const orgs = useApiQuery(businessId, loadOrgs)
   const preview = params.get('preview')
   const isLoading = query.isLoading || preview === 'loading'
@@ -128,14 +136,6 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
       },
     })
   }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearch(searchText)
-      setPage(0)
-    }, SEARCH_DELAY)
-    return () => clearTimeout(timer)
-  }, [searchText])
 
   const columns = [
     ...(isWide ? [{ title: '외부 키', dataIndex: 'externalKey', width: 112 }] : []),
@@ -255,10 +255,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           style={{ width: getSelectWidth(orgOptions.map((option) => option.label), selectFont) }}
           popupMatchSelectWidth={false}
           value={orgUnitId}
-          onChange={(value) => {
-            setOrgUnitId(value)
-            setPage(0)
-          }}
+          onChange={(value) => setFilters({ orgUnitId: value === ALL_FILTER ? null : value, page: null })}
           options={orgOptions}
         />
         <Select
@@ -266,29 +263,20 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           style={{ width: getSelectWidth(statusOptions.map((option) => option.label), selectFont) }}
           popupMatchSelectWidth={false}
           value={progressStatus}
-          onChange={(value) => {
-            setProgressStatus(value)
-            setPage(0)
-          }}
+          onChange={(value) => setFilters({ status: value === ALL_FILTER ? null : value, page: null })}
           options={statusOptions}
         />
         {isMobile ? (
           <FilterChip
             selected={needsAssignment}
-            onClick={() => {
-              setNeedsAssignment(!needsAssignment)
-              setPage(0)
-            }}
+            onClick={() => setFilters({ review: needsAssignment ? null : 'true', page: null })}
           >
             확인 필요
           </FilterChip>
         ) : (
           <Checkbox
             checked={needsAssignment}
-            onChange={(event) => {
-              setNeedsAssignment(event.target.checked)
-              setPage(0)
-            }}
+            onChange={(event) => setFilters({ review: event.target.checked ? 'true' : null, page: null })}
           >
             배정 확인 필요한 것만 보기
           </Checkbox>

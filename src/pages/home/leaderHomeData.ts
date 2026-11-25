@@ -64,6 +64,7 @@ function toLeaderHomeTask(task: TaskResponse, today: string, alertIds: Set<strin
     canReview: task.canReview,
     orgUnit: { id: task.orgUnitId, name: task.orgUnitName, isClosed: task.orgUnitClosed },
     isReadOnly: !task.canReviewInArea,
+    hasInactiveAssignee: task.status === 'TODO' && task.assignees.some((assignee) => assignee.status === 'INACTIVE'),
     ...getDeadline(task.dueDate, today, task.status === 'TODO' && alertIds.has(task.id)),
   }
 }

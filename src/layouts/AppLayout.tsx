@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useState } from 'react'
-import { App, Grid, Layout, Spin } from 'antd'
+import { Alert, App, Grid, Layout, Spin } from 'antd'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { resetAskSession } from '../pages/ask/askSession'
@@ -29,6 +29,14 @@ export type AppLayoutContext = {
   reloadBusinesses: () => void
 }
 
+function saveBusinessSelection(key: string, business: string) {
+  try {
+    localStorage.setItem(key, business)
+  } catch {
+    return
+  }
+}
+
 export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   const { user, logout } = useAuth()
   const { message } = App.useApp()
@@ -38,7 +46,14 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
-  const [businessSelection, setBusinessSelection] = useState('')
+  const businessStorageKey = `portal-business:${user?.id ?? ''}`
+  const [businessSelection, setBusinessSelection] = useState(() => {
+    try {
+      return localStorage.getItem(businessStorageKey) ?? ''
+    } catch {
+      return ''
+    }
+  })
   const loadBusinesses = useCallback((signal: AbortSignal) => getBusinesses(signal), [])
   const businesses = useApiQuery(user ? `businesses:${user.id}` : null, loadBusinesses)
   const [shownBusinesses, setShownBusinesses] = useState<OptionItem[]>()
@@ -58,9 +73,11 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
     next.delete('taskId')
     next.delete('preview')
     next.delete('jobId')
+    for (const key of ['q', 'type', 'orgUnitId', 'status', 'review', 'page']) next.delete(key)
 
     setSearchParams(next, { replace: true })
     setBusinessSelection(business)
+    saveBusinessSelection(businessStorageKey, business)
     resetAskSession()
     if (pathname.startsWith('/admin/courses/') && pathname !== '/admin/courses/import') {
       navigate({ pathname: '/admin/courses', search: next.toString() }, { replace: true })
@@ -130,6 +147,14 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
             className={`flex min-h-0 min-w-0 flex-col overflow-y-auto ${isMobile ? 'p-md' : 'p-lg'}`}
           >
             <main className="flex flex-1 flex-col">
+              {primaryRole === 'VIEWER' && (
+                <Alert
+                  type="info"
+                  showIcon
+                  className="mb-md"
+                  title="열람 전용 계정이에요. 화면은 볼 수 있지만 완료나 확인 같은 처리는 할 수 없어요."
+                />
+              )}
               <HeaderTitleSlot.Provider value={titleSlot}>
               <Suspense fallback={<Spin className="m-auto" aria-label="화면 불러오는 중" />}>
                 <Outlet
