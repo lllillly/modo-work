@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react'
 import { ArrowRightOutlined } from '@ant-design/icons'
-import { Alert, Button, Empty, Modal, Pagination, Spin } from 'antd'
+import { Alert, Button, Modal, Pagination, Spin } from 'antd'
 
 import { getScheduleChanges } from '../../../../api/courses'
 import { getApiErrorMessage } from '../../../../api/client'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { formatActionTime } from '../../../tasks/courseTasksData'
+import EmptyData from '../../../../components/common/EmptyData'
+import { formatDateTime } from '../../../../utils/date'
 
 type CourseHistoryModalProps = { courseId: string; courseName: string; onClose: () => void }
 
@@ -62,18 +64,18 @@ export default function CourseHistoryModal({ courseId, courseName, onClose }: Co
             </p>
             {entry.reason && <p className="m-0 text-caption">사유: {entry.reason}</p>}
             <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
-              {formatActionTime(entry.createdAt, true)} · {entry.actor.name}
+              {formatDateTime(entry.createdAt)} · {entry.actor.name}
             </p>
           </div>
         ))
       ) : (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="일정 변경 이력이 없어요" />
+        <EmptyData plain compact title="일정 변경 이력이 없어요" />
       )}
       <Pagination
         className="mt-md"
         size="small"
         current={page + 1}
-        pageSize={20}
+        pageSize={PAGE_SIZE}
         total={query.data?.totalElements ?? 0}
         showSizeChanger={false}
         hideOnSinglePage

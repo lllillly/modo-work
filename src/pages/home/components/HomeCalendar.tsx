@@ -3,7 +3,7 @@ import { Button } from 'antd'
 import { CaretDownOutlined, CaretUpOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
 
 import type { CalendarDay } from '../../../types/homeApi'
-import { formatDate, parseDate } from '../dateUtils'
+import { parseDate, toDateText } from '../../../utils/date'
 
 type HomeCalendarProps = {
   selectedDate: string
@@ -35,7 +35,7 @@ export default function HomeCalendar({ selectedDate, onSelectDate, onMonthChange
   }
 
   function changeMonth(offset: number) {
-    showDate(formatDate(new Date(year, month + offset, 1)))
+    showDate(toDateText(new Date(year, month + offset, 1)))
   }
 
   function selectDate(value: string) {
@@ -75,7 +75,7 @@ export default function HomeCalendar({ selectedDate, onSelectDate, onMonthChange
                 const day = showMonth ? week * 7 + weekday - firstWeekday + 1 : weekStart + weekday
                 const isEmpty = showMonth && (day < 1 || day > daysInMonth)
                 const cellDate = new Date(year, month, day)
-                const value = formatDate(cellDate)
+                const value = toDateText(cellDate)
                 const isSelected = value === selectedDate
                 const isToday = value === today
                 const hasTask = taskDates.has(value)

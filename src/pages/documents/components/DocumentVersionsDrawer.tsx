@@ -2,13 +2,14 @@ import { useCallback } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
 import { App, Button, Drawer, Skeleton, Tag } from 'antd'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../api/client'
+import { isConflict } from '../../../api/client'
 import { getDocumentVersions, getVersionFileUrl, restoreDocumentVersion } from '../../../api/documents'
-import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
+import LoadingError from '../../../components/common/LoadingError'
 import useApiQuery from '../../../hooks/useApiQuery'
-import { useAuth } from '../../../providers/AuthContext'
+import useApiErrorHandler from '../../../hooks/useApiErrorHandler'
 import type { DocumentItem, DocumentVersion } from '../../../types/documents'
-import { formatFileSize, formatShortDate } from '../documentData'
+import { formatFileSize } from '../documentData'
+import { formatMonthDay } from '../../../utils/date'
 
 type DocumentVersionsDrawerProps = {
   item: DocumentItem
@@ -29,7 +30,7 @@ function getVersionFile(version: DocumentVersion) {
 }
 
 function getVersionMeta(version: DocumentVersion) {
-  const meta = [formatShortDate(version.createdAt), version.createdBy.name]
+  const meta = [formatMonthDay(version.createdAt), version.createdBy.name]
   if (version.effectiveDate) meta.push(`시행 ${version.effectiveDate.replaceAll('-', '.')}`)
   return meta.join(' · ')
 }
@@ -44,7 +45,7 @@ export default function DocumentVersionsDrawer({
   onStale,
 }: DocumentVersionsDrawerProps) {
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const load = useCallback(
     (signal: AbortSignal) => getDocumentVersions(item.id, businessId, signal),
     [item.id, businessId],
@@ -72,14 +73,13 @@ export default function DocumentVersionsDrawer({
           onRestored?.()
           onClose()
         } catch (error) {
-          if (error instanceof ApiError && error.status === 409) {
+          if (isConflict(error)) {
             message.warning('다른 관리자가 먼저 문서를 변경했어요. 다시 시도해 주세요.')
             onStale?.()
             onClose()
             return
           }
-          message.error(getApiErrorMessage(error))
-          if (isAuthStateError(error)) void refreshUser()
+          showError(error)
           versions.reload()
         }
       },
@@ -115,16 +115,7 @@ export default function DocumentVersionsDrawer({
         {versions.isLoading ? (
           <Skeleton active title={false} paragraph={{ rows: 4, width: '100%' }} />
         ) : versions.error ? (
-          <NoticeCard
-            icon={<ErrorTriangle />}
-            title="버전 기록을 불러오지 못했어요"
-            description="잠시 후 다시 시도해 주세요."
-            action={
-              <Button className="h-7" onClick={versions.reload}>
-                다시 시도
-              </Button>
-            }
-          />
+          <LoadingError plain title="버전 기록을 불러오지 못했어요" onRetry={versions.reload} />
         ) : (
           <div className="flex flex-col">
             {items.map((version) => {

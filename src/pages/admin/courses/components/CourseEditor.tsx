@@ -19,7 +19,7 @@ import type { Dayjs } from 'dayjs'
 import { Link, useNavigate } from 'react-router'
 
 import type { CourseDraft, CourseSaveResult, ManagedCourse } from '../../../../types/adminCourses'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isConflict } from '../../../../api/client'
 import { getCourseChanges, replaceAssignees, updateSchedule } from '../../../../api/courses'
 import type { AssignmentContext, OptionItem, ScheduleContext } from '../../../../types/courseApi'
 import { useAuth } from '../../../../providers/AuthContext'
@@ -28,11 +28,13 @@ import { getCoursePeriod, getInactiveAssignees, getOrgUnitName } from '../course
 import { getCourseTaskSummary, getPendingTasksByArea } from '../../../../api/tasks'
 import type { CourseTaskSummary } from '../../../../types/taskApi'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { formatActionTime } from '../../../tasks/courseTasksData'
 import CourseChangesModal from './CourseChangesModal'
 import AssigneeFields from './AssigneeFields'
 import CourseCorrectionModal from './CourseCorrectionModal'
 import PageTitle from '../../../../components/layout/PageTitle'
+import ContentCard from '../../../../components/common/ContentCard'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatDateTime } from '../../../../utils/date'
 
 const HISTORY_SUMMARY_SIZE = 1
 
@@ -59,7 +61,8 @@ export default function CourseEditor({
 }: CourseEditorProps) {
   const navigate = useNavigate()
   const { modal } = App.useApp()
-  const { user, refreshUser } = useAuth()
+  const { user } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [form] = Form.useForm<CourseFormValues>()
   const [result, setResult] = useState<CourseSaveResult | null>(null)
   const [saveError, setSaveError] = useState('')
@@ -159,10 +162,8 @@ export default function CourseEditor({
         return name ? [{ name, errors: [entry.message] }] : []
       })
       form.setFields(fields)
-      if (cause.status === 409) setConflict(true)
-      if (isAuthStateError(cause)) {
-        void refreshUser()
-      }
+      if (isConflict(cause)) setConflict(true)
+      checkLogin(cause)
     }
   }
 
@@ -334,11 +335,7 @@ export default function CourseEditor({
         className="flex flex-col gap-md [&_.ant-form-item-label]:pb-xxs
           [&_.ant-form-item-label>label]:text-caption"
       >
-        <Card
-          variant="borderless"
-          className="shadow-none"
-          classNames={{ body: 'p-md min-[992px]:p-lg' }}
-        >
+        <ContentCard>
           <h3 className="mt-0 mb-sm text-card-title font-medium">기본 정보</h3>
           <div className="grid grid-cols-1 gap-x-md min-[992px]:grid-cols-[260px_200px_minmax(0,1fr)]">
             {/* 기존 외부 키와 조직은 현재 수정 API의 변경 대상이 아님 */}
@@ -485,12 +482,8 @@ export default function CourseEditor({
               />
             </Form.Item>
           </div>
-        </Card>
-        <Card
-          variant="borderless"
-          className="shadow-none"
-          classNames={{ body: 'p-md min-[992px]:p-lg' }}
-        >
+        </ContentCard>
+        <ContentCard>
           <h3 className="m-0 text-card-title font-medium">영역별 담당자</h3>
           <p className="mt-xxs mb-sm text-caption text-(--ant-color-text-secondary)">
             영역마다 여러 명을 배정할 수 있어요. 같은 영역은 한 명만 완료해도 완료로 처리돼요.
@@ -528,7 +521,7 @@ export default function CourseEditor({
               }
             />
           </Form.Item>
-        </Card>
+        </ContentCard>
         <Card
           variant="borderless"
           className="shadow-none"
@@ -549,7 +542,7 @@ export default function CourseEditor({
               <span>
                 {historySummary.data ? `변경 이력 ${historySummary.data.totalElements}건` : '변경 이력'}
                 {historySummary.data?.lastModifiedAt &&
-                  ` · 마지막 수정 ${formatActionTime(historySummary.data.lastModifiedAt, true)} ${
+                  ` · 마지막 수정 ${formatDateTime(historySummary.data.lastModifiedAt)} ${
                     historySummary.data.lastModifiedBy?.name ?? ''
                   }`}
                 <span className="ml-xs text-[11px] text-(--ant-color-text-quaternary)">

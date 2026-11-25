@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import type { CourseDraft, ManagedCourse } from '../../../types/adminCourses'
 import type { CourseResponse, OptionItem } from '../../../types/courseApi'
 import type { AuthUser } from '../../../types/auth'
-import { getToday } from '../../home/dateUtils'
+import { getToday } from '../../../utils/date'
 
 export function getOrgUnitName(id: string, options: OptionItem[], user: AuthUser | null) {
   const knownOrgUnits = [user?.orgUnit, ...(user?.roles.map((role) => role.orgUnit) ?? [])]
@@ -52,15 +52,4 @@ export function getInactiveAssignees(course: ManagedCourse) {
   return Object.values(course.assignedUsers)
     .flat()
     .filter((user) => user.status === 'INACTIVE')
-}
-
-const archiveDateFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Seoul',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
-
-export function formatArchivedDate(value?: string | null) {
-  return value ? archiveDateFormatter.format(new Date(value)).replaceAll('-', '.') : '-'
 }

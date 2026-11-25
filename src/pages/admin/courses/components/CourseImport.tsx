@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { InboxOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Steps, Upload } from 'antd'
+import { Alert, App, Button, Steps, Upload } from 'antd'
 import type { UploadProps } from 'antd'
 import { useSearchParams } from 'react-router'
 
 import { previewCourseImport } from '../../../../api/courses'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
-import { useAuth } from '../../../../providers/AuthContext'
+import { ApiError, getApiErrorMessage } from '../../../../api/client'
 import PageHeader from '../../../../components/layout/PageHeader'
+import ContentCard from '../../../../components/common/ContentCard'
 import CourseImportPreview from './CourseImportPreview'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 
 const importRules = [
   '이 사업의 기존 외부 키는 갱신하고 다른 사업에서 쓰는 키는 오류로 처리해요.',
@@ -23,7 +24,7 @@ type CourseImportProps = { businessId: string; business: string; isMobile: boole
 
 export default function CourseImport({ businessId, business, isMobile }: CourseImportProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [params, setParams] = useSearchParams()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -48,9 +49,7 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
     } catch (error) {
       if (controller.signal.aborted) return
       setError(error)
-      if (isAuthStateError(error)) {
-        void refreshUser()
-      }
+      checkLogin(error)
     } finally {
       if (!controller.signal.aborted) setBusy(false)
     }
@@ -118,11 +117,7 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
               }
             />
           )}
-          <Card
-            variant="borderless"
-            className="shadow-none"
-            classNames={{ body: 'p-md min-[992px]:p-lg' }}
-          >
+          <ContentCard>
             <Upload.Dragger {...uploadProps} className="block">
               <div className="flex min-h-[112px] flex-col items-center justify-center gap-xs p-md min-[992px]:min-h-[140px]">
                 <InboxOutlined className="text-[32px] text-(--ant-color-primary-text)" />
@@ -146,12 +141,8 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
             >
               양식 내려받기 (courses_template.csv)
             </Button>
-          </Card>
-          <Card
-            variant="borderless"
-            className="shadow-none"
-            classNames={{ body: 'p-md min-[992px]:p-lg' }}
-          >
+          </ContentCard>
+          <ContentCard>
             <h3 className="mt-0 mb-xs text-card-title font-medium">가져오기 규칙</h3>
             <ul
               className="m-0 flex list-disc flex-col gap-xs pl-md text-caption
@@ -161,7 +152,7 @@ export default function CourseImport({ businessId, business, isMobile }: CourseI
                 <li key={rule}>{rule}</li>
               ))}
             </ul>
-          </Card>
+          </ContentCard>
         </>
       )}
     </div>

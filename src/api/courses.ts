@@ -17,7 +17,7 @@ import type {
 } from '../types/courseApi'
 import type { CourseDraft } from '../types/adminCourses'
 import { getApi, requestApi, sendApi } from './client'
-import { getAllPages } from './pagination'
+import { PAGE_SIZE, getAllPages } from './pagination'
 
 export const getBusinesses = (signal?: AbortSignal) =>
   getApi<{ items: OptionItem[] }>('/options/businesses', signal)
@@ -50,7 +50,7 @@ export function getCourses(
   filter: CourseListFilter = {},
   signal?: AbortSignal,
 ) {
-  const query = new URLSearchParams({ businessId, page: String(page), size: '20', state: filter.state ?? 'active' })
+  const query = new URLSearchParams({ businessId, page: String(page), size: String(PAGE_SIZE), state: filter.state ?? 'active' })
   if (filter.q?.trim()) query.set('q', filter.q.trim())
   if (filter.orgUnitId) query.set('orgUnitId', filter.orgUnitId)
   if (filter.progressStatus) query.set('progressStatus', filter.progressStatus)
@@ -90,7 +90,7 @@ type AssigneeCandidateQuery = {
 }
 
 export function getAssigneeCandidates(parameters: AssigneeCandidateQuery, signal?: AbortSignal) {
-  const { businessId, orgUnitId, areaId, q, page, size = 20, courseId } = parameters
+  const { businessId, orgUnitId, areaId, q, page, size = PAGE_SIZE, courseId } = parameters
   const query = new URLSearchParams({
     businessId,
     orgUnitId,
@@ -158,12 +158,12 @@ export function replaceAssignees(
 
 export function getScheduleChanges(id: string, page: number, signal?: AbortSignal) {
   return getApi<PageResponse<ScheduleChange>>(
-    `/courses/${encodeURIComponent(id)}/schedule-changes?page=${page}&size=20`,
+    `/courses/${encodeURIComponent(id)}/schedule-changes?page=${page}&size=${PAGE_SIZE}`,
     signal,
   )
 }
 
-export function getCourseChanges(id: string, page: number, signal?: AbortSignal, size = 20) {
+export function getCourseChanges(id: string, page: number, signal?: AbortSignal, size = PAGE_SIZE) {
   return getApi<CourseHistory>(
     `/admin/courses/${encodeURIComponent(id)}/changes?page=${page}&size=${size}`,
     signal,
@@ -188,13 +188,13 @@ export const getImportJob = (id: string, signal?: AbortSignal) =>
 
 export const getImportRows = (id: string, page: number, signal?: AbortSignal) =>
   getApi<PageResponse<ImportRow>>(
-    `/admin/imports/${encodeURIComponent(id)}/rows?page=${page}&size=20`,
+    `/admin/imports/${encodeURIComponent(id)}/rows?page=${page}&size=${PAGE_SIZE}`,
     signal,
   )
 
 export const getMissingCourses = (id: string, page: number, signal?: AbortSignal) =>
   getApi<PageResponse<MissingCourse>>(
-    `/admin/imports/${encodeURIComponent(id)}/missing-courses?page=${page}&size=20`,
+    `/admin/imports/${encodeURIComponent(id)}/missing-courses?page=${page}&size=${PAGE_SIZE}`,
     signal,
   )
 

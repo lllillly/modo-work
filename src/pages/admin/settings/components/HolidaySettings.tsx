@@ -1,26 +1,28 @@
 import { useCallback, useState } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Pen } from 'lucide-react'
-import { App, Button, Card, Pagination, Select, Skeleton, Table, Tag } from 'antd'
+import { App, Button, Pagination, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import dayjs from 'dayjs'
 
 import type { Holiday, HolidayRecalculation } from '../../../../types/holidays'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isAuthStateError, isConflict } from '../../../../api/client'
 import { createHoliday, deleteHoliday, getHolidays, updateHoliday } from '../../../../api/holidays'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
-import NoticeCard, { ErrorTriangle } from '../../../../components/common/NoticeCard'
+import LoadingError from '../../../../components/common/LoadingError'
+import EmptyData from '../../../../components/common/EmptyData'
 import IconAction from '../../../../components/common/IconAction'
-import { formatTaskDate } from '../../../tasks/courseTasksData'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
 import HolidayModal from './HolidayModal'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import ContentCard from '../../../../components/common/ContentCard'
+import { formatDateWithDay } from '../../../../utils/date'
 
 type HolidaySettingsProps = { isMobile: boolean }
 
 const thisYear = dayjs().year()
 const yearOptions = [thisYear - 1, thisYear, thisYear + 1].map((year) => ({ value: year, label: `${year}년` }))
-
-const formatDate = (value: string) => formatTaskDate(value, true)
 
 function changedMessage(done: string, recalculation: HolidayRecalculation) {
   const changed = recalculation.deadlineChangedTaskCount
@@ -29,7 +31,7 @@ function changedMessage(done: string, recalculation: HolidayRecalculation) {
 
 export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
   const { modal, message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const [year, setYear] = useState(thisYear)
   const [page, setPage] = useState(0)
   const [editing, setEditing] = useState<Holiday | 'new' | null>(null)
@@ -42,13 +44,9 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
   const holidays = query.data?.items ?? []
 
   function handleError(error: unknown) {
-    message.error(
-      error instanceof ApiError && error.status === 409
-        ? '같은 날 회사 휴무일이 이미 있거나 다른 사람이 먼저 바꿨어요. 목록을 다시 불러왔어요.'
-        : getApiErrorMessage(error),
-    )
-    if (isAuthStateError(error)) void refreshUser()
-    else query.reload()
+    const conflictText = '같은 날 회사 휴무일이 이미 있거나 다른 사람이 먼저 바꿨어요. 목록을 다시 불러왔어요.'
+    showError(error, isConflict(error) ? conflictText : undefined)
+    if (!isAuthStateError(error)) query.reload()
   }
 
   async function save(values: { date: string; name: string }) {
@@ -81,7 +79,7 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
   function remove(holiday: Holiday) {
     modal.confirm({
       title: '회사 휴무일을 삭제할까요?',
-      content: `${formatDate(holiday.date)} ${holiday.name}. 이 날 때문에 앞당겨진 미완료 할 일의 마감을 다시 계산해요.`,
+      content: `${formatDateWithDay(holiday.date, true)} ${holiday.name}. 이 날 때문에 앞당겨진 미완료 할 일의 마감을 다시 계산해요.`,
       okText: '삭제',
       okButtonProps: { danger: true },
       cancelText: '취소',
@@ -116,14 +114,14 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
     )
 
   const columns: TableColumnsType<Holiday> = [
-    { title: '날짜', dataIndex: 'date', width: 160, render: formatDate },
+    { title: '날짜', dataIndex: 'date', width: 160, render: (value: string) => formatDateWithDay(value, true) },
     { title: '구분', key: 'source', width: 104, render: (_, holiday) => sourceTag(holiday) },
     { title: '이름', dataIndex: 'name' },
     { title: '', key: 'actions', width: 88, render: (_, holiday) => actions(holiday) },
   ]
 
   return (
-    <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+    <ContentCard>
       <div className="mb-sm flex flex-wrap items-center gap-xs">
         <h2 className="m-0 w-full text-card-title min-[992px]:mr-auto min-[992px]:w-auto">공휴일과 회사 휴무일</h2>
         <Select
@@ -145,12 +143,7 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
       </p>
 
       {query.error ? (
-        <NoticeCard
-          icon={<ErrorTriangle />}
-          title="휴무일을 불러오지 못했어요"
-          description={getApiErrorMessage(query.error)}
-          action={<Button className="h-7" onClick={query.reload}>다시 시도</Button>}
-        />
+        <LoadingError plain title="휴무일을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
       ) : query.isLoading ? (
         <Skeleton active title={false} paragraph={{ rows: 5, width: '100%' }} />
       ) : isMobile ? (
@@ -164,7 +157,7 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body font-medium">{holiday.name}</span>
                   <span className="flex items-center gap-xs text-caption text-(--ant-color-text-secondary)">
-                    {formatDate(holiday.date)} {sourceTag(holiday)}
+                    {formatDateWithDay(holiday.date, true)} {sourceTag(holiday)}
                   </span>
                 </span>
                 {actions(holiday)}
@@ -172,7 +165,7 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
             ))}
           </ul>
         ) : (
-          <p className="m-0 py-lg text-center text-caption text-(--ant-color-text-secondary)">{year}년 휴무일이 없어요</p>
+          <EmptyData plain compact title={`${year}년 휴무일이 없어요`} />
         )
       ) : (
         <Table<Holiday>
@@ -182,15 +175,15 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
           pagination={false}
           size="small"
           rowHoverable={false}
-          locale={{ emptyText: `${year}년 휴무일이 없어요` }}
-          classNames={{ header: { cell: 'text-caption font-medium' }, body: { cell: 'px-sm py-xs text-caption' } }}
+          locale={{ emptyText: <EmptyData plain compact title={`${year}년 휴무일이 없어요`} /> }}
+          classNames={smallTableStyle}
         />
       )}
 
-      {!query.isLoading && !query.error && (query.data?.totalElements ?? 0) > 20 && (
+      {!query.isLoading && !query.error && (query.data?.totalElements ?? 0) > PAGE_SIZE && (
         <Pagination
           current={page + 1}
-          pageSize={20}
+          pageSize={PAGE_SIZE}
           total={query.data?.totalElements ?? 0}
           showSizeChanger={false}
           onChange={(value) => setPage(value - 1)}
@@ -207,6 +200,6 @@ export default function HolidaySettings({ isMobile }: HolidaySettingsProps) {
           onSave={(values) => void save(values)}
         />
       )}
-    </Card>
+    </ContentCard>
   )
 }

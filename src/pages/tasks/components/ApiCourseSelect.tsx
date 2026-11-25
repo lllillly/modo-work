@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Button, Divider, Pagination, Select } from 'antd'
 
 import { getCourses } from '../../../api/courses'
+import { PAGE_SIZE } from '../../../api/pagination'
 import useApiQuery from '../../../hooks/useApiQuery'
 
 type ApiCourseSelectProps = {
@@ -57,7 +58,7 @@ export default function ApiCourseSelect({
           <Pagination
             size="small"
             current={page + 1}
-            pageSize={20}
+            pageSize={PAGE_SIZE}
             total={query.data?.totalElements ?? 0}
             showSizeChanger={false}
             hideOnSinglePage

@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { FileTextOutlined, InboxOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Upload } from 'antd'
+import { Alert, App, Button, Upload } from 'antd'
 import type { UploadProps } from 'antd'
 
 import type { SettingsImportPreview, SettingsKind } from '../../../../types/settingsTransfer'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isConflict } from '../../../../api/client'
 import { applySettingsImport, previewSettingsImport } from '../../../../api/settingsTransfer'
-import { useAuth } from '../../../../providers/AuthContext'
 import { getKindLabel, settingsKinds } from '../settingsKinds'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import ContentCard from '../../../../components/common/ContentCard'
 
 const importOrder = [
   '기준 목록 → 할 일 템플릿 → Q&A → 의도 순서로 가져와요. 설정값은 순서와 상관없어요.',
@@ -20,7 +21,7 @@ type SettingsImportProps = { isMobile: boolean }
 
 export default function SettingsImport({ isMobile }: SettingsImportProps) {
   const { modal, message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [selected, setSelected] = useState<{ file: File; kind: SettingsKind } | null>(null)
   const [preview, setPreview] = useState<{ file: File; result: SettingsImportPreview } | null>(null)
   const [failure, setFailure] = useState<{ step: 'preview' | 'apply'; error: unknown } | null>(null)
@@ -34,7 +35,7 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
 
   function fail(step: 'preview' | 'apply', error: unknown) {
     setFailure({ step, error })
-    if (isAuthStateError(error)) void refreshUser()
+    checkLogin(error)
   }
 
   async function selectFile(file: File) {
@@ -108,14 +109,14 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
 
   const error = failure?.error
   const errorTitle =
-    error instanceof ApiError && error.status === 409
+    isConflict(error)
       ? '이름이 겹치거나 다른 사람이 먼저 바꿔서 적용하지 못했어요. 아무것도 바뀌지 않았어요.'
       : !(error instanceof ApiError) && failure?.step === 'apply'
         ? '적용됐는지 확인하지 못했어요. 다시 적용하기 전에 같은 종류를 내보내 바뀌었는지 확인해 주세요.'
         : getApiErrorMessage(error)
 
   return (
-    <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+    <ContentCard>
       <div className="flex flex-col gap-sm">
         <div>
           <h2 className="m-0 text-card-title">가져오기</h2>
@@ -179,6 +180,6 @@ export default function SettingsImport({ isMobile }: SettingsImportProps) {
           </Button>
         </div>
       </div>
-    </Card>
+    </ContentCard>
   )
 }

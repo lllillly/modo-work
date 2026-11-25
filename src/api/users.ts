@@ -2,6 +2,7 @@ import type { OptionItem, PageResponse } from '../types/courseApi'
 import type { ManagedUser, UserSettingsRequest, UserStatus } from '../types/adminUsers'
 import type { UserRole } from '../types/user'
 import { getApi, sendApi } from './client'
+import { PAGE_SIZE } from './pagination'
 
 type UserFilter = {
   q?: string
@@ -19,10 +20,10 @@ function getUserQuery(page: number, filter: UserFilter, size: number) {
   return query
 }
 
-export const getAdminUsers = (page: number, filter: UserFilter = {}, signal?: AbortSignal, size = 20) =>
+export const getAdminUsers = (page: number, filter: UserFilter = {}, signal?: AbortSignal, size = PAGE_SIZE) =>
   getApi<PageResponse<ManagedUser>>(`/admin/users?${getUserQuery(page, filter, size)}`, signal)
 
-export const getManagedUsers = (page: number, filter: UserFilter = {}, signal?: AbortSignal, size = 20) =>
+export const getManagedUsers = (page: number, filter: UserFilter = {}, signal?: AbortSignal, size = PAGE_SIZE) =>
   getApi<PageResponse<ManagedUser>>(`/users?${getUserQuery(page, filter, size)}`, signal)
 
 export const getUserAreas = (signal?: AbortSignal) =>

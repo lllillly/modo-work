@@ -25,12 +25,6 @@ export const viewerTargetOptions: { value: ViewerTarget; label: string }[] = [
   { value: 'ASSIGNEE', label: '담당자 화면' },
 ]
 
-export function formatDateTime(value: string) {
-  const date = new Date(value)
-  const pad = (number: number) => String(number).padStart(2, '0')
-  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
 export function getRoleLabels(user: ManagedUser) {
   return user.roles.map((role) => {
     const key = [role.role, role.scopeType, role.orgUnit?.id, role.leaderType, role.area?.id, role.viewerTargetRole].join(':')

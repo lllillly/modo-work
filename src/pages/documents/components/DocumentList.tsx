@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { InboxOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
+import { RightOutlined } from '@ant-design/icons'
 import { Button, Card, Skeleton } from 'antd'
 import { Link } from 'react-router'
 
-import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
+import LoadingError from '../../../components/common/LoadingError'
+import EmptyData from '../../../components/common/EmptyData'
+import NoSearchResult from '../../../components/common/NoSearchResult'
 import PageHeader from '../../../components/layout/PageHeader'
 import type { DocumentItem } from '../../../types/documents'
 import { ALL_TYPES, getDocumentMeta, getDocumentTypes, getExternalHref, isSearchExcluded } from '../documentData'
@@ -71,19 +73,9 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
           <Skeleton active title={false} paragraph={{ rows: 6, width: '100%' }} />
         </Card>
       ) : query.error ? (
-        <NoticeCard
-          icon={<ErrorTriangle />}
-          title="문서 목록을 불러오지 못했어요"
-          description="잠시 후 다시 시도해 주세요."
-          action={
-            <Button className="h-7" onClick={query.reload}>
-              다시 시도
-            </Button>
-          }
-        />
+        <LoadingError title="문서 목록을 불러오지 못했어요" onRetry={query.reload} />
       ) : documents.length === 0 ? (
-        <NoticeCard
-          icon={<InboxOutlined className="text-3xl text-(--ant-color-text-tertiary)" />}
+        <EmptyData
           title="아직 볼 수 있는 문서가 없어요"
           description="관리자가 문서를 올리면 여기에 보여요. 필요한 문서가 있으면 관리자에게 요청해 주세요."
         />
@@ -101,8 +93,7 @@ export default function DocumentList({ businessId, businessName, isMobile }: Doc
             </div>
           )}
           {visibleDocuments.length === 0 && trimmedKeyword ? (
-            <NoticeCard
-              icon={<SearchOutlined aria-hidden className="text-4xl text-(--ant-color-text-tertiary)" />}
+            <NoSearchResult
               title={`"${keyword.trim()}"이 나온 문서가 없어요`}
               description="다른 단어로 찾거나, 물어보기에 질문해 보세요. 텍스트가 없는 PDF는 검색되지 않아요."
               action={

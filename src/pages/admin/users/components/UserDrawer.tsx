@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Checkbox, Drawer, Radio, Select, Skeleton } from 'antd'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isConflict } from '../../../../api/client'
 import { approveUser, updateUserSettings } from '../../../../api/users'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { ManagedUser } from '../../../../types/adminUsers'
 import type { OptionItem } from '../../../../types/courseApi'
 import type { UserDraft, ViewerTarget } from '../usersData'
 import {
-  formatDateTime,
   getDefaultViewerScope,
   toDraft,
   toSettingsRequest,
@@ -17,6 +15,8 @@ import {
   viewerTargetOptions,
   withCurrentOptions,
 } from '../usersData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatDateTime } from '../../../../utils/date'
 
 const NONE = 'none'
 
@@ -45,7 +45,7 @@ export default function UserDrawer({
 }: UserDrawerProps) {
   
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const [draft, setDraft] = useState(() => toDraft(user))
   const [isSaving, setIsSaving] = useState(false)
   const isApproval = user.status === 'PENDING'
@@ -116,9 +116,8 @@ export default function UserDrawer({
       }
       onSaved()
     } catch (error) {
-      message.error(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
-      if (error instanceof ApiError && error.status === 409) onSaved()
+      showError(error)
+      if (isConflict(error)) onSaved()
     } finally {
       setIsSaving(false)
     }

@@ -2,31 +2,31 @@ import { useCallback, useRef, useState } from 'react'
 import { Alert, App, Button, Card, Skeleton, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
-import { getApiErrorMessage, isAuthStateError } from '../../api/client'
+import { getApiErrorMessage } from '../../api/client'
 import { getLeaderHome } from '../../api/home'
 import { processTask, reviewTasks } from '../../api/tasks'
 import useApiQuery from '../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
-import { useAuth } from '../../providers/AuthContext'
 import type { AuthUser } from '../../types/auth'
 import type { LeaderHomeResponse } from '../../types/homeApi'
 import type { LeaderHomeTask } from '../../types/leaderHome'
 import type { TaskResponse } from '../../types/taskApi'
 import { getLeaderHomeData, getLeaderReviewScope } from './leaderHomeData'
 
-import HomeError from './components/AssigneeHomeError'
+import LoadingError from '../../components/common/LoadingError'
 import HomeSkeleton from './components/AssigneeHomeSkeleton'
 import LeaderCourseList from './components/LeaderCourseList'
 import LeaderReviewList from './components/LeaderReviewList'
 import TaskList from './components/TaskList'
 import { clickableRowProps } from '../../components/common/clickableRow'
 import PageTitle from '../../components/layout/PageTitle'
-
-const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
+import EmptyData from '../../components/common/EmptyData'
+import ContentCard from '../../components/common/ContentCard'
+import useApiErrorHandler from '../../hooks/useApiErrorHandler'
 
 export default function LeaderHomePage({ user }: { user: AuthUser }) {
   const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const { message, modal } = App.useApp()
   const [showAllAlerts, setShowAllAlerts] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -53,8 +53,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
       message.success(`${reviewed}건 확인했어요.`)
     } catch (error) {
       const reason = getApiErrorMessage(error)
-      message.error(reviewed > 0 ? `${reviewed}건은 확인했고 나머지는 처리하지 못했어요. ${reason}` : reason)
-      if (isAuthStateError(error)) void refreshUser()
+      showError(error, reviewed > 0 ? `${reviewed}건은 확인했고 나머지는 처리하지 못했어요. ${reason}` : reason)
     } finally {
       saving.current = false
       setRefreshKey((key) => key + 1)
@@ -161,14 +160,9 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
       )}
 
       {!selectedBusinessId ? (
-        <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
-          <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
-            <h3 className="m-0 text-card-title">선택할 수 있는 사업이 없어요</h3>
-            <p className="m-0 text-body text-(--ant-color-text-secondary)">관리자가 사업을 등록하면 과정 현황을 확인할 수 있어요.</p>
-          </div>
-        </Card>
+        <EmptyData title="선택할 수 있는 사업이 없어요" description="관리자가 사업을 등록하면 과정 현황을 확인할 수 있어요." />
       ) : isError ? (
-        <HomeError title="과정 현황을 불러오지 못했어요" onRetry={query.reload} />
+        <LoadingError title="과정 현황을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
       ) : !homeData ? (
         <>
           <div className="grid auto-cols-fr grid-flow-col gap-xs min-[992px]:gap-md" aria-hidden="true">
@@ -181,12 +175,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
           <HomeSkeleton />
         </>
       ) : isEmpty ? (
-        <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
-          <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
-            <h3 className="m-0 text-card-title">진행 중인 과정이 없어요</h3>
-            <p className="m-0 text-body text-(--ant-color-text-secondary)">관리자가 과정을 등록하면 현황과 처리 기록이 여기에 보여요.</p>
-          </div>
-        </Card>
+        <EmptyData title="진행 중인 과정이 없어요" description="관리자가 과정을 등록하면 현황과 처리 기록이 여기에 보여요." />
       ) : (
         <>
           {isMobile ? (
@@ -223,7 +212,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
 
           <div className="grid grid-cols-1 gap-sm min-[992px]:gap-md min-[1200px]:grid-cols-2">
             {alerts.length > 0 && (
-              <Card id="leader-alerts" variant="borderless" className="h-full scroll-mt-md shadow-none" classNames={cardClassNames} role="region" aria-labelledby="leader-alerts-title">
+              <ContentCard id="leader-alerts" className="h-full scroll-mt-md" role="region" aria-labelledby="leader-alerts-title">
                 <div className="mb-xs flex min-h-8 flex-wrap items-center gap-xs">
                   <h2 id="leader-alerts-title" className="m-0 text-card-title">리더 알림</h2>
                   {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
@@ -238,7 +227,7 @@ export default function LeaderHomePage({ user }: { user: AuthUser }) {
                     {showAllAlerts ? '접기' : `알림 ${alerts.length - visibleAlerts.length}건 더 보기`}
                   </Button>
                 )}
-              </Card>
+              </ContentCard>
             )}
 
             <div id="leader-records" className={`scroll-mt-md ${alerts.length > 0 ? '' : 'min-[1200px]:col-span-2'}`}>

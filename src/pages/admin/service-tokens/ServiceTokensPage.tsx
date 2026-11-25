@@ -1,7 +1,5 @@
-import { Button } from 'antd'
-import { Link } from 'react-router'
-
-import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
+import NoPermission from '../../../components/common/NoPermission'
+import { isAdmin } from '../../../utils/roles'
 import PageHeader from '../../../components/layout/PageHeader'
 import PageGuide from '../../../components/common/PageGuide'
 import { useAuth } from '../../../providers/AuthContext'
@@ -11,20 +9,7 @@ import { serviceTokensGuide } from './serviceTokensGuide'
 export default function ServiceTokensPage() {
   const { user } = useAuth()
 
-  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
-    return (
-      <NoticeCard
-        icon={<ErrorTriangle />}
-        title="이 화면에 접근할 권한이 없어요"
-        description="서비스 토큰은 관리자만 발급하고 폐기할 수 있어요."
-        action={
-          <Link to="/">
-            <Button className="h-7">홈으로</Button>
-          </Link>
-        }
-      />
-    )
-  }
+  if (!isAdmin(user)) return <NoPermission description="서비스 토큰은 관리자만 발급하고 폐기할 수 있어요." />
 
   return (
     <div className="flex flex-col gap-md">

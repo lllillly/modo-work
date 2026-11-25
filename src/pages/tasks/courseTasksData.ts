@@ -2,59 +2,8 @@ import type { AuthUser } from '../../types/auth'
 import type { CourseTask, CourseTasksCourse, MonthlyCycle, TaskAction, TaskActionType } from '../../types/courseTasks'
 
 import { getDeadline } from '../home/assigneeHomeData'
-import { formatDate, getDaysUntil, parseDate } from '../home/dateUtils'
 import { getLeaderReviewScope } from '../home/leaderHomeData'
-
-export function addDays(value: string, days: number) {
-  const date = parseDate(value)
-  date.setDate(date.getDate() + days)
-
-  return formatDate(date)
-}
-
-export function formatTaskDate(value: string, full = false) {
-  const day = value.includes('T')
-    ? new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date(value))
-    : value
-
-  const date = parseDate(day)
-  const weekday = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date)
-
-  if (full) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const dayOfMonth = String(date.getDate()).padStart(2, '0')
-
-    return `${year}.${month}.${dayOfMonth} (${weekday})`
-  }
-
-  return `${date.getMonth() + 1}/${date.getDate()}(${weekday})`
-}
-
-export function formatActionTime(value: string, fullDate = false) {
-  const parts = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: fullDate ? 'numeric' : undefined,
-    month: fullDate ? '2-digit' : 'numeric',
-    day: fullDate ? '2-digit' : 'numeric',
-    weekday: fullDate ? undefined : 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(new Date(value))
-
-  const { year, month, day, weekday, hour, minute } = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  )
-
-  if (fullDate) return `${year}.${month}.${day} ${hour}:${minute}`
-  return `${month}/${day} (${weekday}) ${hour}:${minute}`
-}
+import { addDays, formatDateWithDay, getDaysUntil, parseDate, toDateText } from '../../utils/date'
 
 function adjustDeadline(rawDueDate: string) {
   const date = parseDate(rawDueDate)
@@ -65,7 +14,7 @@ function adjustDeadline(rawDueDate: string) {
     date.setDate(date.getDate() - 1)
   }
 
-  return { rawDueDate, dueDate: formatDate(date), shiftReasons }
+  return { rawDueDate, dueDate: toDateText(date), shiftReasons }
 }
 
 export function getMonthlyCycles(startDate: string, endDate: string, offsetDays: number): MonthlyCycle[] {
@@ -81,8 +30,8 @@ export function getMonthlyCycles(startDate: string, endDate: string, offsetDays:
 
     if (start.slice(0, 7) !== endDate.slice(0, 7)) {
       const candidate = date.getDate() > nextMonthLastDay.getDate()
-        ? formatDate(nextMonthLastDay)
-        : formatDate(new Date(date.getFullYear(), date.getMonth() + 1, date.getDate() - 1))
+        ? toDateText(nextMonthLastDay)
+        : toDateText(new Date(date.getFullYear(), date.getMonth() + 1, date.getDate() - 1))
       end = candidate < endDate ? candidate : endDate
     }
 
@@ -121,8 +70,8 @@ export function recalculateCourseTasks(course: CourseTasksCourse, tasks: CourseT
           reason: '과정 일정 수정',
           changes: [{
             label: '마감',
-            before: formatTaskDate(task.dueDate ?? deadline.dueDate),
-            after: formatTaskDate(deadline.dueDate),
+            before: formatDateWithDay(task.dueDate ?? deadline.dueDate),
+            after: formatDateWithDay(deadline.dueDate),
           }],
         },
       }

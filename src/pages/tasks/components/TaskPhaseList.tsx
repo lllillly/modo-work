@@ -6,9 +6,10 @@ import type { AuthUser } from '../../../types/auth'
 import type { CourseTasksCourse, CourseTaskView } from '../../../types/courseTasks'
 
 import DeadlineTag from '../../home/components/DeadlineTag'
-import { formatTaskDate, getCurrentAction, getTaskPermissions } from '../courseTasksData'
+import { getCurrentAction, getTaskPermissions } from '../courseTasksData'
 
 import DeadlineChange from './DeadlineChange'
+import { formatDateWithDay } from '../../../utils/date'
 
 const taskLimit = 3
 
@@ -108,7 +109,7 @@ export default function TaskPhaseList({
                           </button>
                           <p className="m-0 truncate text-caption leading-4 text-(--ant-color-text-tertiary)">
                             {(!isMobile || !completion) && `${task.tag ? `${task.tag} · ` : ''}${task.areaName} · `}
-                            {completion ? `${completion.actor.name} 완료 ${formatTaskDate(completion.createdAt)}` : task.isCompleted && task.completedBy ? `${task.completedBy} 완료` : task.assignees.map((assignee) => assignee.name).join(', ')}
+                            {completion ? `${completion.actor.name} 완료 ${formatDateWithDay(completion.createdAt)}` : task.isCompleted && task.completedBy ? `${task.completedBy} 완료` : task.assignees.map((assignee) => assignee.name).join(', ')}
                             {review && ` · 확인 ${review.actor.name}`}
                           </p>
                           {task.rawDueDate !== task.dueDate && task.rawDueDate && task.dueDate && (

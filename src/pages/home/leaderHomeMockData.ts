@@ -1,6 +1,6 @@
 import type { AuthUser } from '../../types/auth'
 import type { LeaderArea, LeaderCourse, LeaderTask } from '../../types/leaderHome'
-import { formatDate, parseDate } from './dateUtils'
+import { parseDate, toDateText } from '../../utils/date'
 
 export function createLeaderHomeMockData(user: AuthUser, today: string) {
   const orgUnit = user.roles.find((role) => role.role === 'LEADER' && role.leaderType === 'ORG_UNIT')?.orgUnit
@@ -16,7 +16,7 @@ export function createLeaderHomeMockData(user: AuthUser, today: string) {
   function dateOffset(days: number) {
     const date = parseDate(today)
     date.setDate(date.getDate() + days)
-    return formatDate(date)
+    return toDateText(date)
   }
 
   const samples = [

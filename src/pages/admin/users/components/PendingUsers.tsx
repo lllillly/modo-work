@@ -3,7 +3,10 @@ import { Button, Card, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import type { ManagedUser } from '../../../../types/adminUsers'
-import { formatDateTime, getSameNameUsers } from '../usersData'
+import { getSameNameUsers } from '../usersData'
+import EmptyData from '../../../../components/common/EmptyData'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import { formatDateTime } from '../../../../utils/date'
 
 type PendingUsersProps = {
   users: ManagedUser[]
@@ -73,13 +76,12 @@ export default function PendingUsers({ users, activeUsers, getBlockReason, isMob
   ] satisfies TableColumnsType<ManagedUser>
 
   const empty = (
-    <div className="flex min-h-[200px] flex-col items-center justify-center gap-sm py-xl text-center">
-      <CheckCircleOutlined className="text-[30px] text-(--ant-color-text-tertiary)" />
-      <h3 className="m-0 text-card-title font-medium">승인을 기다리는 사람이 없어요</h3>
-      <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-        회사 Google 계정으로 처음 로그인한 사람이 여기에 보여요.
-      </p>
-    </div>
+    <EmptyData
+      plain
+      icon={<CheckCircleOutlined aria-hidden className="text-4xl text-(--ant-color-text-tertiary)" />}
+      title="승인을 기다리는 사람이 없어요"
+      description="회사 Google 계정으로 처음 로그인한 사람이 여기에 보여요."
+    />
   )
 
   return (
@@ -114,10 +116,7 @@ export default function PendingUsers({ users, activeUsers, getBlockReason, isMob
           size="small"
           scroll={{ x: 600 }}
           locale={{ emptyText: empty }}
-          classNames={{
-            header: { cell: 'text-caption font-medium' },
-            body: { cell: 'px-sm py-xs text-caption' },
-          }}
+          classNames={smallTableStyle}
         />
       )}
       {users.length > 0 && (

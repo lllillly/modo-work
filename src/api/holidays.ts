@@ -1,9 +1,10 @@
 import type { PageResponse } from '../types/courseApi'
 import type { Holiday, HolidayRecalculation } from '../types/holidays'
 import { getApi, requestApi, sendApi } from './client'
+import { PAGE_SIZE } from './pagination'
 
 export function getHolidays(from: string, to: string, page: number, signal?: AbortSignal) {
-  const query = new URLSearchParams({ from, to, page: String(page), size: '20' })
+  const query = new URLSearchParams({ from, to, page: String(page), size: String(PAGE_SIZE) })
   return getApi<PageResponse<Holiday>>(`/holidays?${query}`, signal)
 }
 

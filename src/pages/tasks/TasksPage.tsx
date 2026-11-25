@@ -7,11 +7,10 @@ import type { AuthUser } from '../../types/auth'
 import type { TaskActionType } from '../../types/courseTasks'
 
 import { useAuth } from '../../providers/AuthContext'
-import { getToday } from '../home/dateUtils'
-import HomeError from '../home/components/AssigneeHomeError'
+import LoadingError from '../../components/common/LoadingError'
 import PageHeader from '../../components/layout/PageHeader'
 import {
-  applyTaskAction, canViewCourse, formatTaskDate, getCourseDays,
+  applyTaskAction, canViewCourse, getCourseDays,
   getCourseTaskView, getMonthlyCycles, getTaskPermissions, recalculateCourseTasks,
 } from './courseTasksData'
 import { createCourseTasksMockData } from './courseTasksMockData'
@@ -24,6 +23,7 @@ import MonthlyWork from './components/MonthlyWork'
 import TaskDetailDrawer from './components/TaskDetailDrawer'
 import TaskPhaseList from './components/TaskPhaseList'
 import FilterChip from '../../components/common/FilterChip'
+import { formatDateWithDay, getToday } from '../../utils/date'
 
 export default function TasksPage() {
   const { user } = useAuth()
@@ -182,11 +182,11 @@ function CourseTasksContent({ user }: { user: AuthUser }) {
       {isEnded && <Alert type="info" className="py-2.5" title="종료된 과정이에요. 일정과 과정 정보는 바꿀 수 없지만, 남은 할 일은 계속 처리할 수 있어요." classNames={{ title: 'text-caption text-(--ant-color-info-text)' }} />}
       {!isMobile && schedule}
 
-      {isLoading ? <CourseTasksSkeleton /> : isError ? <HomeError onRetry={retry} /> : isEmpty ? <CourseTasksEmpty /> : (
+      {isLoading ? <CourseTasksSkeleton /> : isError ? <LoadingError title="할 일을 불러오지 못했어요" onRetry={retry} /> : isEmpty ? <CourseTasksEmpty /> : (
         <>
           {isMobile && <Card variant="borderless" className="shadow-none" classNames={{ body: 'min-h-[110px] p-md' }}>
             <h3 className="m-0 text-body leading-5 font-medium">월 주기 {currentCycle ? `${currentCycle.number} / ${cycles.length}` : cycles.length}{currentCycle && <span className="ml-xs text-caption text-(--ant-color-primary-text)">현재</span>}</h3>
-            <p className="mt-xs mb-0 text-caption leading-[18px] text-(--ant-color-text-secondary)">{currentCycle ? `${formatTaskDate(currentCycle.startDate).split('(')[0]} ~ ${formatTaskDate(currentCycle.endDate).split('(')[0]} · 주기 할 일 마감 ${formatTaskDate(currentCycle.dueDate)}`
+            <p className="mt-xs mb-0 text-caption leading-[18px] text-(--ant-color-text-secondary)">{currentCycle ? `${formatDateWithDay(currentCycle.startDate).split('(')[0]} ~ ${formatDateWithDay(currentCycle.endDate).split('(')[0]} · 주기 할 일 마감 ${formatDateWithDay(currentCycle.dueDate)}`
               : isEnded ? '모든 주기가 종료됐어요.' : '아직 시작하지 않은 과정이에요.'}</p>
             <div className="mt-xs flex items-center justify-between gap-xs"><span className="text-caption leading-[18px] text-(--ant-color-text-secondary)">상시 업무 {alwaysTasks.length}</span><Button type="link" className="hit-area h-auto p-0 text-caption leading-[18px]"
               onClick={() => setShowMonthlyWork(true)}>월 주기·상시 업무 보기</Button></div>

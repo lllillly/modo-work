@@ -9,9 +9,10 @@ import type { CourseTasksCourse, CourseTaskView, TaskActionType } from '../../..
 import { getApiErrorMessage } from '../../../api/client'
 
 import DeadlineTag from '../../home/components/DeadlineTag'
-import { formatActionTime, formatTaskDate, getCompletionMemo, getTaskPermissions } from '../courseTasksData'
+import { getCompletionMemo, getTaskPermissions } from '../courseTasksData'
 
 import DeadlineChange from './DeadlineChange'
+import { formatDateWithDay, formatShortDateTime } from '../../../utils/date'
 
 type TaskDetailDrawerProps = {
   task: CourseTaskView
@@ -97,7 +98,7 @@ export default function TaskDetailDrawer({
             {action.actor.name}{proxyLabel} · {actionLabels[action.type]} {isCancelled && <Tag className="m-0 text-[11px]">취소됨</Tag>}
           </p>
           <p className="mt-xxs mb-0 text-(--ant-color-text-tertiary)">
-            {formatActionTime(action.createdAt)}
+            {formatShortDateTime(action.createdAt)}
           </p>
           {action.memo && (
             <p className="mt-xxs mb-0 whitespace-pre-wrap break-words text-(--ant-color-text-secondary)">
@@ -269,7 +270,7 @@ export default function TaskDetailDrawer({
           <>
             <div className="flex flex-wrap items-center gap-xs">
               {task.isCompleted && task.reviewStatus !== 'pending' ? <Tag className="m-0">완료</Tag> : <DeadlineTag task={{ ...task, isCompleted: false }} />}
-              {task.dueDate && <span className="text-body font-medium">{formatTaskDate(task.dueDate, true)}</span>}
+              {task.dueDate && <span className="text-body font-medium">{formatDateWithDay(task.dueDate, true)}</span>}
             </div>
             <p className="mt-xs mb-0 text-caption leading-[18px] text-(--ant-color-text-tertiary)">
               기준: {task.referenceType === 'MONTH_END' ? '주기 종료일' : task.referenceType === 'COURSE_END' ? '과정 종료일' : '과정 시작일'} {task.offsetDays !== null && <>{task.offsetDays >= 0 ? '+' : '-'} {Math.abs(task.offsetDays)}일</>}

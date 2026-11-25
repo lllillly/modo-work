@@ -1,9 +1,9 @@
 import type { AuthUser } from '../../types/auth'
 import type { CourseTask, CourseTasksCourse, TaskAction, TaskAssignee } from '../../types/courseTasks'
 import { courses as homeCourses } from '../home/assigneeHomeMockData'
-import { getToday } from '../home/dateUtils'
 import { createLeaderHomeMockData } from '../home/leaderHomeMockData'
-import { formatTaskDate, recalculateCourseTasks } from './courseTasksData'
+import { recalculateCourseTasks } from './courseTasksData'
+import { formatDateWithDay, getToday } from '../../utils/date'
 
 export function createCourseTasksMockData(user: AuthUser) {
   const leaderMockData = createLeaderHomeMockData(user, getToday())
@@ -85,7 +85,7 @@ export function createCourseTasksMockData(user: AuthUser) {
         ],
         mismatch: {
           reason: '템플릿 수정',
-          changes: [{ label: '마감', before: formatTaskDate('2026-10-30'), after: formatTaskDate('2026-11-02') }],
+          changes: [{ label: '마감', before: formatDateWithDay('2026-10-30'), after: formatDateWithDay('2026-11-02') }],
         },
       }),
       task('F', 1, 23, { tag: '태그 2', areaId: areas[1].id, areaName: areas[1].name, assignees: [otherAssignee], isMyArea: false, requiresReview: false, ...completed(otherAssignee, '2026-10-28T09:00:00+09:00') }),

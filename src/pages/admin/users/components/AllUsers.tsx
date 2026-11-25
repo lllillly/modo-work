@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
-import { SearchOutlined, WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Pagination, Select, Skeleton, Table, Tag } from 'antd'
+import { Card, Pagination, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import type { getAdminUsers } from '../../../../api/users'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import type { ManagedUser, UserStatus } from '../../../../types/adminUsers'
 import type { OptionItem } from '../../../../types/courseApi'
 import type { UserRole } from '../../../../types/user'
 import { userRoleLabels } from '../../../../types/user'
-import { formatDateTime, getRoleLabels } from '../usersData'
+import { getRoleLabels } from '../usersData'
 import SearchInput from '../../../../components/common/SearchInput'
 import { clickableRowProps } from '../../../../components/common/clickableRow'
+import LoadingError from '../../../../components/common/LoadingError'
+import NoSearchResult from '../../../../components/common/NoSearchResult'
+import EmptyData from '../../../../components/common/EmptyData'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import { formatDateTime } from '../../../../utils/date'
 
 const ALL_FILTER = 'all'
 const SEARCH_DELAY = 300
@@ -142,17 +147,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
     },
   ] satisfies TableColumnsType<ManagedUser>
 
-  const empty = (
-    <div className="flex min-h-[200px] flex-col items-center justify-center gap-sm py-xl text-center">
-      <SearchOutlined className="text-[30px] text-(--ant-color-text-tertiary)" />
-      <h3 className="m-0 text-card-title font-medium">
-        {hasFilter ? '조건에 맞는 사용자가 없어요' : '아직 사용자가 없어요'}
-      </h3>
-      {hasFilter && (
-        <p className="m-0 text-caption text-(--ant-color-text-secondary)">검색어나 필터를 바꿔 다시 찾아보세요.</p>
-      )}
-    </div>
-  )
+  const empty = hasFilter ? <NoSearchResult plain title="조건에 맞는 사용자가 없어요" /> : <EmptyData plain title="아직 사용자가 없어요" />
 
   return (
     <div className="flex flex-col gap-md">
@@ -212,16 +207,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
       </div>
 
       {query.error ? (
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
-          <div role="alert" className="flex flex-col items-center gap-sm text-center">
-            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
-            <h3 className="m-0 text-card-title font-medium">사용자 목록을 불러오지 못했어요</h3>
-            <p className="m-0 text-caption text-(--ant-color-text-secondary)">잠시 후 다시 시도해 주세요.</p>
-            <Button className="h-7" onClick={query.reload}>
-              다시 시도
-            </Button>
-          </div>
-        </Card>
+        <LoadingError title="사용자 목록을 불러오지 못했어요" onRetry={query.reload} />
       ) : query.isLoading ? (
         <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-lg' }} aria-busy="true">
           <Skeleton active title={false} paragraph={{ rows: 6, width: '100%' }} />
@@ -272,10 +258,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
                 }`
               }
               onRow={(user) => getEditProps(user)}
-              classNames={{
-                header: { cell: 'text-caption font-medium' },
-                body: { cell: 'px-sm py-xs text-caption' },
-              }}
+              classNames={smallTableStyle}
             />
           )}
         </Card>
@@ -283,7 +266,7 @@ export default function AllUsers({ orgUnits, refreshKey, loadUsers, editLabel, c
       {!query.isLoading && !query.error && (
         <Pagination
           current={page + 1}
-          pageSize={20}
+          pageSize={PAGE_SIZE}
           total={query.data?.totalElements ?? 0}
           showSizeChanger={false}
           onChange={(value) => setPage(value - 1)}

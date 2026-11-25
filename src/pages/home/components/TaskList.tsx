@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { Checkbox, Empty } from 'antd'
+import { Checkbox } from 'antd'
 import { Link } from 'react-router'
 
 import type { HomeTask } from '../../../types/home'
 
 import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
+import EmptyData from '../../../components/common/EmptyData'
 
 type TaskListProps<T extends HomeTask> = {
   tasks: T[]
@@ -21,7 +22,7 @@ export default function TaskList<T extends HomeTask>({ tasks, showCheckbox = fal
   const hasCheckbox = showCheckbox && tasks.some((task) => task.canComplete)
 
   if (tasks.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="이날의 할 일이 없어요" className="my-lg" />
+    return <EmptyData plain compact title="이날의 할 일이 없어요" />
   }
 
   return (

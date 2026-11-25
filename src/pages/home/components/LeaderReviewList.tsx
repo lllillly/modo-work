@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { Button, Card, Empty } from 'antd'
+import { Button } from 'antd'
 import { Link } from 'react-router'
 
 import type { LeaderHomeTask } from '../../../types/leaderHome'
 import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
+import EmptyData from '../../../components/common/EmptyData'
+import ContentCard from '../../../components/common/ContentCard'
+import { formatShortDateTime } from '../../../utils/date'
 
 type LeaderReviewListProps = {
   tasks: LeaderHomeTask[]
@@ -15,24 +18,13 @@ type LeaderReviewListProps = {
   onReviewAll: () => void
 }
 
-const actionTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric',
-  hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-})
-
-function formatActionTime(value?: string) {
-  if (!value) return ''
-  const parts = Object.fromEntries(actionTimeFormatter.formatToParts(new Date(value)).map((part) => [part.type, part.value]))
-  return `${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`
-}
-
 export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrgUnitId, onReview, onReviewAll }: LeaderReviewListProps) {
   const [showAll, setShowAll] = useState(false)
   const limit = isMobile ? 3 : 4
   const visibleTasks = showAll ? tasks : tasks.slice(0, limit)
 
   return (
-    <Card variant="borderless" className="h-full shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+    <ContentCard className="h-full">
       <div className="mb-xs flex min-h-8 flex-wrap items-center justify-between gap-xs">
         <h2 className="m-0 flex items-center gap-xs text-card-title">
           처리 기록 <span className="text-caption font-regular text-(--ant-color-text-tertiary)">최신순</span>
@@ -45,7 +37,7 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
       </div>
 
       {tasks.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="처리 기록이 없어요" className="my-lg" />
+        <EmptyData plain compact title="처리 기록이 없어요" />
       ) : (
         <ul className={`m-0 list-none p-0 ${showAll ? 'min-[1200px]:max-h-[456px] min-[1200px]:overflow-y-auto' : ''}`}>
           {visibleTasks.map((task) => {
@@ -53,8 +45,8 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
               !isMobile && task.courseName,
               task.orgUnit.id !== ownOrgUnitId && task.orgUnit.name,
               task.completedBy,
-              formatActionTime(task.completedAt),
-              task.reviewedBy && `확인 ${task.reviewedBy} ${formatActionTime(task.reviewedAt)}`,
+              formatShortDateTime(task.completedAt, false),
+              task.reviewedBy && `확인 ${task.reviewedBy} ${formatShortDateTime(task.reviewedAt, false)}`,
               task.completionMemo && `"${task.completionMemo}"`,
             ].filter(Boolean).join(' - ')
 
@@ -85,6 +77,6 @@ export default function LeaderReviewList({ tasks, pendingCount, isMobile, ownOrg
       {tasks.length > limit && (
         <Button type="link" block onClick={() => setShowAll(!showAll)}>{showAll ? '접기' : '기록 더 보기'}</Button>
       )}
-    </Card>
+    </ContentCard>
   )
 }

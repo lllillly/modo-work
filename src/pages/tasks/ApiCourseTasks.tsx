@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, App, Button, Card, Drawer, Result, Spin, Tag } from 'antd'
+import { Alert, App, Button, Card, Drawer, Spin, Tag } from 'antd'
 import { useOutletContext, useSearchParams } from 'react-router'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../api/client'
+import { ApiError, getApiErrorMessage } from '../../api/client'
 import { getCourse, getCourseOptions, getCourses, getScheduleContext, updateSchedule } from '../../api/courses'
 import { getHomeCourses } from '../../api/home'
 import { getOpenTaskIssues, getTaskIssue, resolveTaskIssue } from '../../api/taskIssues'
@@ -15,13 +15,15 @@ import {
   processTask,
 } from '../../api/tasks'
 import useApiQuery from '../../hooks/useApiQuery'
+import useApiErrorHandler from '../../hooks/useApiErrorHandler'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
-import { useAuth } from '../../providers/AuthContext'
 import type { AuthUser } from '../../types/auth'
 import type { CourseResponse } from '../../types/courseApi'
 import type { TaskActionType } from '../../types/courseTasks'
 import type { TaskResponse } from '../../types/taskApi'
-import { getToday } from '../home/dateUtils'
+import LoadingError from '../../components/common/LoadingError'
+import EmptyData from '../../components/common/EmptyData'
+import { isAdmin } from '../../utils/roles'
 import ApiCourseSelect from './components/ApiCourseSelect'
 import CourseTasksEmpty from './components/CourseTasksEmpty'
 import CourseTasksSkeleton from './components/CourseTasksSkeleton'
@@ -29,7 +31,6 @@ import CourseSchedule from './components/CourseSchedule'
 import MonthlyWork from './components/MonthlyWork'
 import TaskDetailDrawer from './components/TaskDetailDrawer'
 import TaskPhaseList from './components/TaskPhaseList'
-import { formatTaskDate } from './courseTasksData'
 import FilterChip from '../../components/common/FilterChip'
 import {
   getStoredMonthlyCycles,
@@ -40,11 +41,10 @@ import {
   toTaskActions,
   toTaskCourse,
 } from './courseTasksApiData'
+import { formatDateWithDay, getToday } from '../../utils/date'
 
 const notFound = (message: string) =>
   new ApiError(404, { code: 'NOT_FOUND', message, fieldErrors: [] })
-
-const isAdmin = (user: AuthUser) => user.roles.some((role) => role.role === 'ADMIN')
 
 function getVisibleCourses(user: AuthUser, businessId: string, signal: AbortSignal) {
   const isLeader = user.roles.some((role) => role.role === 'LEADER')
@@ -83,16 +83,11 @@ export default function ApiCourseTasks({ user }: { user: AuthUser }) {
   )
   const courses = useApiQuery(businessId && !admin ? `courses:${businessId}` : null, loadCourses)
 
-  if (!selectedBusinessId) return <Result title="선택할 수 있는 사업이 없어요" />
+  if (!selectedBusinessId) return <EmptyData title="선택할 수 있는 사업이 없어요" />
   if (!admin && !courses.data) {
     if (!courses.error) return <CourseTasksSkeleton />
     return (
-      <Result
-        status="warning"
-        title="과정을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(courses.error)}
-        extra={<Button onClick={courses.reload}>다시 시도</Button>}
-      />
+      <LoadingError title="과정을 불러오지 못했어요" error={courses.error} onRetry={courses.reload} />
     )
   }
   if (!courseId) return <FirstCourse key={selectedBusinessId} businessId={selectedBusinessId} courses={courses.data} />
@@ -124,15 +119,10 @@ function FirstCourse({ businessId, courses }: { businessId: string; courses?: Co
 
   if (query.error) {
     return (
-      <Result
-        status="warning"
-        title="과정을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(query.error)}
-        extra={<Button onClick={query.reload}>다시 시도</Button>}
-      />
+      <LoadingError title="과정을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
     )
   }
-  if (first === null) return <Result title="볼 수 있는 과정이 없어요" />
+  if (first === null) return <EmptyData title="볼 수 있는 과정이 없어요" />
   return <CourseTasksSkeleton />
 }
 
@@ -147,7 +137,7 @@ type CourseContentProps = {
 
 function CourseContent({ businessId, businessName, courseId, courses, isMobile, user }: CourseContentProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [params, setParams] = useSearchParams()
   const [tag, setTag] = useState('all')
   const [showMonthly, setShowMonthly] = useState(false)
@@ -254,7 +244,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
       reload()
     } catch (error) {
       setSaveError(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
       throw error
     } finally {
       saving.current = false
@@ -271,7 +261,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
       message.success('변경 사항을 확인했어요.')
       detail.reload()
     } catch (error) {
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
       throw error
     } finally {
       saving.current = false
@@ -289,7 +279,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
       reload()
     } catch (error) {
       setSaveError(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
       throw error
     } finally {
       saving.current = false
@@ -300,12 +290,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
   if (query.isLoading) return <CourseTasksSkeleton />
   if (query.error || !query.data) {
     return (
-      <Result
-        status="warning"
-        title="과정을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(query.error)}
-        extra={<Button onClick={reload}>다시 시도</Button>}
-      />
+      <LoadingError title="과정을 불러오지 못했어요" error={query.error} onRetry={reload} />
     )
   }
 
@@ -313,7 +298,7 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
   const listed = courses?.find((item) => item.id === courseId)
   const response = query.data.course ?? (listed && schedule ? { ...listed, ...schedule.course } : listed)
   if (!response || response.businessId !== businessId) {
-    return <Result status="warning" title="이 사업에서 볼 수 있는 과정이 아니에요" />
+    return <EmptyData title="이 사업에서 볼 수 있는 과정이 아니에요" description="위에서 다른 과정을 골라 주세요." />
   }
   const course = toTaskCourse(response, businessName, orgUnits, responses)
   const today = getToday()
@@ -381,11 +366,11 @@ function CourseContent({ businessId, businessName, courseId, courses, isMobile, 
   )
   const currentCycles = cycles.filter((cycle) => cycle.startDate <= today && cycle.endDate >= today)
   const currentCycle = currentCycles[0]
-  const currentDeadlines = [...new Set(currentCycles.map((cycle) => formatTaskDate(cycle.dueDate)))]
+  const currentDeadlines = [...new Set(currentCycles.map((cycle) => formatDateWithDay(cycle.dueDate)))]
   let cycleDescription = '현재 진행 중인 주기가 없어요.'
   if (currentCycle) {
-    const start = formatTaskDate(currentCycle.startDate).split('(')[0]
-    const end = formatTaskDate(currentCycle.endDate).split('(')[0]
+    const start = formatDateWithDay(currentCycle.startDate).split('(')[0]
+    const end = formatDateWithDay(currentCycle.endDate).split('(')[0]
     cycleDescription = `${start} ~ ${end} · 주기 할 일 마감 ${currentDeadlines.join(', ')}`
   } else if (cycles.length === 0) {
     cycleDescription = '월 주기 업무가 없어요.'

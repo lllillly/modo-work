@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { App, Button, Checkbox, Drawer, Tag } from 'antd'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isConflict } from '../../../../api/client'
 import { grantUserRoles } from '../../../../api/users'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { ManagedUser, UserRoleRequest } from '../../../../types/adminUsers'
-import { formatDateTime, getRoleLabels } from '../usersData'
+import { getRoleLabels } from '../usersData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatDateTime } from '../../../../utils/date'
 
 type LeaderRoleDrawerProps = {
   user: ManagedUser
@@ -18,7 +19,7 @@ const base = { scopeType: 'ORG_UNIT', viewerTargetRole: null, areaId: null } as 
 
 export default function LeaderRoleDrawer({ user, isMobile, onClose, onSaved }: LeaderRoleDrawerProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const [assignee, setAssignee] = useState(false)
   const [orgLeader, setOrgLeader] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -41,9 +42,8 @@ export default function LeaderRoleDrawer({ user, isMobile, onClose, onSaved }: L
       message.success(`${user.name} 님에게 역할을 추가했어요.`)
       onSaved()
     } catch (error) {
-      message.error(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
-      if (error instanceof ApiError && error.status === 409) onSaved()
+      showError(error)
+      if (isConflict(error)) onSaved()
     } finally {
       setIsSaving(false)
     }

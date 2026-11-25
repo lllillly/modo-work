@@ -1,29 +1,22 @@
 import { useState } from 'react'
 import { CopyOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Alert, App, Button, Card, Form, Input, Modal, Select } from 'antd'
+import { Alert, App, Button, Form, Input, Modal, Select } from 'antd'
 
 import type { IssuedApiClient } from '../../../../types/apiClients'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError } from '../../../../api/client'
 import { issueApiClient, revokeApiClient } from '../../../../api/apiClients'
 import { getBusinesses } from '../../../../api/courses'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
 import IconAction from '../../../../components/common/IconAction'
+import ContentCard from '../../../../components/common/ContentCard'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatDateTime } from '../../../../utils/date'
 
 type IssueForm = { name: string; businesses: string[] }
 
-const issuedTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul',
-  month: 'numeric',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
 export default function ServiceTokens() {
   const { modal, message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const [form] = Form.useForm<IssueForm>()
   const businesses = useApiQuery('businesses', getBusinesses)
   const [issuing, setIssuing] = useState(false)
@@ -34,11 +27,6 @@ export default function ServiceTokens() {
   const businessName = (id: string) => businessOptions.find((option) => option.value === id)?.label ?? `사업 ${id}`
   const exampleUrl = `${window.location.origin}${import.meta.env.BASE_URL}api/integration/courses/summary?business=`
 
-  function handleError(error: unknown) {
-    message.error(getApiErrorMessage(error))
-    if (isAuthStateError(error)) void refreshUser()
-  }
-
   async function issue(values: IssueForm) {
     setIssuing(true)
     try {
@@ -47,7 +35,7 @@ export default function ServiceTokens() {
       setShown(result)
       form.resetFields()
     } catch (error) {
-      handleError(error)
+      showError(error)
     } finally {
       setIssuing(false)
     }
@@ -77,7 +65,7 @@ export default function ServiceTokens() {
           setRevokeId('')
         } catch (error) {
           if (error instanceof ApiError && error.status === 404) message.error('없는 발급 ID예요. 다시 확인해 주세요.')
-          else handleError(error)
+          else showError(error)
         }
       },
     })
@@ -85,7 +73,7 @@ export default function ServiceTokens() {
 
   return (
     <div className="grid grid-cols-1 items-start gap-md min-[1200px]:grid-cols-2">
-      <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+      <ContentCard>
         <h2 className="m-0 text-card-title">토큰 발급</h2>
         <p className="mt-xxs mb-sm text-caption text-(--ant-color-text-secondary)">
           토큰은 고른 사업의 과정 요약만 읽을 수 있어요. 토큰 원문은 발급할 때 한 번만 보여 줘요.
@@ -108,9 +96,9 @@ export default function ServiceTokens() {
             </Button>
           </div>
         </Form>
-      </Card>
+      </ContentCard>
 
-      <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+      <ContentCard>
         <h2 className="m-0 text-card-title">토큰 폐기</h2>
         <p className="mt-xxs mb-sm text-caption text-(--ant-color-text-secondary)">
           발급한 토큰 목록을 불러오는 기능이 아직 없어요. 이 화면에서 방금 발급한 토큰만 아래에 보이고, 새로고침하면 사라져요. 다른 토큰은 발급 ID로 폐기해 주세요.
@@ -125,7 +113,7 @@ export default function ServiceTokens() {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body font-medium">{item.name}</span>
                   <span className="text-caption text-(--ant-color-text-tertiary)">
-                    발급 ID {item.id} · {item.businesses.map(businessName).join(', ')} · {issuedTimeFormatter.format(new Date(item.issuedAt))}
+                    발급 ID {item.id} · {item.businesses.map(businessName).join(', ')} · {formatDateTime(item.issuedAt)}
                   </span>
                 </span>
                 <IconAction label="폐기" ariaLabel={`${item.name} 폐기`} icon={<DeleteOutlined />} tone="danger" onClick={() => revoke(item.id, item.name)} />
@@ -145,7 +133,7 @@ export default function ServiceTokens() {
             폐기
           </Button>
         </div>
-      </Card>
+      </ContentCard>
 
       {shown && (
         <Modal

@@ -1,12 +1,17 @@
 import { useCallback } from 'react'
-import { Button, Result, Spin } from 'antd'
+import { Button, Spin } from 'antd'
 import { Link, Route, Routes, useOutletContext, useParams } from 'react-router'
 
 import { getAssignmentContext, getCourse, getCourseOptions, getScheduleContext } from '../../../api/courses'
-import { ApiError, getApiErrorMessage } from '../../../api/client'
+import { ApiError } from '../../../api/client'
 import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
 import { useAuth } from '../../../providers/AuthContext'
+import LoadingError from '../../../components/common/LoadingError'
+import EmptyData from '../../../components/common/EmptyData'
+import NoPermission from '../../../components/common/NoPermission'
+import PageNotFound from '../../../components/common/PageNotFound'
+import { isAdmin } from '../../../utils/roles'
 import { toManagedCourse } from './courseManagementData'
 import ArchivedCourses from './components/ArchivedCourses'
 import CourseEditor from './components/CourseEditor'
@@ -57,15 +62,14 @@ function CourseEditorRoute({ businessId }: CourseRouteProps) {
   if (query.isLoading) return <Spin className="m-auto" aria-label="과정 정보 불러오는 중" />
   if (query.error) {
     return (
-      <Result
-        status="warning"
+      <LoadingError
         title="과정을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(query.error)}
+        error={query.error}
+        onRetry={query.reload}
         extra={
-          <>
-            <Button onClick={query.reload}>다시 시도</Button>
-            <Link to="/admin/courses">목록으로</Link>
-          </>
+          <Link to="/admin/courses">
+            <Button className="h-7">목록으로</Button>
+          </Link>
         }
       />
     )
@@ -86,22 +90,13 @@ export default function CoursesPage() {
   const { isMobile, selectedBusiness, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user } = useAuth()
 
-  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
+  if (!isAdmin(user)) {
     return (
-      <Result
-        status="403"
-        title="이 화면에 접근할 권한이 없어요"
-        subTitle="과정과 담당 배정은 관리자만 관리할 수 있어요."
-        extra={
-          <Link to="/">
-            <Button type="primary">홈으로</Button>
-          </Link>
-        }
-      />
+      <NoPermission description="과정과 담당 배정은 관리자만 관리할 수 있어요." />
     )
   }
   if (!selectedBusinessId) {
-    return <Result status="info" title="선택할 수 있는 사업이 없어요" />
+    return <EmptyData title="선택할 수 있는 사업이 없어요" />
   }
 
   return (
@@ -119,11 +114,7 @@ export default function CoursesPage() {
       <Route
         path="*"
         element={
-          <Result
-            status="404"
-            title="페이지를 찾을 수 없어요"
-            extra={<Link to="/admin/courses">목록으로</Link>}
-          />
+          <PageNotFound backTo="/admin/courses" backLabel="과정 목록으로" />
         }
       />
     </Routes>

@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react'
 import { Alert, App, Button, Card, Segmented, Skeleton, Tag } from 'antd'
 import { useOutletContext } from 'react-router'
 
-import { getApiErrorMessage, isAuthStateError } from '../../api/client'
 import { getAssigneeHome } from '../../api/home'
 import { getTasksDueOn, processTask } from '../../api/tasks'
 import useApiQuery from '../../hooks/useApiQuery'
@@ -11,21 +10,23 @@ import { useAuth } from '../../providers/AuthContext'
 import type { ViewScope } from '../../types/home'
 import type { AssigneeHomeResponse } from '../../types/homeApi'
 import type { TaskResponse } from '../../types/taskApi'
-import { formatSelectedDate, getToday } from './dateUtils'
 import { getAssigneeHomeData } from './assigneeHomeData'
 
 import AssigneeHomeSkeleton from './components/AssigneeHomeSkeleton'
-import AssigneeHomeError from './components/AssigneeHomeError'
+import LoadingError from '../../components/common/LoadingError'
 import CourseList from './components/CourseList'
 import HomeCalendar from './components/HomeCalendar'
 import TaskList from './components/TaskList'
 import PageTitle from '../../components/layout/PageTitle'
-
-const cardClassNames = { body: 'p-md min-[992px]:p-lg' }
+import EmptyData from '../../components/common/EmptyData'
+import ContentCard from '../../components/common/ContentCard'
+import useApiErrorHandler from '../../hooks/useApiErrorHandler'
+import { formatSelectedDate, getToday } from '../../utils/date'
 
 export default function AssigneeHomePage() {
   const { isMobile, selectedBusiness, selectedBusinessId, userName } = useOutletContext<AppLayoutContext>()
-  const { user, refreshUser } = useAuth()
+  const { user } = useAuth()
+  const { showError } = useApiErrorHandler()
   const { message } = App.useApp()
   const today = getToday()
 
@@ -90,8 +91,7 @@ export default function AssigneeHomePage() {
       await processTask(task.id, 'COMPLETE', { version: task.version, requestId: crypto.randomUUID() })
       message.success(`'${task.title}' 완료했어요.`)
     } catch (error) {
-      message.error(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
+      showError(error)
     } finally {
       saving.current = false
       setRefreshKey((key) => key + 1)
@@ -105,12 +105,7 @@ export default function AssigneeHomePage() {
 
   if (!selectedBusinessId) {
     return (
-      <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
-        <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
-          <h3 className="m-0 text-card-title">선택할 수 있는 사업이 없어요</h3>
-          <p className="m-0 text-body text-(--ant-color-text-secondary)">관리자가 사업을 등록하면 할 일과 마감을 확인할 수 있어요.</p>
-        </div>
-      </Card>
+      <EmptyData title="선택할 수 있는 사업이 없어요" description="관리자가 사업을 등록하면 할 일과 마감을 확인할 수 있어요." />
     )
   }
 
@@ -162,20 +157,15 @@ export default function AssigneeHomePage() {
       )}
 
       {isError ? (
-        <AssigneeHomeError onRetry={retry} />
+        <LoadingError title="할 일을 불러오지 못했어요" onRetry={retry} />
       ) : isLoading || !homeData ? (
         <AssigneeHomeSkeleton />
       ) : isEmpty ? (
-        <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
-          <div className="flex min-h-[136px] flex-col items-center justify-center gap-xs text-center">
-            <h3 className="m-0 text-card-title">배정된 과정이 없어요</h3>
-            <p className="m-0 text-body text-(--ant-color-text-secondary)">관리자가 과정을 배정하면 여기에서 할 일과 마감을 확인할 수 있어요.</p>
-          </div>
-        </Card>
+        <EmptyData title="배정된 과정이 없어요" description="관리자가 과정을 배정하면 여기에서 할 일과 마감을 확인할 수 있어요." />
       ) : (
         <>
           {alerts.length > 0 && (
-            <Card variant="borderless" className="shadow-none" classNames={cardClassNames}>
+            <ContentCard>
               <div className="mb-xs flex flex-wrap items-center gap-xs">
                 <h2 className="m-0 text-card-title">내 알림</h2>
                 {homeData.summary.overdueCount > 0 && <Tag color="error" variant="outlined" className="m-0">{isMobile ? '지남' : '기한 지남'} {homeData.summary.overdueCount}</Tag>}
@@ -187,7 +177,7 @@ export default function AssigneeHomePage() {
                   {showAllAlerts ? '접기' : `알림 ${alerts.length - visibleAlerts.length}건 더 보기`}
                 </Button>
               )}
-            </Card>
+            </ContentCard>
           )}
 
           <div className="grid grid-cols-1 gap-md min-[992px]:grid-cols-[280px_minmax(0,1fr)] min-[1200px]:grid-cols-[320px_minmax(0,1fr)]">
@@ -203,7 +193,7 @@ export default function AssigneeHomePage() {
                 />
               </Card>
             )}
-            <Card variant="borderless" className="min-w-0 shadow-none" classNames={cardClassNames}>
+            <ContentCard className="min-w-0">
               <h2 className="m-0 mb-xs flex flex-wrap items-center gap-xs text-card-title min-[992px]:mb-sm">
                 {formatSelectedDate(selectedDate)} 할 일
                 {shownDay && <span className="text-caption font-regular text-(--ant-color-text-secondary)">{homeData.dayTasks.length}건</span>}
@@ -241,7 +231,7 @@ export default function AssigneeHomePage() {
                   <TaskList tasks={homeData.otherTasks} />
                 </div>
               )}
-            </Card>
+            </ContentCard>
           </div>
 
           <CourseList key={selectedBusiness} courses={homeData.courses} isMobile={isMobile} />

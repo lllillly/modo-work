@@ -37,11 +37,6 @@ export function formatFileSize(size: number) {
   return size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(size / 1024))}KB`
 }
 
-export function formatShortDate(value: string) {
-  const date = new Date(value)
-  return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
-}
-
 export function getFileSummary(item: DocumentItem) {
   if (item.sourceType === 'LINK') return '외부 링크'
   const summary = ['PDF']

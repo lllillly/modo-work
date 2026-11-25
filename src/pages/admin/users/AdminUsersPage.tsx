@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
-import { WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Skeleton } from 'antd'
+import { Card, Skeleton } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import { getOrgUnits } from '../../../api/courses'
@@ -15,6 +14,7 @@ import ListManagement from './components/ListManagement'
 import PendingUsers from './components/PendingUsers'
 import UsersTabs, { TabCount } from './components/UsersTabs'
 import UserDrawer from './components/UserDrawer'
+import LoadingError from '../../../components/common/LoadingError'
 import { getSameNameUsers } from './usersData'
 
 type UsersTab = 'pending' | 'all' | 'lists'
@@ -69,16 +69,7 @@ function UsersContent({ businessId, isMobile }: UsersContentProps) {
   }
 
   const pendingContent = pending.error ? (
-    <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
-      <div role="alert" className="flex flex-col items-center gap-sm text-center">
-        <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
-        <h3 className="m-0 text-card-title font-medium">승인 대기 목록을 불러오지 못했어요</h3>
-        <p className="m-0 text-caption text-(--ant-color-text-secondary)">잠시 후 다시 시도해 주세요.</p>
-        <Button className="h-7" onClick={pending.reload}>
-          다시 시도
-        </Button>
-      </div>
-    </Card>
+    <LoadingError title="승인 대기 목록을 불러오지 못했어요" onRetry={pending.reload} />
   ) : pending.isLoading ? (
     <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-lg' }} aria-busy="true">
       <Skeleton active title={false} paragraph={{ rows: 3, width: '100%' }} />

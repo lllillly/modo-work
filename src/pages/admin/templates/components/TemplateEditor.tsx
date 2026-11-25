@@ -19,9 +19,8 @@ import {
 import dayjs from 'dayjs'
 import { Link, useLocation, useNavigate } from 'react-router'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isConflict } from '../../../../api/client'
 import { createTaskTemplate, createTemplateTag, updateTaskTemplate } from '../../../../api/taskTemplates'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { OptionItem } from '../../../../types/courseApi'
 import type { DocumentItem } from '../../../../types/documents'
 import type {
@@ -31,9 +30,11 @@ import type {
   TemplateRecalculation,
   TemplateTag,
 } from '../../../../types/taskTemplate'
-import { formatTaskDate } from '../../../tasks/courseTasksData'
 import { getConditionalOffsets, previewDeadline, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
 import PageTitle from '../../../../components/layout/PageTitle'
+import ContentCard from '../../../../components/common/ContentCard'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatDateWithDay } from '../../../../utils/date'
 
 type FormValues = TemplateInput & { templateKey: string; isActive: boolean }
 
@@ -55,7 +56,6 @@ const shortReferenceLabels: Record<ReferenceType, string> = {
   ALWAYS: '상시',
 }
 
-const sectionClassNames = { body: 'p-md min-[992px]:p-lg' }
 const textFields = ['phase', 'performer', 'systemName', 'displayText'] as const
 
 function OffsetInput({ value, onChange, disabled, label }: {
@@ -158,7 +158,7 @@ function getChanges(input: TemplateInput, isActive: boolean, template: TaskTempl
 
 export default function TemplateEditor({ businessId, template, areas, tags: initialTags, documents, phases, isMobile, onReload }: TemplateEditorProps) {
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const navigate = useNavigate()
   const listSearch = (useLocation().state as { listSearch?: string } | null)?.listSearch
   const listPath = listSearch ? `/admin/task-templates?${listSearch}` : '/admin/task-templates'
@@ -278,15 +278,15 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
       const result = await updateTaskTemplate(template.id, { ...changes, version: template.version })
       showSaved(result.template, result.recalculation)
     } catch (error) {
-      if (isAuthStateError(error)) void refreshUser()
-      if (error instanceof ApiError && error.status === 409 && template) {
+      checkLogin(error)
+      if (isConflict(error) && template) {
         showConflict()
         return
       }
       if (error instanceof ApiError && error.fieldErrors.length > 0) {
         form.setFields(error.fieldErrors.map((item) => ({ name: item.field as keyof FormValues, errors: [item.message] })))
       }
-      if (error instanceof ApiError && error.status === 409) {
+      if (isConflict(error)) {
         form.setFields([{ name: 'templateKey', errors: [error.message] }])
       }
       message.error(getApiErrorMessage(error))
@@ -332,7 +332,7 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
 
       <div className="grid grid-cols-1 gap-md min-[992px]:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-md">
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          <ContentCard>
             <h3 className="m-0 mb-sm text-card-title">기본 정보</h3>
             <div className="grid grid-cols-1 gap-x-md min-[768px]:grid-cols-[200px_minmax(0,1fr)]">
               <Form.Item
@@ -364,9 +364,9 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 <InputNumber className="w-full" min={0} precision={0} />
               </Form.Item>
             </div>
-          </Card>
+          </ContentCard>
 
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          <ContentCard>
             <h3 className="m-0 mb-sm text-card-title">마감 계산</h3>
             <Form.Item name="referenceType" label="기준" rules={[{ required: true }]}>
               <Segmented
@@ -413,9 +413,9 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 ? '상시 할 일은 마감 없이 과정마다 하나씩 만들어지고, 마감, 진행률, 알림에 포함되지 않아요.'
                 : '장기나 단기를 비우면 그 과정에는 기본 일수를 써요. 장기는 시작일과 종료일을 포함해 180일 이상인 과정이에요.'}
             </p>
-          </Card>
+          </ContentCard>
 
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          <ContentCard>
             <h3 className="m-0 mb-sm text-card-title">업무 정보</h3>
             <div className="grid grid-cols-1 gap-x-md min-[768px]:grid-cols-3">
               <Form.Item name="performer" label="수행자">
@@ -428,9 +428,9 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 <Input maxLength={255} placeholder="예: 과정 시작 45일 뒤" />
               </Form.Item>
             </div>
-          </Card>
+          </ContentCard>
 
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          <ContentCard>
             <h3 className="m-0 mb-sm text-card-title">태그와 연결 문서</h3>
             <div className="grid grid-cols-1 gap-x-md min-[768px]:grid-cols-2">
               <Form.Item name="tagIds" label="태그">
@@ -470,11 +470,11 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 <Select mode="multiple" className="cursor-pointer **:cursor-pointer" options={documentOptions} placeholder="문서 선택" optionFilterProp="label" />
               </Form.Item>
             </div>
-          </Card>
+          </ContentCard>
         </div>
 
         <div className="flex min-w-0 flex-col gap-md">
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          <ContentCard>
             <h3 className="m-0 mb-xs text-card-title">적용 설정</h3>
             {template && (
               <label className="flex cursor-pointer items-start justify-between gap-sm border-0 border-b border-solid border-(--ant-color-border-secondary) py-sm">
@@ -502,8 +502,8 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 <Switch aria-label="리더 확인 필요" disabled={isAlways} />
               </Form.Item>
             </label>
-          </Card>
-          <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+          </ContentCard>
+          <ContentCard>
             <h3 className="m-0 mb-sm text-card-title">마감 미리보기</h3>
             {isAlways ? (
               <p className="m-0 text-caption text-(--ant-color-text-secondary)">상시 할 일은 마감이 없어요.</p>
@@ -514,7 +514,7 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                   <DatePicker
                     allowClear={false}
                     inputReadOnly
-                    format={(value) => formatTaskDate(value.format('YYYY-MM-DD'), true)}
+                    format={(value) => formatDateWithDay(value.format('YYYY-MM-DD'), true)}
                     value={dayjs(exampleDate)}
                     onChange={(value) => value && setExampleDate(value.format('YYYY-MM-DD'))}
                   />
@@ -535,10 +535,10 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                             {fromDefault && <span className="text-(--ant-color-text-tertiary)">기본 일수</span>}
                           </span>
                           <span className="flex flex-col items-end">
-                            <span className="text-body font-medium">{formatTaskDate(preview.dueDate, true)}</span>
+                            <span className="text-body font-medium">{formatDateWithDay(preview.dueDate, true)}</span>
                             {preview.shiftReason && (
                               <span className="text-(--ant-color-warning-text)">
-                                원래 {formatTaskDate(preview.rawDueDate)} → {formatTaskDate(preview.dueDate)} 당김 ({preview.shiftReason})
+                                원래 {formatDateWithDay(preview.rawDueDate)} → {formatDateWithDay(preview.dueDate)} 당김 ({preview.shiftReason})
                               </span>
                             )}
                           </span>
@@ -552,15 +552,15 @@ export default function TemplateEditor({ businessId, template, areas, tags: init
                 </p>
               </>
             )}
-          </Card>
+          </ContentCard>
           {template && (
-            <Card variant="borderless" className="shadow-none" classNames={sectionClassNames}>
+            <ContentCard>
               <h3 className="m-0 mb-xs text-card-title">변경 정보</h3>
               <p className="m-0 text-caption text-(--ant-color-text-secondary)">현재 버전 {template.revision}</p>
               <p className="mt-xs mb-0 text-caption text-(--ant-color-text-secondary)">
                 저장할 때마다 버전이 1씩 올라가요. 바뀐 내용은 진행 중인 과정의 미완료 할 일에 바로 반영되고, 이미 완료한 할 일은 그대로 남아요.
               </p>
-            </Card>
+            </ContentCard>
           )}
         </div>
       </div>

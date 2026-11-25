@@ -1,8 +1,9 @@
 import { BellOutlined, DownOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
-import { Badge, Button, Dropdown, Empty, Layout, Popover } from 'antd'
+import { Badge, Button, Dropdown, Layout, Popover } from 'antd'
 import type { MenuProps } from 'antd'
 
 import ThemeToggle from '../common/ThemeToggle'
+import EmptyData from '../../components/common/EmptyData'
 
 type AppHeaderProps = {
   isDark: boolean
@@ -77,10 +78,7 @@ export default function AppHeader({
           trigger="click"
           placement="bottomRight"
           content={
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="알림 목록이 없습니다"
-            />
+<EmptyData plain compact title="새 알림이 없어요" />
           }
         >
           <Button

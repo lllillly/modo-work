@@ -1,7 +1,7 @@
-import { Button } from 'antd'
-import { Link, Route, Routes, useOutletContext } from 'react-router'
+import { Route, Routes, useOutletContext } from 'react-router'
 
-import NoticeCard, { ErrorTriangle } from '../../components/common/NoticeCard'
+import EmptyData from '../../components/common/EmptyData'
+import PageNotFound from '../../components/common/PageNotFound'
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import DocumentList from './components/DocumentList'
 import DocumentViewer from './components/DocumentViewer'
@@ -11,11 +11,7 @@ export default function DocumentsPage() {
 
   if (!selectedBusinessId) {
     return (
-      <NoticeCard
-        icon={<ErrorTriangle />}
-        title="사업 정보를 불러오지 못해서 문서를 볼 수 없어요"
-        description="담당 관리자에게 문의해 주세요."
-      />
+      <EmptyData title="사업 정보를 불러오지 못해서 문서를 볼 수 없어요" description="담당 관리자에게 문의해 주세요." />
     )
   }
 
@@ -32,15 +28,7 @@ export default function DocumentsPage() {
       <Route
         path="*"
         element={
-          <NoticeCard
-            icon={<ErrorTriangle />}
-            title="페이지를 찾을 수 없어요"
-            action={
-              <Link to="/documents">
-                <Button className="h-7">문서 목록으로</Button>
-              </Link>
-            }
-          />
+          <PageNotFound backTo="/documents" backLabel="문서 목록으로" />
         }
       />
     </Routes>

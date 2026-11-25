@@ -6,7 +6,7 @@ import { Alert, App, Button, Input, Modal, Space, Spin, Switch } from 'antd'
 import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import { createTemplateTag, getTemplateTags, updateTemplateTag } from '../../../../api/taskTemplates'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 import type { TemplateTag } from '../../../../types/taskTemplate'
 import IconAction from '../../../../components/common/IconAction'
 
@@ -14,7 +14,7 @@ type TagManagerProps = { businessId: string; onClose: () => void }
 
 export default function TagManager({ businessId, onClose }: TagManagerProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const load = useCallback((signal: AbortSignal) => getTemplateTags(businessId, signal), [businessId])
   const query = useApiQuery(`template-tags:${businessId}`, load)
   const [list, setList] = useState<{ source?: TemplateTag[]; tags: TemplateTag[] }>({ tags: [] })
@@ -39,9 +39,8 @@ export default function TagManager({ businessId, onClose }: TagManagerProps) {
       message.success(await request())
       setEditing(null)
     } catch (error) {
-      message.error(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
-      else query.reload()
+      showError(error)
+      if (!isAuthStateError(error)) query.reload()
     } finally {
       setSavingId(null)
     }

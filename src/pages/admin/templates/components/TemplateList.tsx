@@ -1,20 +1,24 @@
 import { useCallback, useState } from 'react'
-import { PlusOutlined, RightOutlined, TagsOutlined, WarningOutlined } from '@ant-design/icons'
+import { PlusOutlined, RightOutlined, TagsOutlined } from '@ant-design/icons'
 import { App, Button, Card, Grid, Select, Skeleton, Switch, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
-import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isAuthStateError } from '../../../../api/client'
 import { getCourseOptions } from '../../../../api/courses'
 import { getTaskTemplates, updateTaskTemplate } from '../../../../api/taskTemplates'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { ReferenceType, TaskTemplate } from '../../../../types/taskTemplate'
 import PageHeader from '../../../../components/layout/PageHeader'
 import { describeDeadline, groupByPhase, referenceLabels, TURN_OFF_NOTICE } from '../templatesData'
 import TagManager from './TagManager'
 import SearchInput from '../../../../components/common/SearchInput'
 import { clickableRowProps } from '../../../../components/common/clickableRow'
+import NoSearchResult from '../../../../components/common/NoSearchResult'
+import LoadingError from '../../../../components/common/LoadingError'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import EmptyData from '../../../../components/common/EmptyData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 
 type TemplateRow =
   | { kind: 'group'; key: string; phase: string; isAlways: boolean; count: number }
@@ -28,7 +32,7 @@ type TemplateListProps = { businessId: string; isMobile: boolean }
 
 export default function TemplateList({ businessId, isMobile }: TemplateListProps) {
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const navigate = useNavigate()
   const isWide = Grid.useBreakpoint().xl ?? true
   const [params, setParams] = useSearchParams()
@@ -90,9 +94,8 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
         }))
         message.success(isActive ? '템플릿을 다시 켰어요.' : '템플릿을 껐어요.')
       } catch (error) {
-        message.error(getApiErrorMessage(error))
-        if (isAuthStateError(error)) void refreshUser()
-        else query.reload()
+        showError(error)
+        if (!isAuthStateError(error)) query.reload()
       } finally {
         setSavingId(null)
       }
@@ -232,29 +235,15 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
     return (
       <div className="flex flex-col gap-md break-keep">
         {header}
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
-          <div role="alert" className="flex flex-col items-center gap-sm text-center">
-            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
-            <h3 className="m-0 text-card-title font-medium">템플릿을 불러오지 못했어요</h3>
-            <p className="m-0 text-caption text-(--ant-color-text-secondary)">{getApiErrorMessage(query.error)}</p>
-            <Button className="h-7" onClick={query.reload}>
-              다시 시도
-            </Button>
-          </div>
-        </Card>
+        <LoadingError title="템플릿을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
       </div>
     )
   }
 
-  const empty = (
-    <div className="flex min-h-[160px] flex-col items-center justify-center gap-xs py-lg text-center">
-      <h3 className="m-0 text-card-title font-medium">
-        {data?.templates.length ? '조건에 맞는 템플릿이 없어요' : '아직 템플릿이 없어요'}
-      </h3>
-      <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-        {data?.templates.length ? '검색어나 필터를 바꿔 보세요.' : '템플릿 추가로 과정에 만들 할 일을 등록해 주세요.'}
-      </p>
-    </div>
+  const empty = data?.templates.length ? (
+    <NoSearchResult plain title="조건에 맞는 템플릿이 없어요" />
+  ) : (
+    <EmptyData plain title="아직 템플릿이 없어요" description="템플릿 추가로 과정에 만들 할 일을 등록해 주세요." />
   )
 
   return (
@@ -368,10 +357,7 @@ export default function TemplateList({ businessId, isMobile }: TemplateListProps
                 row.kind === 'item' ? `cursor-pointer ${row.isActive ? '' : '[&>td]:text-(--ant-color-text-tertiary)'}` : '[&>td]:bg-transparent!'
               }
               onRow={(row) => (row.kind === 'item' ? clickableRowProps(() => navigate(editPath(row), { state: listState })) : {})}
-              classNames={{
-                header: { cell: 'text-caption font-medium' },
-                body: { cell: 'px-sm py-xs text-caption' },
-              }}
+              classNames={smallTableStyle}
             />
           )}
         </Card>

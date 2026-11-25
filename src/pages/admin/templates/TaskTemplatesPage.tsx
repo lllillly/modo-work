@@ -1,20 +1,22 @@
 import { useCallback } from 'react'
-import { Button, Result, Spin } from 'antd'
+import { Button, Spin } from 'antd'
 import { Link, Route, Routes, useOutletContext, useParams } from 'react-router'
 
-import { getApiErrorMessage } from '../../../api/client'
 import { getCourseOptions } from '../../../api/courses'
 import { getDocuments } from '../../../api/documents'
 import { getTaskTemplate, getTaskTemplates, getTemplateTags } from '../../../api/taskTemplates'
 import useApiQuery from '../../../hooks/useApiQuery'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
 import { useAuth } from '../../../providers/AuthContext'
+import LoadingError from '../../../components/common/LoadingError'
+import EmptyData from '../../../components/common/EmptyData'
+import NoPermission from '../../../components/common/NoPermission'
+import PageNotFound from '../../../components/common/PageNotFound'
+import { isAdmin } from '../../../utils/roles'
 import TemplateEditor from './components/TemplateEditor'
 import TemplateList from './components/TemplateList'
 
-const notFound = (
-  <Result status="404" title="페이지를 찾을 수 없어요" extra={<Link to="/admin/task-templates">목록으로</Link>} />
-)
+const notFound = <PageNotFound backTo="/admin/task-templates" backLabel="템플릿 목록으로" />
 
 function TemplateEditorRoute({ businessId, isMobile }: { businessId: string; isMobile: boolean }) {
   const { templateId } = useParams()
@@ -36,15 +38,14 @@ function TemplateEditorRoute({ businessId, isMobile }: { businessId: string; isM
 
   if (query.error) {
     return (
-      <Result
-        status="warning"
+      <LoadingError
         title="템플릿을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(query.error)}
+        error={query.error}
+        onRetry={query.reload}
         extra={
-          <>
-            <Button onClick={query.reload}>다시 시도</Button>
-            <Link to="/admin/task-templates">목록으로</Link>
-          </>
+          <Link to="/admin/task-templates">
+            <Button className="h-7">목록으로</Button>
+          </Link>
         }
       />
     )
@@ -67,21 +68,12 @@ export default function TaskTemplatesPage() {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
   const { user } = useAuth()
 
-  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
+  if (!isAdmin(user)) {
     return (
-      <Result
-        status="403"
-        title="이 화면에 접근할 권한이 없어요"
-        subTitle="할 일 템플릿은 관리자만 관리할 수 있어요."
-        extra={
-          <Link to="/">
-            <Button type="primary">홈으로</Button>
-          </Link>
-        }
-      />
+      <NoPermission description="할 일 템플릿은 관리자만 관리할 수 있어요." />
     )
   }
-  if (!selectedBusinessId) return <Result status="info" title="선택할 수 있는 사업이 없어요" />
+  if (!selectedBusinessId) return <EmptyData title="선택할 수 있는 사업이 없어요" />
 
   return (
     <Routes key={selectedBusinessId}>

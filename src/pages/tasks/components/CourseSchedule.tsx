@@ -7,10 +7,10 @@ import type { Dayjs } from 'dayjs'
 import 'dayjs/locale/ko'
 
 import type { CourseTasksCourse } from '../../../types/courseTasks'
-import { getToday } from '../../home/dateUtils'
 import CourseHistoryModal from '../../admin/courses/components/CourseHistoryModal'
-import { formatActionTime, getCourseDays, getMonthlyCycles } from '../courseTasksData'
+import { getCourseDays, getMonthlyCycles } from '../courseTasksData'
 import IconAction from '../../../components/common/IconAction'
+import { formatDateTime, getToday } from '../../../utils/date'
 
 type CourseScheduleProps = {
   course: CourseTasksCourse
@@ -166,7 +166,7 @@ export default function CourseSchedule({
                   </span>
                 </p>
                 <p className="m-0 text-caption text-(--ant-color-text-secondary)">{entry.reason ? `사유: ${entry.reason}` : '사유 없음 (진행 중 과정의 일반 수정)'}{entry.description && ` · ${entry.description}`}</p>
-                <p className="m-0 text-caption text-(--ant-color-text-tertiary)"><time dateTime={entry.createdAt}>{formatActionTime(entry.createdAt, true)}</time> · {entry.actor}</p>
+                <p className="m-0 text-caption text-(--ant-color-text-tertiary)"><time dateTime={entry.createdAt}>{formatDateTime(entry.createdAt)}</time> · {entry.actor}</p>
               </li>
             ))}
           </ul>

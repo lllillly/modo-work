@@ -1,9 +1,8 @@
 import { useEffect, useEffectEvent, useState } from 'react'
-import { DeleteOutlined, FileAddOutlined, HistoryOutlined, InboxOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FileAddOutlined, HistoryOutlined, ReloadOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Select, Skeleton, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
-import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
 import { getBusinesses } from '../../../../api/courses'
 import {
   deleteDocument,
@@ -12,11 +11,12 @@ import {
   getDocumentKinds,
   retryDocumentIndex,
 } from '../../../../api/documents'
-import NoticeCard, { ErrorTriangle } from '../../../../components/common/NoticeCard'
+import LoadingError from '../../../../components/common/LoadingError'
+import EmptyData from '../../../../components/common/EmptyData'
+import NoSearchResult from '../../../../components/common/NoSearchResult'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
-import { formatShortDate, getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
+import { getFileSummary, getIndexStatus, isIndexRetrying } from '../../../documents/documentData'
 import DocumentVersionsDrawer from '../../../documents/components/DocumentVersionsDrawer'
 import PageHeader from '../../../../components/layout/PageHeader'
 import DocumentReplaceModal from './DocumentReplaceModal'
@@ -24,6 +24,9 @@ import DocumentUploadDrawer from './DocumentUploadDrawer'
 import SearchInput from '../../../../components/common/SearchInput'
 import IconAction from '../../../../components/common/IconAction'
 import HintTooltip from '../../../../components/common/HintTooltip'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatMonthDay } from '../../../../utils/date'
 
 const ALL_FILTER = 'all'
 
@@ -33,7 +36,7 @@ const linkReplaceNotice = '링크 문서는 파일로 교체할 수 없어요'
 
 export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) {
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const [search, setSearch] = useState('')
   const [kindId, setKindId] = useState(ALL_FILTER)
   const [businessId, setBusinessId] = useState(ALL_FILTER)
@@ -104,11 +107,6 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       window.clearInterval(timer)
     }
   }, [indexing, message])
-
-  function showError(error: unknown) {
-    message.error(getApiErrorMessage(error))
-    if (isAuthStateError(error)) void refreshUser()
-  }
 
   async function retry(item: DocumentItem) {
     try {
@@ -210,7 +208,7 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
       responsive: ['xl'],
       render: (_, item) => (
         <span className="text-(--ant-color-text-tertiary)">
-          {formatShortDate(item.updatedAt)} · {item.createdBy.name}
+          {formatMonthDay(item.updatedAt)} · {item.createdBy.name}
         </span>
       ),
     },
@@ -277,19 +275,9 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
           <Skeleton active title={false} paragraph={{ rows: 6, width: '100%' }} />
         </Card>
       ) : documents.error ? (
-        <NoticeCard
-          icon={<ErrorTriangle />}
-          title="문서 목록을 불러오지 못했어요"
-          description="잠시 후 다시 시도해 주세요."
-          action={
-            <Button className="h-7" onClick={documents.reload}>
-              다시 시도
-            </Button>
-          }
-        />
+        <LoadingError title="문서 목록을 불러오지 못했어요" onRetry={documents.reload} />
       ) : allDocuments.length === 0 ? (
-        <NoticeCard
-          icon={<InboxOutlined className="text-3xl text-(--ant-color-text-tertiary)" />}
+        <EmptyData
           title="올린 문서가 없어요"
           description="규정·안내서·양식을 올리면 문서 메뉴에 보이고, PDF는 물어보기가 근거로 써요."
           action={uploadButton}
@@ -405,18 +393,9 @@ export default function AdminDocumentList({ isMobile }: AdminDocumentListProps) 
               rowHoverable={false}
               scroll={{ x: 640 }}
               locale={{
-                emptyText: (
-                  <div className="flex flex-col items-center gap-xs py-lg">
-                    <SearchOutlined aria-hidden className="text-4xl text-(--ant-color-text-tertiary)" />
-                    <span className="font-medium text-(--ant-color-text)">조건에 맞는 문서가 없어요</span>
-                    <span className="text-(--ant-color-text-secondary)">다른 이름이나 필터로 찾아 보세요.</span>
-                  </div>
-                ),
+                emptyText: <NoSearchResult plain compact title="조건에 맞는 문서가 없어요" description="다른 이름이나 필터로 찾아 보세요." />,
               }}
-              classNames={{
-                header: { cell: 'text-caption font-medium' },
-                body: { cell: 'px-sm py-xs text-caption' },
-              }}
+              classNames={smallTableStyle}
             />
           </Card>
           )}

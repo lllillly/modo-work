@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { Spin } from 'antd'
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 
 import AuthLayout from './layouts/AuthLayout'
 import RequireAuth from './layouts/RequireAuth'
+import PageNotFound from './components/common/PageNotFound'
 
 const AppLayout = lazy(() => import('./layouts/AppLayout'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
@@ -48,12 +49,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
               <Route path="/admin/import" element={<Navigate to="/admin/courses/import" replace />} />
               <Route
                 path="*"
-                element={
-                  <>
-                    <h2 className="text-section-title">페이지를 찾을 수 없습니다.</h2>
-                    <Link to="/">홈으로 이동</Link>
-                  </>
-                }
+                element={<PageNotFound />}
               />
             </Route>
           </Route>

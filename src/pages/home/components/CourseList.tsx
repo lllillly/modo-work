@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Progress, Select, Table } from 'antd'
+import { Button, Progress, Select, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link } from 'react-router'
 
@@ -7,6 +7,7 @@ import type { HomeCourse } from '../../../types/home'
 
 import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
+import ContentCard from '../../../components/common/ContentCard'
 
 type CourseListProps = {
   courses: HomeCourse[]
@@ -97,7 +98,7 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
   ]
 
   return (
-    <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+    <ContentCard>
       <div className="mb-sm flex flex-wrap items-center justify-between gap-xs">
         <h2 className="m-0 flex items-center gap-xs text-card-title">
           내 과정 <span className="text-caption font-regular text-(--ant-color-text-secondary)">{courses.length}개</span>
@@ -168,6 +169,6 @@ export default function CourseList({ courses, isMobile }: CourseListProps) {
           }}
         />
       )}
-    </Card>
+    </ContentCard>
   )
 }

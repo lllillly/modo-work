@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { DeleteOutlined, InboxOutlined, MoreOutlined, PlusOutlined, SearchOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
+import { DeleteOutlined, InboxOutlined, MoreOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Card, Checkbox, Dropdown, Grid, Pagination, Select, Skeleton, Table, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -7,10 +7,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import type { ManagedCourse } from '../../../../types/adminCourses'
 import type { CourseProgressStatus } from '../../../../types/courseApi'
 import { formatCoursePeriod, getOrgUnitName, toManagedCourse } from '../courseManagementData'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isAuthStateError, isConflict } from '../../../../api/client'
 import { deleteCourse, getAssignmentAreas, getCourses } from '../../../../api/courses'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import useMediaQuery from '../../../../hooks/useMediaQuery'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 import { useAuth } from '../../../../providers/AuthContext'
 import PageHeader from '../../../../components/layout/PageHeader'
 import { AssignmentStatus, CourseLengthTag, CourseStateTag } from './CourseLabels'
@@ -18,6 +20,10 @@ import SearchInput from '../../../../components/common/SearchInput'
 import IconAction from '../../../../components/common/IconAction'
 import FilterChip from '../../../../components/common/FilterChip'
 import { clickableRowProps } from '../../../../components/common/clickableRow'
+import EmptyData from '../../../../components/common/EmptyData'
+import LoadingError from '../../../../components/common/LoadingError'
+import NoSearchResult from '../../../../components/common/NoSearchResult'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
 
 const ALL_FILTER = 'all'
 const SEARCH_DELAY = 300
@@ -50,7 +56,8 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   const isWidest = useMediaQuery('(min-width: 1366px)')
   const { token } = theme.useToken()
   const selectFont = `${token.fontSize}px ${token.fontFamily}`
-  const { user, refreshUser } = useAuth()
+  const { user } = useAuth()
+  const { showError } = useApiErrorHandler()
   const { modal, message } = App.useApp()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(0)
@@ -114,13 +121,9 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
           if (visibleCourses.length === 1 && page > 0) setPage(page - 1)
           else query.reload()
         } catch (error) {
-          message.error(
-            error instanceof ApiError && error.status === 409
-              ? '다른 사람이 먼저 바꿨거나 이미 보관된 과정이에요. 목록을 다시 불러왔어요.'
-              : getApiErrorMessage(error),
-          )
-          if (isAuthStateError(error)) void refreshUser()
-          else query.reload()
+          const conflictText = '다른 사람이 먼저 바꿨거나 이미 보관된 과정이에요. 목록을 다시 불러왔어요.'
+          showError(error, isConflict(error) ? conflictText : undefined)
+          if (!isAuthStateError(error)) query.reload()
         }
       },
     })
@@ -210,35 +213,23 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
   )
 
   const empty = hasFilter ? (
-    <div
-      className="flex min-h-[260px] flex-col items-center justify-center gap-sm py-xl
-      text-center"
-    >
-      <SearchOutlined className="text-[30px] text-(--ant-color-text-tertiary)" />
-      <h3 className="m-0 text-card-title font-medium">조건에 맞는 과정이 없어요</h3>
-      <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-        검색어나 필터를 바꿔 다시 찾아보세요.
-      </p>
-    </div>
+    <NoSearchResult plain title="조건에 맞는 과정이 없어요" />
   ) : (
-    <div
-      className="flex min-h-[260px] flex-col items-center justify-center gap-sm py-xl
-      text-center"
-    >
-      <InboxOutlined className="text-[30px] text-(--ant-color-text-tertiary)" />
-      <h3 className="m-0 text-card-title font-medium">아직 등록된 과정이 없어요</h3>
-      <p className="m-0 text-caption text-(--ant-color-text-secondary)">
-        과정을 하나씩 추가하거나 CSV 파일로 한 번에 가져올 수 있어요.
-      </p>
-      <div className="flex gap-xs">
-        <Button icon={<UploadOutlined aria-hidden />} onClick={() => navigate('import')}>
-          CSV로 가져오기
-        </Button>
-        <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
-          과정 추가
-        </Button>
-      </div>
-    </div>
+    <EmptyData
+      plain
+      title="아직 등록된 과정이 없어요"
+      description="과정을 하나씩 추가하거나 CSV 파일로 한 번에 가져올 수 있어요."
+      action={
+        <div className="flex gap-xs">
+          <Button icon={<UploadOutlined aria-hidden />} onClick={() => navigate('import')}>
+            CSV로 가져오기
+          </Button>
+          <Button type="primary" icon={<PlusOutlined aria-hidden />} onClick={() => navigate('new')}>
+            과정 추가
+          </Button>
+        </div>
+      }
+    />
   )
 
   return (
@@ -316,35 +307,16 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
         />
       )}
       {isError ? (
-        <Card
-          variant="borderless"
-          className="shadow-none"
-          classNames={{ body: 'px-lg py-[48px]' }}
-        >
-          <div
-            role="alert"
-            className="flex flex-col items-center gap-sm text-center"
-          >
-            <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
-            <h3 className="m-0 text-card-title font-medium leading-[normal]">
-              과정 목록을 불러오지 못했어요
-            </h3>
-            <p className="m-0 text-[13px] leading-[normal] text-(--ant-color-text-secondary)">
-              잠시 후 다시 시도해 주세요. 새로고침해도 안 되면 조금 뒤에 다시 들어와 주세요.
-            </p>
-            <Button
-              className="h-7"
-              onClick={() => {
-                const next = new URLSearchParams(params)
-                next.delete('preview')
-                setParams(next, { replace: true })
-                query.reload()
-              }}
-            >
-              다시 시도
-            </Button>
-          </div>
-        </Card>
+        <LoadingError
+          title="과정 목록을 불러오지 못했어요"
+          description="잠시 후 다시 시도해 주세요. 새로고침해도 안 되면 조금 뒤에 다시 들어와 주세요."
+          onRetry={() => {
+            const next = new URLSearchParams(params)
+            next.delete('preview')
+            setParams(next, { replace: true })
+            query.reload()
+          }}
+        />
       ) : isLoading ? (
         <Card
           variant="borderless"
@@ -373,10 +345,7 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
               size="small"
               rowHoverable={false}
               scroll={{ x: isWidest ? 1030 : isWide ? 840 : 640 }}
-              classNames={{
-                header: { cell: 'text-caption font-medium' },
-                body: { cell: 'px-sm py-xs text-caption' },
-              }}
+              classNames={smallTableStyle}
             />
           )}
         </Card>
@@ -448,17 +417,14 @@ export default function CourseList({ businessId, isMobile }: CourseListProps) {
             scroll={{ x: isWidest ? 1030 : isWide ? 840 : 640 }}
             locale={{ emptyText: empty }}
             onRow={(course) => ({ ...clickableRowProps(() => navigate(course.id)), className: 'cursor-pointer' })}
-            classNames={{
-              header: { cell: 'text-caption font-medium' },
-              body: { cell: 'px-sm py-xs text-caption' },
-            }}
+            classNames={smallTableStyle}
           />
         </Card>
       )}
       {!isLoading && !isError && (
         <Pagination
           current={page + 1}
-          pageSize={20}
+          pageSize={PAGE_SIZE}
           total={query.data?.totalElements ?? 0}
           showSizeChanger={false}
           onChange={(value) => setPage(value - 1)}

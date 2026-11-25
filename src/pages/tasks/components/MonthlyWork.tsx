@@ -3,7 +3,7 @@ import { Button, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import type { CourseTaskView, MonthlyCycle } from '../../../types/courseTasks'
-import { formatTaskDate } from '../courseTasksData'
+import { formatDateWithDay } from '../../../utils/date'
 
 type MonthlyWorkProps = {
   cycles: MonthlyCycle[]
@@ -47,7 +47,7 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
       title: '기간', key: 'period', width: '44%',
       render: (_, group) => (
         <span className="flex flex-wrap items-center gap-xxs">
-          {formatTaskDate(group.startDate).split('(')[0]} ~ {formatTaskDate(group.endDate).split('(')[0]}
+          {formatDateWithDay(group.startDate).split('(')[0]} ~ {formatDateWithDay(group.endDate).split('(')[0]}
           {isCurrent(group) && <span className="text-[11px] font-medium text-(--ant-color-primary-text)">현재</span>}
         </span>
       ),
@@ -58,11 +58,11 @@ export default function MonthlyWork({ cycles, tasks, today, courseEndDate, offse
         <ul className="m-0 flex list-none flex-col gap-xs p-0">
           {group.items.map(({ taskId, ...cycle }) => (
             <li key={cycle.id ?? cycle.dueDate} className="flex flex-wrap items-center gap-xxs">
-              {formatTaskDate(cycle.dueDate)}
+              {formatDateWithDay(cycle.dueDate)}
               {cycle.title && (taskId ? (
                 <Button type="link" onClick={() => onOpenTask(taskId)} className="hit-area h-auto p-0 text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</Button>
               ) : <span className="text-[11px] text-(--ant-color-text-tertiary)">{cycle.title}</span>)}
-              {cycle.rawDueDate !== cycle.dueDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">{formatTaskDate(cycle.rawDueDate).split('(')[0]} 당김</span>}
+              {cycle.rawDueDate !== cycle.dueDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">{formatDateWithDay(cycle.rawDueDate).split('(')[0]} 당김</span>}
               {cycle.dueDate > courseEndDate && <span className="text-[11px] text-(--ant-color-text-tertiary)">종료일 뒤</span>}
             </li>
           ))}

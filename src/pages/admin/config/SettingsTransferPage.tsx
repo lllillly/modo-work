@@ -1,7 +1,7 @@
-import { Button } from 'antd'
-import { Link, useOutletContext } from 'react-router'
+import { useOutletContext } from 'react-router'
 
-import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
+import NoPermission from '../../../components/common/NoPermission'
+import { isAdmin } from '../../../utils/roles'
 import PageHeader from '../../../components/layout/PageHeader'
 import PageGuide from '../../../components/common/PageGuide'
 import type { AppLayoutContext } from '../../../layouts/AppLayout'
@@ -14,20 +14,7 @@ export default function SettingsTransferPage() {
   const { user } = useAuth()
   const { isMobile } = useOutletContext<AppLayoutContext>()
 
-  if (!user?.roles.some((role) => role.role === 'ADMIN')) {
-    return (
-      <NoticeCard
-        icon={<ErrorTriangle />}
-        title="이 화면에 접근할 권한이 없어요"
-        description="설정 내보내기와 가져오기는 관리자만 할 수 있어요."
-        action={
-          <Link to="/">
-            <Button className="h-7">홈으로</Button>
-          </Link>
-        }
-      />
-    )
-  }
+  if (!isAdmin(user)) return <NoPermission description="설정 내보내기와 가져오기는 관리자만 할 수 있어요." />
 
   return (
     <div className="flex flex-col gap-md">

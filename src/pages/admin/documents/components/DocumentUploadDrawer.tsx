@@ -3,12 +3,12 @@ import { InboxOutlined, WarningOutlined } from '@ant-design/icons'
 import { App, Button, DatePicker, Drawer, Form, Input, Segmented, Select, Upload } from 'antd'
 import type { Dayjs } from 'dayjs'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage } from '../../../../api/client'
 import { createLinkDocument, uploadDocument } from '../../../../api/documents'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentKind } from '../../../../types/documents'
 import type { OptionItem } from '../../../../types/courseApi'
 import { formatFileSize } from '../../../documents/documentData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALL_BUSINESSES = 'ALL'
@@ -38,7 +38,7 @@ function normalizeBusinesses(values: string[]) {
 
 export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onClose, onUploaded }: DocumentUploadDrawerProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [form] = Form.useForm<FormValues>()
   const [source, setSource] = useState<'file' | 'link'>('file')
   const [file, setFile] = useState<File | null>(null)
@@ -98,7 +98,7 @@ export default function DocumentUploadDrawer({ kinds, businesses, isMobile, onCl
           }),
         )
       }
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
     } finally {
       setIsSaving(false)
     }

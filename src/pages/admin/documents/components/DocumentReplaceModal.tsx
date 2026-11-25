@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { InboxOutlined, WarningOutlined } from '@ant-design/icons'
 import { App, Button, Modal, Upload } from 'antd'
 
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { getApiErrorMessage, isConflict } from '../../../../api/client'
 import { replaceDocumentFile } from '../../../../api/documents'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { DocumentItem } from '../../../../types/documents'
 import { formatFileSize } from '../../../documents/documentData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -20,7 +20,7 @@ type DocumentReplaceModalProps = {
 
 export default function DocumentReplaceModal({ item, isMobile, onClose, onReplaced, onStale }: DocumentReplaceModalProps) {
   const { message } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -51,14 +51,14 @@ export default function DocumentReplaceModal({ item, isMobile, onClose, onReplac
       onReplaced()
       onClose()
     } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
+      if (isConflict(error)) {
         message.warning('다른 관리자가 먼저 문서를 변경했어요. 다시 시도해 주세요.')
         onStale()
         onClose()
         return
       }
       setFileError(getApiErrorMessage(error))
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
     } finally {
       setIsSaving(false)
     }

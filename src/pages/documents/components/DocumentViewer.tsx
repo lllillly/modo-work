@@ -1,14 +1,17 @@
 import { useRef, useState } from 'react'
-import { ArrowLeftOutlined, FullscreenOutlined, HistoryOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, FullscreenOutlined, HistoryOutlined, LeftOutlined, LinkOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons'
 import { Button, Card, Input, InputNumber, Skeleton, Tag } from 'antd'
 import { Link, useParams, useSearchParams } from 'react-router'
 
 import { getDocumentFileUrl } from '../../../api/documents'
-import NoticeCard, { ErrorTriangle } from '../../../components/common/NoticeCard'
-import { formatShortDate, getDocumentScope, getExternalHref, getViewerMeta } from '../documentData'
+import LoadingError from '../../../components/common/LoadingError'
+import NoticeCard from '../../../components/common/NoticeCard'
+import PageNotFound from '../../../components/common/PageNotFound'
+import { getDocumentScope, getExternalHref, getViewerMeta } from '../documentData'
 import DocumentVersionsDrawer from './DocumentVersionsDrawer'
 import useDocuments from '../useDocuments'
 import IconAction from '../../../components/common/IconAction'
+import { formatMonthDay } from '../../../utils/date'
 
 type DocumentViewerProps = {
   businessId: string
@@ -54,30 +57,17 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
 
   if (query.error) {
     return (
-      <NoticeCard
-        icon={<ErrorTriangle />}
-        title="문서를 불러오지 못했어요"
-        description="잠시 후 다시 시도해 주세요."
-        action={
-          <Button className="h-7" onClick={query.reload}>
-            다시 시도
-          </Button>
-        }
-      />
+      <LoadingError title="문서를 불러오지 못했어요" onRetry={query.reload} />
     )
   }
 
   if (!item) {
     return (
-      <NoticeCard
-        icon={<ErrorTriangle />}
+      <PageNotFound
         title="문서를 찾을 수 없어요"
         description="삭제됐거나 볼 수 없는 문서예요."
-        action={
-          <Link to="/documents">
-            <Button className="h-7">문서 목록으로</Button>
-          </Link>
-        }
+        backTo="/documents"
+        backLabel="문서 목록으로"
       />
     )
   }
@@ -87,7 +77,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
   if (item.sourceType === 'LINK' || !item.originalFilename) {
     return (
       <NoticeCard
-        icon={<ErrorTriangle />}
+        icon={<LinkOutlined aria-hidden className="text-4xl text-(--ant-color-primary-text)" />}
         title={item.title}
         description="외부 링크 문서는 새 탭에서 열려요."
         action={
@@ -124,7 +114,7 @@ export default function DocumentViewer({ businessId, businessName, isMobile }: D
   const pageControls = <PageControls key={page} page={page} total={item.pageCount} onMove={movePage} />
   const revisedTag = item.contentRevision > 1 && (
     <Tag variant="outlined" color="processing" className="m-0 text-caption">
-      개정됨 {formatShortDate(item.updatedAt)}
+      개정됨 {formatMonthDay(item.updatedAt)}
     </Tag>
   )
   const versionsButton = (

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { MinusOutlined } from '@ant-design/icons'
-import { Button, Card, Progress, Table, Tag, Tooltip } from 'antd'
+import { Button, Progress, Table, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate } from 'react-router'
 
@@ -8,6 +8,7 @@ import type { LeaderArea, LeaderHomeCourse } from '../../../types/leaderHome'
 import { getCourseTasksPath } from '../taskLinks'
 import DeadlineTag from './DeadlineTag'
 import { clickableRowProps } from '../../../components/common/clickableRow'
+import ContentCard from '../../../components/common/ContentCard'
 
 type LeaderCourseListProps = {
   courses: LeaderHomeCourse[]
@@ -88,7 +89,7 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
   ]
 
   return (
-    <Card variant="borderless" className="min-w-0 shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+    <ContentCard className="min-w-0">
       <div className="mb-sm flex flex-wrap items-center justify-between gap-xs">
         <h2 className="m-0 flex items-center gap-xs text-card-title">
           과정별 진행 <span className="text-caption font-regular text-(--ant-color-text-secondary)">{courses.length}개</span>
@@ -144,6 +145,6 @@ export default function LeaderCourseList({ courses, areas, isMobile, ownOrgUnitI
           }}
         />
       )}
-    </Card>
+    </ContentCard>
   )
 }

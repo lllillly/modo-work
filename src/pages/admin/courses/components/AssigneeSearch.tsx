@@ -3,6 +3,7 @@ import { Button, Pagination, Select, Spin } from 'antd'
 
 import { getAssigneeCandidates } from '../../../../api/courses'
 import { getApiErrorMessage } from '../../../../api/client'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
 import type { AssigneeCandidate } from '../../../../types/courseApi'
 
@@ -117,7 +118,7 @@ export default function AssigneeSearch({
               size="small"
               simple
               current={search.page + 1}
-              pageSize={20}
+              pageSize={PAGE_SIZE}
               total={query.data?.totalElements ?? 0}
               showSizeChanger={false}
               hideOnSinglePage

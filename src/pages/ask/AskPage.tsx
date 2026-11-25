@@ -1,13 +1,12 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { PlusOutlined } from '@ant-design/icons'
-import { App, Button, Card, Divider } from 'antd'
+import { App, Button, Divider } from 'antd'
 import type { InputRef } from 'antd'
 import { useOutletContext } from 'react-router'
 
 import type { AppLayoutContext } from '../../layouts/AppLayout'
 import type { QuestionRequest } from '../../types/question'
 
-import { isAuthStateError } from '../../api/client'
 import { askQuestion } from '../../api/questions'
 import { useAuth } from '../../providers/AuthContext'
 import type { AskTurn } from './askData'
@@ -25,6 +24,8 @@ import BotMessage from './components/BotMessage'
 import NewChatFab from './components/NewChatFab'
 import QuestionInput from './components/QuestionInput'
 import PageTitle from '../../components/layout/PageTitle'
+import EmptyData from '../../components/common/EmptyData'
+import useApiErrorHandler from '../../hooks/useApiErrorHandler'
 
 export default function AskPage() {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
@@ -39,12 +40,10 @@ export default function AskPage() {
         {selectedBusinessId ? (
           <AskChat key={sessionKey} sessionKey={sessionKey} session={session} />
         ) : (
-          <Card variant="borderless" className="shadow-none" classNames={{ body: 'py-xl text-center' }}>
-            <p role="alert" className="m-0 text-card-title">지금은 물어보기를 쓸 수 없어요</p>
-            <p className="m-0 mt-xxs text-caption text-(--ant-color-text-secondary)">
-              선택할 수 있는 사업이 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요.
-            </p>
-          </Card>
+          <EmptyData
+            title="지금은 물어보기를 쓸 수 없어요"
+            description="선택할 수 있는 사업이 없어서 질문을 보낼 수 없어요. 관리자에게 문의해 주세요."
+          />
         )}
       </div>
     </div>
@@ -58,7 +57,8 @@ type AskChatProps = {
 
 function AskChat({ sessionKey, session }: AskChatProps) {
   const { isMobile, selectedBusinessId } = useOutletContext<AppLayoutContext>()
-  const { user, refreshUser } = useAuth()
+  const { user } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const { turns, conversationId, draft } = session
   const inputRef = useRef<InputRef>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -118,7 +118,7 @@ function AskChat({ sessionKey, session }: AskChatProps) {
       )
     } catch (error) {
       updateTurn(id, { status: 'error', error })
-      if (isAuthStateError(error)) void refreshUser()
+      checkLogin(error)
     }
   }
 

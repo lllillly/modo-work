@@ -1,18 +1,18 @@
 import { Suspense, useCallback, useState } from 'react'
-import { App, Button, Grid, Layout, Result, Spin } from 'antd'
+import { App, Grid, Layout, Spin } from 'antd'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { resetAskSession } from '../pages/ask/askSession'
 import { notificationCount } from '../pages/home/assigneeHomeMockData'
 
 import { getBusinesses } from '../api/courses'
-import { getApiErrorMessage } from '../api/client'
 import useApiQuery from '../hooks/useApiQuery'
 
 import { useAuth } from '../providers/AuthContext'
 import type { OptionItem } from '../types/courseApi'
 import { userRoleLabels } from '../types/user'
 
+import LoadingError from '../components/common/LoadingError'
 import AppHeader from '../components/layout/AppHeader'
 import AppSidebar from '../components/layout/AppSidebar'
 import { HeaderTitleSlot } from '../components/layout/headerTitleSlot'
@@ -85,12 +85,11 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   if (!shownBusinesses && businesses.isLoading) return <Spin fullscreen aria-label="사업 목록 불러오는 중" />
   if (!shownBusinesses && businesses.error) {
     return (
-      <Result
-        status="warning"
-        title="사업 목록을 불러오지 못했어요"
-        subTitle={getApiErrorMessage(businesses.error)}
-        extra={<Button onClick={businesses.reload}>다시 시도</Button>}
-      />
+      <main className="flex min-h-svh items-center justify-center px-md">
+        <div className="w-full max-w-md">
+          <LoadingError title="사업 목록을 불러오지 못했어요" error={businesses.error} onRetry={businesses.reload} />
+        </div>
+      </main>
     )
   }
 

@@ -1,5 +1,4 @@
 import { getDeadline } from '../home/assigneeHomeData'
-import { formatTaskDate } from './courseTasksData'
 
 import type { CourseResponse, OptionItem } from '../../types/courseApi'
 import type {
@@ -11,12 +10,13 @@ import type {
 } from '../../types/courseTasks'
 import type { TaskActionResponse, TaskMemoResponse, TaskResponse } from '../../types/taskApi'
 import type { TaskIssueDetail, TaskIssueSnapshot } from '../../types/taskIssue'
+import { formatDateWithDay } from '../../utils/date'
 
 const shiftLabels = { WEEKEND: '주말', HOLIDAY: '공휴일' }
 const issueReasons = { SCHEDULE_MISMATCH: '과정 일정 수정', TEMPLATE_MISMATCH: '템플릿 수정' }
 const referenceLabels = { COURSE_START: '과정 시작일', COURSE_END: '과정 종료일', MONTH_END: '주기 종료일', ALWAYS: '상시' }
 
-const formatDueDate = (value: string | null) => (value ? formatTaskDate(value) : '없음')
+const formatDueDate = (value: string | null) => (value ? formatDateWithDay(value) : '없음')
 const formatTags = (snapshot: TaskIssueSnapshot) => Object.values(snapshot.tags).sort().join(', ') || '없음'
 
 function getIssueChanges(before: TaskIssueSnapshot, after: TaskIssueSnapshot | undefined) {

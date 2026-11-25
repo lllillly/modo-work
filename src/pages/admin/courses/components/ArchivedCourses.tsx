@@ -1,18 +1,22 @@
 import { useCallback, useState } from 'react'
 import { RollbackOutlined } from '@ant-design/icons'
-import { App, Breadcrumb, Button, Card, Pagination, Skeleton, Table } from 'antd'
+import { App, Breadcrumb, Card, Pagination, Skeleton, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link, useNavigate } from 'react-router'
 
 import type { ManagedCourse } from '../../../../types/adminCourses'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { isAuthStateError, isConflict } from '../../../../api/client'
 import { getCourses, restoreCourse } from '../../../../api/courses'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
-import { formatArchivedDate, formatCoursePeriod, toManagedCourse } from '../courseManagementData'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
+import { formatCoursePeriod, toManagedCourse } from '../courseManagementData'
 import PageTitle from '../../../../components/layout/PageTitle'
-import NoticeCard, { ErrorTriangle } from '../../../../components/common/NoticeCard'
+import LoadingError from '../../../../components/common/LoadingError'
+import EmptyData from '../../../../components/common/EmptyData'
 import IconAction from '../../../../components/common/IconAction'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import { formatDate } from '../../../../utils/date'
 
 type ArchivedCoursesProps = {
   businessId: string
@@ -21,7 +25,7 @@ type ArchivedCoursesProps = {
 
 export default function ArchivedCourses({ businessId, isMobile }: ArchivedCoursesProps) {
   const navigate = useNavigate()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const { modal, message } = App.useApp()
   const [page, setPage] = useState(0)
   const load = useCallback(
@@ -44,13 +48,9 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
           message.success(changed ? `과정을 복원했어요. 할 일 ${changed}개의 마감이 바뀌었어요.` : '과정을 복원했어요.')
           navigate('/admin/courses')
         } catch (error) {
-          message.error(
-            error instanceof ApiError && error.status === 409
-              ? '복원하지 못했어요. 사업이나 조직 단위를 지금 쓰지 않거나, 다른 사람이 먼저 바꿨을 수 있어요.'
-              : getApiErrorMessage(error),
-          )
-          if (isAuthStateError(error)) void refreshUser()
-          else query.reload()
+          const conflictText = '복원하지 못했어요. 사업이나 조직 단위를 지금 쓰지 않거나, 다른 사람이 먼저 바꿨을 수 있어요.'
+          showError(error, isConflict(error) ? conflictText : undefined)
+          if (!isAuthStateError(error)) query.reload()
         }
       },
     })
@@ -61,7 +61,7 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
     { title: '과정명', dataIndex: 'name' },
     { title: '조직 단위', key: 'orgUnit', render: (_, course) => course.orgUnitName ?? '-' },
     { title: '기간', key: 'period', className: 'whitespace-nowrap', render: (_, course) => formatCoursePeriod(course) },
-    { title: '보관한 날', dataIndex: 'archivedAt', width: 104, render: formatArchivedDate },
+    { title: '보관한 날', dataIndex: 'archivedAt', width: 104, render: formatDate },
     {
       title: '',
       key: 'restore',
@@ -86,12 +86,7 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
       </div>
 
       {query.error ? (
-        <NoticeCard
-          icon={<ErrorTriangle />}
-          title="보관 목록을 불러오지 못했어요"
-          description={getApiErrorMessage(query.error)}
-          action={<Button className="h-7" onClick={query.reload}>다시 시도</Button>}
-        />
+        <LoadingError title="보관 목록을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
       ) : query.isLoading ? (
         <Card variant="borderless" className="shadow-none" classNames={{ body: isMobile ? 'p-md' : 'p-lg' }} aria-label="보관 목록 불러오는 중" aria-busy="true">
           <Skeleton active title={false} paragraph={{ rows: 5, width: '100%' }} />
@@ -109,13 +104,11 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
                   {course.externalKey} · {course.orgUnitName ?? '-'}
                 </p>
                 <p className="m-0 text-caption text-(--ant-color-text-secondary)">{formatCoursePeriod(course)}</p>
-                <p className="m-0 text-caption text-(--ant-color-text-tertiary)">보관 {formatArchivedDate(course.archivedAt)}</p>
+                <p className="m-0 text-caption text-(--ant-color-text-tertiary)">보관 {formatDate(course.archivedAt)}</p>
               </Card>
             ))
           ) : (
-            <Card variant="borderless" className="shadow-none">
-              <p className="m-0 py-lg text-center text-caption text-(--ant-color-text-secondary)">보관된 과정이 없어요</p>
-            </Card>
+            <EmptyData title="보관된 과정이 없어요" description="처리 기록이 있는 과정을 삭제하면 여기에 보관돼요." />
           )}
         </div>
       ) : (
@@ -127,16 +120,16 @@ export default function ArchivedCourses({ businessId, isMobile }: ArchivedCourse
             pagination={false}
             size="small"
             scroll={{ x: 600 }}
-            locale={{ emptyText: '보관된 과정이 없어요' }}
-            classNames={{ header: { cell: 'text-caption font-medium' }, body: { cell: 'px-sm py-xs text-caption' } }}
+            locale={{ emptyText: <EmptyData plain compact title="보관된 과정이 없어요" description="처리 기록이 있는 과정을 삭제하면 여기에 보관돼요." /> }}
+            classNames={smallTableStyle}
           />
         </Card>
       )}
 
-      {!query.isLoading && !query.error && (query.data?.totalElements ?? 0) > 20 && (
+      {!query.isLoading && !query.error && (query.data?.totalElements ?? 0) > PAGE_SIZE && (
         <Pagination
           current={page + 1}
-          pageSize={20}
+          pageSize={PAGE_SIZE}
           total={query.data?.totalElements ?? 0}
           showSizeChanger={false}
           onChange={(value) => setPage(value - 1)}

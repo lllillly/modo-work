@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router'
-import { DeleteOutlined, HolderOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons'
+import { DeleteOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons'
 import { App, Button, Card, Input, Select, Skeleton, Switch, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 
-import { getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { getApiErrorMessage } from '../../../../api/client'
 import { addListItem, deleteListItem, getListItems, updateListItem } from '../../../../api/listManagement'
 import useApiQuery from '../../../../hooks/useApiQuery'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 import type { AppLayoutContext } from '../../../../layouts/AppLayout'
-import { useAuth } from '../../../../providers/AuthContext'
 import type { ListItem, ListItemInput, ListKind } from '../../../../types/listManagement'
 import IconAction from '../../../../components/common/IconAction'
+import LoadingError from '../../../../components/common/LoadingError'
+import ContentCard from '../../../../components/common/ContentCard'
+import EmptyData from '../../../../components/common/EmptyData'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
 
 type ListRow = ListItem & { key: string; isNew?: boolean }
 
@@ -61,7 +65,7 @@ function isChanged(row: ListRow, original: ListItem | undefined) {
 
 export default function ListManagement({ isMobile }: { isMobile: boolean }) {
   const { message, modal } = App.useApp()
-  const { refreshUser } = useAuth()
+  const { showError } = useApiErrorHandler()
   const { reloadBusinesses } = useOutletContext<AppLayoutContext>()
   const [kind, setKind] = useState<ListKind>('businesses')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -183,11 +187,6 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
     if (kind === 'businesses') reloadBusinesses()
   }
 
-  function handleError(error: unknown) {
-    message.error(getApiErrorMessage(error))
-    if (isAuthStateError(error)) void refreshUser()
-  }
-
   async function save() {
     if (saving.current || !isDirty) return
     if (invalidKeys.size > 0) {
@@ -209,10 +208,8 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
       message.success(`${current.label} 목록을 저장했어요.`)
     } catch (error) {
       setUnsaved({ kind, rows: changedRows.slice(saved) })
-      message.error(
-        `${getApiErrorMessage(error)} ${saved > 0 ? `${saved}건은 저장했어요. ` : ''}저장하지 못한 입력은 그대로 남아있어요. 확인하고 다시 저장해 주세요.`,
-      )
-      if (isAuthStateError(error)) void refreshUser()
+      const savedText = saved > 0 ? `${saved}건은 저장했어요. ` : ''
+      showError(error, `${getApiErrorMessage(error)} ${savedText}저장하지 못한 입력은 그대로 남아있어요. 확인하고 다시 저장해 주세요.`)
     } finally {
       saving.current = false
       setIsSaving(false)
@@ -236,7 +233,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
           await deleteListItem(kind, row.id, row.version)
           message.success('항목을 삭제했어요.')
         } catch (error) {
-          handleError(error)
+          showError(error)
         } finally {
           reload()
         }
@@ -346,16 +343,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
 
   if (query.error) {
     return (
-      <Card variant="borderless" className="shadow-none" classNames={{ body: 'px-lg py-[48px]' }}>
-        <div role="alert" className="flex flex-col items-center gap-sm text-center">
-          <WarningOutlined aria-hidden className="text-[36px] text-(--ant-color-error-text)" />
-          <h3 className="m-0 text-card-title font-medium">목록을 불러오지 못했어요</h3>
-          <p className="m-0 text-caption text-(--ant-color-text-secondary)">{getApiErrorMessage(query.error)}</p>
-          <Button className="h-7" onClick={query.reload}>
-            다시 시도
-          </Button>
-        </div>
-      </Card>
+      <LoadingError title="목록을 불러오지 못했어요" error={query.error} onRetry={query.reload} />
     )
   }
 
@@ -401,7 +389,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
   return (
     <div className="flex flex-col gap-md min-[992px]:flex-row">
       {kindMenu}
-      <Card variant="borderless" className="min-w-0 flex-1 shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+      <ContentCard className="min-w-0 flex-1">
         <div className="mb-xs flex items-center justify-between gap-sm">
           <h3 className="m-0 text-card-title">{current.label}</h3>
           <Button icon={<PlusOutlined />} className="h-7" onClick={addRow}>
@@ -469,17 +457,14 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
             pagination={false}
             size="small"
             scroll={{ x: kind === 'areas' ? 820 : 580 }}
-            locale={{ emptyText: '항목이 없어요. 항목 추가로 만들어 주세요.' }}
+            locale={{ emptyText: <EmptyData plain compact title="항목이 없어요" description="항목 추가로 만들어 주세요." /> }}
             rowClassName={(row) => (row.isActive ? '' : '[&>td]:text-(--ant-color-text-tertiary)')}
             onRow={(row, index) => ({
               className: dragKey === row.key ? 'opacity-50' : undefined,
               onDragOver: (event) => event.preventDefault(),
               onDrop: () => moveRow(dragKey, index ?? 0),
             })}
-            classNames={{
-              header: { cell: 'text-caption font-medium' },
-              body: { cell: 'px-sm py-xs text-caption' },
-            }}
+            classNames={smallTableStyle}
           />
         )}
         <p className="mt-sm mb-md text-caption text-(--ant-color-text-secondary)">{current.note}</p>
@@ -488,7 +473,7 @@ export default function ListManagement({ isMobile }: { isMobile: boolean }) {
             저장
           </Button>
         </div>
-      </Card>
+      </ContentCard>
     </div>
   )
 }

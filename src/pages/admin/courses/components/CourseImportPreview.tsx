@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { ArrowRightOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Checkbox, Pagination, Steps, Table, Tag } from 'antd'
+import { Alert, Button, Checkbox, Pagination, Steps, Table, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Link } from 'react-router'
 
@@ -11,10 +11,13 @@ import {
   getImportRows,
   getMissingCourses,
 } from '../../../../api/courses'
-import { ApiError, getApiErrorMessage, isAuthStateError } from '../../../../api/client'
+import { ApiError, getApiErrorMessage, isConflict } from '../../../../api/client'
+import { PAGE_SIZE } from '../../../../api/pagination'
 import useApiQuery from '../../../../hooks/useApiQuery'
-import { useAuth } from '../../../../providers/AuthContext'
+import useApiErrorHandler from '../../../../hooks/useApiErrorHandler'
 import type { ApplyImportRequest, ImportJob, ImportRow } from '../../../../types/courseApi'
+import { smallTableStyle } from '../../../../components/common/tableStyle'
+import ContentCard from '../../../../components/common/ContentCard'
 
 const rowLabels: Record<ImportRow['disposition'], string> = {
   ADDED: '신규',
@@ -54,7 +57,7 @@ type ImportPreviewProps = {
 }
 
 export default function CourseImportPreview({ jobId, businessId, isMobile, onReset }: ImportPreviewProps) {
-  const { refreshUser } = useAuth()
+  const { checkLogin } = useApiErrorHandler()
   const [page, setPage] = useState(0)
   const [missingPage, setMissingPage] = useState(0)
   const [confirmed, setConfirmed] = useState<string[]>([])
@@ -122,9 +125,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
 
   function handleError(error: unknown) {
     setError(getApiErrorMessage(error))
-    if (isAuthStateError(error)) {
-      void refreshUser()
-    }
+    checkLogin(error)
   }
 
   async function apply() {
@@ -139,7 +140,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
       setNeedsCheck(false)
     } catch (error) {
       handleError(error)
-      if (error instanceof ApiError && error.status === 409) {
+      if (isConflict(error)) {
         setMustPreview(true)
       }
       setNeedsCheck(true)
@@ -277,7 +278,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
         />
       )}
       {job && (
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+        <ContentCard>
           <div className="mb-sm flex flex-wrap items-center gap-xs">
             <span className="break-all text-body font-medium">{job.fileName}</span>
             <span className="text-caption">총 {job.summary.totalRowCount}행</span>
@@ -295,9 +296,9 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
               마감 변경 {job.result.recalculation.deadlineChangedTaskCount}건
             </p>
           )}
-        </Card>
+        </ContentCard>
       )}
-      <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+      <ContentCard>
         <Table
           rowKey="rowNumber"
           dataSource={rowsQuery.data?.items ?? []}
@@ -308,7 +309,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
           scroll={{ x: 1000 }}
           pagination={{
             current: page + 1,
-            pageSize: 20,
+            pageSize: PAGE_SIZE,
             total: rowsQuery.data?.totalElements ?? 0,
             showSizeChanger: false,
             onChange: (value) => setPage(value - 1),
@@ -320,10 +321,7 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
                 ? '[&>td]:bg-(--ant-color-warning-bg)'
                 : ''
           }
-          classNames={{
-            header: { cell: 'text-caption font-medium' },
-            body: { cell: 'px-sm py-xs text-caption' },
-          }}
+          classNames={smallTableStyle}
         />
         {!!job?.requiredWarningKeys.length && (
           <p className="mb-0 text-caption">
@@ -331,9 +329,9 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
             확인해 주세요.
           </p>
         )}
-      </Card>
+      </ContentCard>
       {!!job?.summary.missingCourseCount && (
-        <Card variant="borderless" className="shadow-none" classNames={{ body: 'p-md min-[992px]:p-lg' }}>
+        <ContentCard>
           <h3 className="mt-0 mb-sm text-card-title">
             파일에 없는 기존 과정 {job.summary.missingCourseCount}개
           </h3>
@@ -350,13 +348,13 @@ export default function CourseImportPreview({ jobId, businessId, isMobile, onRes
           <Pagination
             size="small"
             current={missingPage + 1}
-            pageSize={20}
+            pageSize={PAGE_SIZE}
             total={missingQuery.data?.totalElements ?? 0}
             showSizeChanger={false}
             hideOnSinglePage
             onChange={(value) => setMissingPage(value - 1)}
           />
-        </Card>
+        </ContentCard>
       )}
       <div className={`flex flex-wrap gap-xs ${isMobile ? '[&>button]:flex-1' : 'justify-end'}`}>
         <Button icon={<UploadOutlined aria-hidden />} disabled={busy} onClick={onReset}>

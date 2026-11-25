@@ -1,7 +1,7 @@
 import type { HomeCourse, HomeTask } from '../../types/home'
 import type { AssigneeHomeResponse } from '../../types/homeApi'
 import type { TaskResponse } from '../../types/taskApi'
-import { getDaysUntil } from './dateUtils'
+import { getDaysUntil } from '../../utils/date'
 
 export function getDeadline(
   dueDate: string | null,
