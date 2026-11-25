@@ -86,7 +86,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
   if (!shownBusinesses && businesses.error) {
     return (
       <main className="flex min-h-svh items-center justify-center px-md">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-[400px]">
           <LoadingError title="사업 목록을 불러오지 못했어요" error={businesses.error} onRetry={businesses.reload} />
         </div>
       </main>
