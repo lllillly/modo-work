@@ -97,13 +97,13 @@
 
 <sub>화면 캡쳐 속 서비스 이름과 로고(멋피스)는 이 저장소의 이름(MODO WORK)과 다릅니다. 인턴 프로젝트라 회사에서 요청한 공개 가능 범위에 맞추느라 저장소의 이름과 로고만 바꿨고, 캡쳐는 실제 화면 그대로 두었습니다.</sub>
 
-<details>
-<summary>모바일 화면</summary>
-<br>
-<img src="docs/images/report/mobile-home.png" width="320" alt="모바일 담당자 홈">
+### 모바일
 
-992px 아래에서는 메뉴를 서랍으로 열고, 목록은 한 번에 보이는 개수를 줄여 더 보기로 펼칩니다.
-</details>
+992px 아래에서는 메뉴를 서랍으로 열고, 목록은 한 번에 보이는 개수를 줄여 더 보기로 펼칩니다. 아래는 폭 400px 화면입니다.
+
+| 담당자 홈 | 과정별 할 일 | 물어보기 | 리더 홈 |
+| --- | --- | --- | --- |
+| <img src="docs/images/report/mobile-home.png" alt="모바일 담당자 홈: 내 알림, 주간 달력, 내 과정"> | <img src="docs/images/report/mobile-tasks.png" alt="모바일 과정별 할 일: 월 주기, 단계별 목록"> | <img src="docs/images/report/mobile-ask.png" alt="모바일 물어보기: 추천 질문과 입력창"> | <img src="docs/images/report/mobile-leader-home.png" alt="모바일 리더 홈: 기한 지남과 확인 대기, 알림, 처리 기록"> |
 
 ## 시연
 
