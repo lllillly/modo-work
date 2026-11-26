@@ -16,6 +16,7 @@
 ![Ant Design](https://img.shields.io/badge/Ant_Design_6-0170FE?style=for-the-badge&logo=antdesign&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 
 <br>
 
@@ -24,7 +25,7 @@
 
 <br>
 
-[화면](#화면) · [시연](#시연) · [맡은 일](#맡은-일) · [주요 구현](#주요-구현) · [트러블슈팅](#트러블슈팅) · [검증과 수치](#검증과-수치) · [결과 보고서](docs/report.md) · [PR 기록](docs/pull-requests/README.md)
+[기술 스택](#기술-스택과-환경) · [화면](#화면) · [시연](#시연) · [맡은 일](#맡은-일) · [주요 구현](#주요-구현) · [트러블슈팅](#트러블슈팅) · [검증과 수치](#검증과-수치) · [결과 보고서](docs/report.md) · [PR 기록](docs/pull-requests/README.md)
 
 <br>
 
@@ -58,6 +59,25 @@
 | **🎯 역할** | 프론트엔드, UI/UX. 화면 설계와 디자인 기준, 전체 화면 구현, 백엔드 API 연동, 테스트 |
 | **📦 규모** | 담당 커밋 168개, 화면 15개, 소스 176개 파일 약 1만 9천 줄 |
 | **🔑 사용자** | 담당자, 리더, 관리자. 역할마다 첫 화면과 메뉴가 다름 |
+
+## 기술 스택과 환경
+
+| 구분 | 기술 | 버전 | 쓴 곳 |
+| --- | --- | --- | --- |
+| 언어 | TypeScript | 6.0 | 전체 코드, API 응답 타입 |
+| 프레임워크 | React | 19.3 | 화면 구성 |
+| 라우팅 | React Router | 8.5 | 역할별 화면 이동, 하위 경로(`BASE_PATH`) 배포 |
+| UI | Ant Design, Ant Design Icons | 6.6, 6.3 | 표, 폼, 달력, 알림 등 공통 컴포넌트와 테마 |
+| 스타일 | Tailwind CSS | 4.3 | 간격과 반응형 레이아웃 |
+| 아이콘 | Lucide React | 1.78 | 메뉴와 상태 아이콘 |
+| 날짜 | Day.js | 1.11 | 마감일, D-day, 달력 계산 표시 |
+| 빌드 | Vite | 8.3 | 개발 서버(`/api` 프록시), 빌드 |
+| 코드 검사 | ESLint, typescript-eslint | 10.13, 8.72 | 린트, 빌드 전 타입 검사(`tsc -b`) |
+| 테스트 | Playwright | - | 역할별 화면 자동 점검, 연타와 동시 수정 재현 스크립트 |
+| 실행 환경 | Node.js | 22 | 개발과 빌드 |
+| 운영 배포 | Docker, Nginx | - | 원 프로젝트에서 정적 파일을 Nginx로 서빙, 하위 경로 배포 |
+| 데모 배포 | Cloudflare Workers | - | 정적 자산으로 데모 빌드 배포, `main`에 올리면 자동 배포 |
+| 연동 서버 | Spring Boot, PostgreSQL, FastAPI(NLP) | - | 원 프로젝트의 백엔드와 물어보기 서버. 이 저장소에는 포함하지 않음 |
 
 ## 화면
 
