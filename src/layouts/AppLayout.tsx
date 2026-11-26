@@ -73,7 +73,7 @@ export default function AppLayout({ isDark, onThemeChange }: AppLayoutProps) {
     next.delete('taskId')
     next.delete('preview')
     next.delete('jobId')
-    for (const key of ['q', 'type', 'orgUnitId', 'status', 'review', 'page']) next.delete(key)
+    for (const key of ['q', 'type', 'kind', 'business', 'orgUnitId', 'role', 'status', 'review', 'page']) next.delete(key)
 
     setSearchParams(next, { replace: true })
     setBusinessSelection(business)
