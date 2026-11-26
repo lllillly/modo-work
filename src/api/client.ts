@@ -19,12 +19,14 @@ export class ApiError extends Error {
 export async function requestApi(path: string, options?: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS) {
   const timeout = AbortSignal.timeout(timeoutMs)
   const signal = options?.signal ? AbortSignal.any([options.signal, timeout]) : timeout
-  const response = await fetch(`${import.meta.env.BASE_URL}api${path}`, {
-    ...options,
-    credentials: 'include',
-    cache: 'no-store',
-    signal,
-  })
+  const response = import.meta.env.VITE_DEMO === 'true'
+    ? await (await import('../demo/demoFetch')).demoFetch(path, options)
+    : await fetch(`${import.meta.env.BASE_URL}api${path}`, {
+      ...options,
+      credentials: 'include',
+      cache: 'no-store',
+      signal,
+    })
 
   if (!response.ok) {
     const error: AuthErrorResponse | null = await response.json().catch(() => null)

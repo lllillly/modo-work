@@ -3,12 +3,15 @@ import { Alert, App, Button, Card, Spin, Tag } from 'antd'
 import { Navigate } from 'react-router'
 
 import TestLoginForm from './components/TestLoginForm'
+import { demoAccounts } from './demoAccounts'
 
 import { AuthApiError } from '../../api/auth'
 import { useAuth } from '../../providers/AuthContext'
 import type { AuthErrorResponse, TestLoginRequest } from '../../types/auth'
 
 type LoginStatus = 'test' | 'pending' | 'inactive' | 'credentialsError' | 'error' | 'expired'
+
+const isDemo = import.meta.env.VITE_DEMO === 'true'
 
 const statusMessages = {
   pending: {
@@ -189,7 +192,7 @@ export default function LoginPage() {
         {!showIntroduction && <h1 className="sr-only">로그인</h1>}
 
         {showForm && status !== 'expired' && (
-          <Tag color="gold" className="m-0 self-start">개발/시연용 로그인</Tag>
+          <Tag color="gold" className="m-0 self-start">{isDemo ? '데모' : '개발/시연용 로그인'}</Tag>
         )}
 
         {statusMessage && (
@@ -205,7 +208,31 @@ export default function LoginPage() {
           />
         )}
 
-        {showForm && (
+        {showForm && isDemo && (
+          <div className="flex flex-col gap-sm">
+            <div className="flex flex-col gap-xxs">
+              <p className="m-0 text-body font-medium">역할을 골라 둘러보세요</p>
+              <p className="m-0 text-caption text-(--ant-color-text-tertiary)">
+                더미 데이터로 동작하는 데모라 저장은 되지 않아요.
+              </p>
+            </div>
+            {demoAccounts.map((account) => (
+              <Button
+                key={account.email}
+                type="primary"
+                size="large"
+                block
+                loading={isSubmitting}
+                onClick={() => submitTestLogin({ email: account.email, password: 'demo' })}
+                className="font-medium"
+              >
+                {account.label}로 로그인
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {showForm && !isDemo && (
           <>
             <TestLoginForm
               showDemoAccounts={status === 'test'}

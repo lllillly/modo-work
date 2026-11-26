@@ -8,6 +8,7 @@ import type {
   DocumentVersion,
   UploadDocumentMetadata,
 } from '../types/documents'
+import { demoDocumentFileUrl } from '../demo/documentFiles'
 import { getApi, requestApi, sendApi } from './client'
 import { getAllPages } from './pagination'
 
@@ -19,6 +20,7 @@ export function getDocuments(businessId: string, signal?: AbortSignal) {
 }
 
 export function getDocumentFileUrl(documentId: string, businessId: string, page = 1) {
+  if (import.meta.env.VITE_DEMO === 'true') return demoDocumentFileUrl(documentId, page)
   const query = new URLSearchParams({ businessId })
   return `${import.meta.env.BASE_URL}api/documents/${encodeURIComponent(documentId)}/file?${query}#page=${page}&navpanes=0`
 }
@@ -80,6 +82,7 @@ export function getDocumentVersions(documentId: string, businessId: string | nul
 }
 
 export function getVersionFileUrl(documentId: string, contentRevision: number, businessId: string | null) {
+  if (import.meta.env.VITE_DEMO === 'true') return demoDocumentFileUrl(documentId)
   const id = encodeURIComponent(documentId)
   return businessId
     ? `${import.meta.env.BASE_URL}api/documents/${id}/versions/${contentRevision}/file?${new URLSearchParams({ businessId })}`
