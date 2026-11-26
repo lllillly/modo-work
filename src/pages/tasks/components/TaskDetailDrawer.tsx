@@ -53,7 +53,7 @@ export default function TaskDetailDrawer({
   const permissions = getTaskPermissions(user, course, task)
   const isAdmin = user.roles.some((role) => role.role === 'ADMIN')
   const canReassign = !task.isCompleted && !course.archived && task.assignees.some((assignee) => assignee.status === 'INACTIVE')
-    && user.roles.some((role) => role.role === 'ADMIN' || role.role === 'LEADER')
+    && (isAdmin || (user.roles.some((role) => role.role === 'LEADER') && !!task.server?.canReviewInArea))
   const processingTitle = isAdmin ? '관리자 처리' : permissions.canManage ? '리더 처리' : '내 처리'
   const isAlways = task.referenceType === 'ALWAYS'
   const showMismatch = task.mismatch && permissions.canManage
