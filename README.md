@@ -37,5 +37,6 @@ BASE_PATH=/portal npm run build
 | [문서와 물어보기](docs/documents-ask.md) | 문서 보기와 본문 검색, 업로드, 물어보기 |
 | [관리자 화면](docs/admin.md) | 사용자와 승인, 할 일 템플릿, 설정 내보내기와 가져오기, 휴무일, 서비스 토큰 |
 | [목업과 상태 확인](docs/mock-preview.md) | 목업 화면과 `preview` 주소 |
+| [프론트엔드 결과 보고서](docs/report.md) | 구현 범위, 화면, 검증, 트러블슈팅 |
 
 API 형식은 [contracts/api](../../contracts/api/)의 문서를 따릅니다.
