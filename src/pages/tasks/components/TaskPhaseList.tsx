@@ -97,7 +97,7 @@ export default function TaskPhaseList({
                     const review = getCurrentAction(task, 'REVIEW')
 
                     return (
-                      <li key={task.id} className={`flex min-h-14 items-center gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs min-[992px]:px-md ${hasMore ? 'last:border-b-0' : ''}`}>
+                      <li key={task.id} className="flex min-h-14 items-center gap-xs border-0 border-b border-solid border-(--ant-color-border-secondary) px-xxs py-xs last:border-b-0 min-[992px]:px-md">
                         {permissions.showCheckbox ? (
                           <Checkbox aria-label={`${task.title} 완료`} checked={task.isCompleted} disabled={disabled || !permissions.canComplete}
                             onChange={() => onComplete(task.id)} className="shrink-0"
