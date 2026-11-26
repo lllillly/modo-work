@@ -1,0 +1,2 @@
+﻿external_key,business,name,start_date,end_date,capacity,length_type,org_unit,assignee_area1,assignee_area2,assignee_area3
+C-EXAMPLE-01,사업 1,예시 과정,2027-01-31,2027-03-31,30,단기,조직 단위 1,user01@example.com;user02@example.com,user07@example.com,user09@example.com

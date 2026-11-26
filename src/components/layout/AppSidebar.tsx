@@ -42,7 +42,7 @@ const adminNavItems: NavItem[] = [
   { key: '/admin/users', to: '/admin/users', label: '사용자와 승인', icon: <TeamOutlined /> },
   { key: '/admin/task-templates', to: '/admin/task-templates', label: '할 일 템플릿', icon: <SnippetsOutlined /> },
   { key: '/admin/documents', to: '/admin/documents', label: '문서 업로드', icon: <CloudUploadOutlined /> },
-  { key: '/admin/questions', label: '물어보기 관리', icon: <CommentOutlined /> },
+  { key: '/admin/questions', to: '/admin/questions', label: '물어보기 관리', icon: <CommentOutlined /> },
   { key: '/admin/import', to: '/admin/courses/import', label: '과정 가져오기', icon: <ImportOutlined /> },
   { key: '/admin/service-tokens', to: '/admin/service-tokens', label: '서비스 토큰 관리', icon: <ApiOutlined /> },
   { key: '/admin/config', to: '/admin/config', label: '설정 내보내기 & 가져오기', icon: <SwapOutlined /> },
@@ -166,14 +166,14 @@ export default function AppSidebar({
               <img
                 src={`${import.meta.env.BASE_URL}images/logo.png`}
                 alt="MODO WORK 홈"
-                width={121}
+                width={104}
                 height={28}
                 className="h-7 w-auto dark:hidden"
               />
               <img
                 src={`${import.meta.env.BASE_URL}images/logo-dark.png`}
                 alt="MODO WORK 홈"
-                width={121}
+                width={104}
                 height={28}
                 className="hidden h-7 w-auto dark:block"
               />
@@ -287,8 +287,8 @@ export default function AppSidebar({
             ) : (
               <div className="relative flex h-16 shrink-0 items-center justify-center pr-4">
                 <Link to="/" className="flex items-center">
-                  <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="MODO WORK 홈" width={121} height={28} className="h-7 w-auto dark:hidden" />
-                  <img src={`${import.meta.env.BASE_URL}images/logo-dark.png`} alt="MODO WORK 홈" width={121} height={28} className="hidden h-7 w-auto dark:block" />
+                  <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="MODO WORK 홈" width={104} height={28} className="h-7 w-auto dark:hidden" />
+                  <img src={`${import.meta.env.BASE_URL}images/logo-dark.png`} alt="MODO WORK 홈" width={104} height={28} className="hidden h-7 w-auto dark:block" />
                 </Link>
                 <HintTooltip title="메뉴 접기" placement="right">
                   <Button type="text" aria-label="메뉴 접기" aria-expanded icon={<PanelLeft size={18} aria-hidden />} onClick={() => changeCollapsed(true)} className="absolute top-1/2 right-xs -translate-y-1/2 cursor-ew-resize text-(--ant-color-text-secondary)" />

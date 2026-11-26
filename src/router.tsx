@@ -38,6 +38,7 @@ export default function AppRouter({ isDark, onThemeChange }: AppRouterProps) {
               <Route index element={<HomePage />} /> {/* 홈(역할별로 화면 변경) */}
               <Route path="/tasks" element={<TasksPage />} /> {/* 과정별 할 일 */}
               <Route path="/ask" element={<AskPage />} /> {/* 물어보기 */}
+              <Route path="/documents/*" element={<DocumentsPage />} /> {/* 문서 */}
               <Route path="/admin/courses/*" element={<CoursesPage />} />
               <Route path="/admin/task-templates/*" element={<TaskTemplatesPage />} /> {/* 할 일 템플릿 */}
               <Route path="/admin/documents" element={<AdminDocumentsPage />} />

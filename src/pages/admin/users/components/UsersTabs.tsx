@@ -6,6 +6,7 @@ type UsersTabsProps<T extends string> = {
   items: NonNullable<TabsProps['items']>
   isMobile: boolean
   onChange: (key: T) => void
+  ariaLabel?: string // 모바일 Segmented 이름. 다른 화면에서 쓸 때 바꾼다
 }
 
 export function TabCount({ value, highlight = false }: { value: number; highlight?: boolean }) {
@@ -22,7 +23,13 @@ export function TabCount({ value, highlight = false }: { value: number; highligh
   )
 }
 
-export default function UsersTabs<T extends string>({ activeKey, items, isMobile, onChange }: UsersTabsProps<T>) {
+export default function UsersTabs<T extends string>({
+  activeKey,
+  items,
+  isMobile,
+  onChange,
+  ariaLabel = '사용자와 승인 화면',
+}: UsersTabsProps<T>) {
   return (
     <Tabs
       activeKey={activeKey}
@@ -34,7 +41,7 @@ export default function UsersTabs<T extends string>({ activeKey, items, isMobile
           ? () => (
               <Segmented
                 block
-                aria-label="사용자와 승인 화면"
+                aria-label={ariaLabel}
                 value={activeKey}
                 onChange={(key) => onChange(key as T)}
                 options={items.map((item) => ({ value: item.key, label: item.label }))}

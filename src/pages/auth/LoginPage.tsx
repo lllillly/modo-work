@@ -164,14 +164,14 @@ export default function LoginPage() {
           src={`${import.meta.env.BASE_URL}images/logo.png`}
           alt="MODO WORK"
           width={140}
-          height={32}
+          height={38}
           className="h-auto w-[140px] max-w-full dark:hidden"
         />
         <img
           src={`${import.meta.env.BASE_URL}images/logo-dark.png`}
           alt="MODO WORK"
           width={140}
-          height={32}
+          height={38}
           className="hidden h-auto w-[140px] max-w-full dark:block"
         />
 
