@@ -4,6 +4,7 @@ import { BellOutlined } from '@ant-design/icons'
 import { Badge, Button, Popover, Spin } from 'antd'
 import { Link, useLocation } from 'react-router'
 
+import { ApiError } from '../../api/client'
 import { getHeaderAlerts } from '../../api/home'
 import useApiQuery from '../../hooks/useApiQuery'
 import { useAuth } from '../../providers/AuthContext'
@@ -20,7 +21,7 @@ type HeaderAlertsProps = {
 }
 
 type ShownAlerts = {
-  businessId: string
+  scope: string
   data: Pick<AssigneeHomeResponse, 'today' | 'alerts'>
 }
 
@@ -33,11 +34,14 @@ export default function HeaderAlerts({ businessId, isMobile }: HeaderAlertsProps
     (signal: AbortSignal) => getHeaderAlerts(businessId ?? '', isLeader, signal),
     [businessId, isLeader],
   )
-  const alerts = useApiQuery(user && businessId ? `header-alerts:${user.id}:${businessId}:${pathname}` : null, loadAlerts)
+  const scope = user && businessId ? `${user.id}:${businessId}:${isLeader ? 'leader' : 'assignee'}` : null
+  const alerts = useApiQuery(scope ? `header-alerts:${scope}:${pathname}` : null, loadAlerts)
   const [shown, setShown] = useState<ShownAlerts>()
-  if (businessId && alerts.data && alerts.data !== shown?.data) setShown({ businessId, data: alerts.data })
+  const isDenied = alerts.error instanceof ApiError && (alerts.error.status === 401 || alerts.error.status === 403)
+  if (scope && alerts.data && alerts.data !== shown?.data) setShown({ scope, data: alerts.data })
+  if (isDenied && shown) setShown(undefined)
 
-  const data = shown && shown.businessId === businessId ? shown.data : undefined
+  const data = shown && shown.scope === scope ? shown.data : undefined
   const alertIds = new Set(data?.alerts.items.map((task) => task.id))
   const tasks = data ? data.alerts.items.map((task) => toHomeTask(task, data.today, alertIds)) : []
   const count = data?.alerts.totalElements ?? 0
