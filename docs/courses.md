@@ -22,7 +22,7 @@
 - 파일은 `FormData`로 보냅니다. 서버가 검사한 행별 변경 내용, 오류, 경고를 보여 줍니다.
 - 확인한 경고 키를 적용 요청에 같이 보냅니다.
 - 작업 조회에는 주소의 `jobId`를 씁니다.
-- 양식은 `public/templates/courses_template.csv`이고 `/templates/courses_template.csv`로 내려받습니다. 작성 규칙은 [CSV 입력 명세](../../../contracts/api/course-import.md)를 따릅니다.
+- 양식은 `public/templates/courses_template.csv`이고 `/templates/courses_template.csv`로 내려받습니다. 작성 규칙은 CSV 입력 명세(원 저장소 계약서)를 따릅니다.
 
 ## 삭제, 보관, 복원
 

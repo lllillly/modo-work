@@ -164,11 +164,18 @@ export default function AppSidebar({
               className="flex min-w-0 flex-1 items-center pt-xxs pb-sm pl-xs"
             >
               <img
-                src={`${import.meta.env.BASE_URL}images/logo.svg`}
+                src={`${import.meta.env.BASE_URL}images/logo.png`}
                 alt="MODO WORK 홈"
-                width={112}
+                width={121}
                 height={28}
-                className="h-7 w-auto"
+                className="h-7 w-auto dark:hidden"
+              />
+              <img
+                src={`${import.meta.env.BASE_URL}images/logo-dark.png`}
+                alt="MODO WORK 홈"
+                width={121}
+                height={28}
+                className="hidden h-7 w-auto dark:block"
               />
             </Link>
             <Button
@@ -272,7 +279,7 @@ export default function AppSidebar({
                     onClick={() => changeCollapsed(false)}
                     className="group relative flex h-10 w-10 cursor-ew-resize items-center justify-center rounded-lg border-0 bg-transparent transition-colors hover:bg-(--ant-color-fill-tertiary) focus-visible:outline-2 focus-visible:outline-(--ant-color-primary)"
                   >
-                    <img src={`${import.meta.env.BASE_URL}images/logo-mark.svg`} alt="" width={28} height={28} className="h-7 w-7 group-hover:invisible group-focus-visible:invisible" />
+                    <img src={`${import.meta.env.BASE_URL}images/logo-mark.png`} alt="" width={28} height={28} className="h-7 w-7 group-hover:invisible group-focus-visible:invisible" />
                     <PanelLeft size={18} aria-hidden className="invisible absolute text-(--ant-color-text-secondary) group-hover:visible group-focus-visible:visible" />
                   </button>
                 </HintTooltip>
@@ -280,7 +287,8 @@ export default function AppSidebar({
             ) : (
               <div className="relative flex h-16 shrink-0 items-center justify-center pr-4">
                 <Link to="/" className="flex items-center">
-                  <img src={`${import.meta.env.BASE_URL}images/logo.svg`} alt="MODO WORK 홈" width={108} height={28} className="h-7 w-auto" />
+                  <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="MODO WORK 홈" width={121} height={28} className="h-7 w-auto dark:hidden" />
+                  <img src={`${import.meta.env.BASE_URL}images/logo-dark.png`} alt="MODO WORK 홈" width={121} height={28} className="hidden h-7 w-auto dark:block" />
                 </Link>
                 <HintTooltip title="메뉴 접기" placement="right">
                   <Button type="text" aria-label="메뉴 접기" aria-expanded icon={<PanelLeft size={18} aria-hidden />} onClick={() => changeCollapsed(true)} className="absolute top-1/2 right-xs -translate-y-1/2 cursor-ew-resize text-(--ant-color-text-secondary)" />

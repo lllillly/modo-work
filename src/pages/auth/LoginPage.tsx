@@ -161,11 +161,18 @@ export default function LoginPage() {
     >
       <div className="flex flex-col gap-5">
         <img
-          src={`${import.meta.env.BASE_URL}images/logo.svg`}
+          src={`${import.meta.env.BASE_URL}images/logo.png`}
           alt="MODO WORK"
-          width={120}
-          height={30}
-          className="h-auto w-[120px] max-w-full"
+          width={140}
+          height={32}
+          className="h-auto w-[140px] max-w-full dark:hidden"
+        />
+        <img
+          src={`${import.meta.env.BASE_URL}images/logo-dark.png`}
+          alt="MODO WORK"
+          width={140}
+          height={32}
+          className="hidden h-auto w-[140px] max-w-full dark:block"
         />
 
         {showIntroduction && (
