@@ -229,6 +229,9 @@ export default function LoginPage() {
                 {account.label}로 로그인
               </Button>
             ))}
+            <Tag color="blue" className="m-0 whitespace-normal px-sm py-xs text-caption leading-[18px]">
+              인턴십 과정이 끝난 뒤 공개할 수 있는 범위까지만 보여 드리기 위해 데모 버전으로 제공하고 있어요.
+            </Tag>
           </div>
         )}
 
