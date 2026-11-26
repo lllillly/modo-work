@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRightOutlined, CloseOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Drawer, Input, Tag, Timeline } from 'antd'
 import { Link } from 'react-router'
 
@@ -12,6 +12,7 @@ import DeadlineTag from '../../home/components/DeadlineTag'
 import { getCompletionMemo, getTaskPermissions } from '../courseTasksData'
 
 import DeadlineChange from './DeadlineChange'
+import ReassignModal from './ReassignModal'
 import { formatDateWithDay, formatShortDateTime } from '../../../utils/date'
 
 type TaskDetailDrawerProps = {
@@ -47,9 +48,12 @@ export default function TaskDetailDrawer({
   const { modal } = App.useApp()
   const [actionError, setActionError] = useState('')
   const [memo, setMemo] = useState(() => getCompletionMemo(task))
+  const [isReassigning, setIsReassigning] = useState(false)
 
   const permissions = getTaskPermissions(user, course, task)
   const isAdmin = user.roles.some((role) => role.role === 'ADMIN')
+  const canReassign = !task.isCompleted && !course.archived && task.assignees.some((assignee) => assignee.status === 'INACTIVE')
+    && user.roles.some((role) => role.role === 'ADMIN' || role.role === 'LEADER')
   const processingTitle = isAdmin ? '관리자 처리' : permissions.canManage ? '리더 처리' : '내 처리'
   const isAlways = task.referenceType === 'ALWAYS'
   const showMismatch = task.mismatch && permissions.canManage
@@ -294,6 +298,12 @@ export default function TaskDetailDrawer({
             </div>
           ))}
         </dl>
+        {canReassign && (
+          <p className="mt-sm mb-0 flex flex-wrap items-center gap-xs text-caption text-(--ant-color-warning-text)">
+            <WarningOutlined aria-hidden /> 비활성 담당자가 있어요.
+            <Button size="small" onClick={() => setIsReassigning(true)}>담당자 바꾸기</Button>
+          </p>
+        )}
       </section>
 
       <section className={sectionClassName}>
@@ -340,6 +350,18 @@ export default function TaskDetailDrawer({
             ))}
           </div>
         </section>
+      )}
+      {isReassigning && (
+        <ReassignModal
+          courseId={course.id}
+          areaId={task.areaId}
+          orgUnitName={course.orgUnit.name}
+          onClose={() => setIsReassigning(false)}
+          onSaved={() => {
+            setIsReassigning(false)
+            onReload?.()
+          }}
+        />
       )}
     </Drawer>
   )
